@@ -19,7 +19,6 @@ void Response::createResponse(const Request& req)
     else if (req.getMethod() == "POST")
     {
         handlePostRequest(req);
-        std::cout  << "hey2" << std::endl;
     }
     else
     {
@@ -91,23 +90,22 @@ std::string Response::readFileContent(const std::string& filePath) const {
 
 
 void Response::handlePostRequest(const Request& req) {
-    // Check if the method is valid and parse the multipart data
+
     const auto& multipartData = req.getMultipartData();
 
-    // If there are multipart data parts, handle them
-    std::cout << "HEP!" << std::endl;
+
     if (!multipartData.empty()) {
         for (const auto& part : multipartData) {
             if (!part.filename.empty()) {
-                // This part is a file
+
                 std::ofstream file("./html/" + part.filename, std::ios::binary);
                 if (file) {
                     file.write(part.data.data(), part.data.size());
                     file.close();
                 }
                 else {
-                    // Handle file write error
-                    statusCode = 500;  // Internal Server Error
+
+                    statusCode = 500;
                     body = "<html><body><h1>500 Internal Server Error</h1></body></html>";
                     setResponse(500, "text/html", body.length());
                     return;
@@ -122,8 +120,8 @@ void Response::handlePostRequest(const Request& req) {
                 std::cout << "Form field: " << part.name << ", Value: " << std::string(part.data.begin(), part.data.end()) << std::endl;
             }
         }
-        // If all parts are processed successfully
-        statusCode = 200;  // OK
+
+        statusCode = 200;
         body = "<html><body><h1>File uploaded successfully!</h1></body></html>";
         setResponse(200, "text/html", body.length());
     } 
@@ -139,8 +137,8 @@ void Response::handlePostRequest(const Request& req) {
         }
     }
     else {
-        // If there was no multipart data, return a bad request
-        statusCode = 400;  // Bad Request
+
+        statusCode = 400;
         body = "<html><body><h1>400 Bad Request</h1></body></html>";
         setResponse(400, "text/html", body.length());
     }
@@ -153,10 +151,10 @@ void Response::handleGetRequest(const Request& req) {
 
     if (validFile(req)) {
         body = readFileContent(filePath);
-        statusCode = 200;  // OK
+        statusCode = 200;
         setResponse(200, getContentType(filePath), body.length());
     } else {
-        statusCode = 404;  // Not Found
+        statusCode = 404;
         body = "<html><body><h1>404 Not Found</h1></body></html>";
         setResponse(404, getContentType(filePath), body.length());
     }
@@ -203,6 +201,6 @@ std::string Response::getStatusLine() const {
         case 405:
             return "HTTP/1.1 405 Method Not Allowed\r\n";
         default:
-            return "HTTP/1.1 500 Internal Server Error\r\n"; // You could handle more status codes
+            return "HTTP/1.1 500 Internal Server Error\r\n";
     }
 }

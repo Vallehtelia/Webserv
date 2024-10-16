@@ -6,6 +6,7 @@
 #include <iostream>
 #include <map>
 #include <sstream> 
+#include <vector>
 
 #include "RequestHandler.hpp"
 
@@ -16,6 +17,7 @@ struct MultipartData
 	std::string					contentType;
 	std::vector<char>			data = {};
 	std::string					boundary;
+    std::map<std::string, std::string>    headers;
 };
 
 class Request {
@@ -27,7 +29,7 @@ class Request {
         std::string getPath() const;
         std::string getVersion() const;
         std::map<std::string, std::string> getHeaders() const {
-        return headers; // Return the headers map
+        return headers;
     }
         std::string getBody() const;
         void parse(const std::string& rawRequest);

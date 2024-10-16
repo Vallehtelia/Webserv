@@ -26,17 +26,23 @@ std::string Request::getBody() const {
     return body;
 }
 
+void printHex(const std::string& data) {
+    for (unsigned char c : data) {
+        std::cout << std::hex << (int)c << " ";
+    }
+    std::cout << std::dec << std::endl;
+}
+
+
 void Request::parse(const std::string& rawRequest) {
     
     std::istringstream requestStream(rawRequest);
     std::string requestLine;
 
-    // Read the first line (request line)
     std::getline(requestStream, requestLine);
     std::istringstream requestLineStream(requestLine);
     requestLineStream >> method >> path >> version;
 
-    // Read headers
     std::string headerLine;
     int contentLength = 0;
     
@@ -45,29 +51,23 @@ void Request::parse(const std::string& rawRequest) {
         if (colonPos != std::string::npos) {
             std::string key = headerLine.substr(0, colonPos);
             std::string value = headerLine.substr(colonPos + 1);
-            // Trim leading whitespace from value
             value.erase(0, value.find_first_not_of(" \t"));
             headers[key] = value;
-            //std::cout << key << " : " << value << std::endl;
-            // Check if this is the Content-Length header
             if (key == "Content-Length") {
-                contentLength = std::stoi(value);  // Parse content length
+                contentLength = std::stoi(value);
             }
         }
     }
 
-    // If there is a body, extract it using Content-Length
     if (contentLength > 0) {
-        body.resize(contentLength);  // Resize the body string to fit the content
-        requestStream.read(&body[0], contentLength);  // Read the exact content length
+        body.resize(contentLength);
+        requestStream.read(&body[0], contentLength);
 
-        // Handle multipart form-data (POST request)
+
         if (method == "POST" && headers["Content-Type"].find("multipart/form-data") != std::string::npos) {
             size_t boundaryPos = headers["Content-Type"].find("boundary=");
             if (boundaryPos != std::string::npos) {
-                std::string boundary = headers["Content-Type"].substr(boundaryPos + 9); // "boundary=" is 9 characters
-                boundary.erase(0, boundary.find_first_not_of("\r\n "));
-                boundary.erase(boundary.find_last_not_of("\r\n ") + 1);
+                std::string boundary = headers["Content-Type"].substr(boundaryPos + 9);
                 parseMultipartData(boundary);
             }
         }
@@ -83,77 +83,88 @@ for (char c : line) {
 std::cout << std::endl;
 }
 
-
-void Request::parseMultipartData(const std::string& boundary) {
-    std::string delimiter =  "--" + boundary;
-    std::string closingBoundary = delimiter + "--";
-    //std::cout << body << std::endl;
-    size_t start = 0, end = 0;
-
-    while ((start = body.find(delimiter, end)) != std::string::npos)
-    {
-        end = body.find(delimiter, start + delimiter.length());
-        std::string part = body.substr(start + delimiter.length(), end - delimiter.length());
-        part.erase(0, part.find_first_not_of("\r\n"));
-        part.erase(part.find_last_not_of("\r\n") + 1);
-        checkline(part);
-        if (part ==  "--")
-            break;
-        std::istringstream partStream(part);
-        std::string line;
-        std::string partHeaders;
-        std::string partContent;
-        bool isContent = false;
-        MultipartData multipartPart;  // Create a new multipartPart instance for each part
-    while (std::getline(partStream, line)) {
-    std::string sanitizedLine = line;
-    sanitizedLine.erase(0, sanitizedLine.find_first_not_of("\r\n"));
-    sanitizedLine.erase(sanitizedLine.find_last_not_of("\r\n") + 1);
-    // Trim leading/trailing whitespace including spaces
-    if (line.empty() || line == "\r" || line == "\n")
-    {
-        isContent = true;
-        continue;
+std::vector<std::string> splitByBoundary(std::string data, std::string boundary) {
+    std::vector<std::string> parts;
+    std::string part;
+    size_t start = 0;
+    
+    while ((start = data.find(boundary, start)) != std::string::npos) {
+        start += boundary.length();
+        size_t end = data.find(boundary, start);
+        part = data.substr(start, end - start);
+        if (part == "--\r\n")
+            break ;
+        parts.push_back(part);
+        start = end;
     }
-    if (sanitizedLine == closingBoundary)
-        break ;
-    if (!isContent) {
-        partHeaders += line + "\n";
-    } else {
-        partContent += line + "\n";
-    }
+    return parts;
 }
 
-        std::cout << "Part Headers: " << partHeaders << std::endl;
-        std::cout << "Part Content: " << partContent << std::endl;
 
-        // Extract "Content-Disposition" for the field name or file name
-        size_t contentDispositionPos = partHeaders.find("Content-Disposition:");
-        if (contentDispositionPos != std::string::npos) {
-            size_t namePos = partHeaders.find("name=\"", contentDispositionPos);
-            if (namePos != std::string::npos) {
-                size_t nameEnd = partHeaders.find("\"", namePos + 6);
-                multipartPart.name = partHeaders.substr(namePos + 6, nameEnd - (namePos + 6));
 
-                // Check if it's a file (i.e., has a filename)
-                size_t filenamePos = partHeaders.find("filename=\"", nameEnd);
-                if (filenamePos != std::string::npos) {
-                    size_t filenameEnd = partHeaders.find("\"", filenamePos + 10);
-                    multipartPart.filename = partHeaders.substr(filenamePos + 10, filenameEnd - (filenamePos + 10));
-                }
-
-                    multipartPart.contentType = headers["Content-Type"];
-
-                // Set content (body) for the field or file
-                multipartPart.data = std::vector<char>(partContent.begin(), partContent.end());
-
-                // Add to the multipartData vector
-                multipartData.push_back(multipartPart);
-                // Debug output for each part added
-                std::cout << "Added part: " << multipartPart.name 
-                          << " with filename: " << multipartPart.filename 
-                          << " and content type: " << multipartPart.contentType << std::endl;
+MultipartData createData(std::string &part) {
+    MultipartData multipartData;
+    
+    std::istringstream partStream(part);
+    std::string line;
+    while (std::getline(partStream, line))
+    {
+        if (line == "\r")
+            break ;
+        if (line.empty())
+            continue ;
+        line.erase(0, line.find_first_not_of(" "));
+        line.erase(line.find_last_not_of("\r\n") + 1);
+        checkline(line);
+        if (line.find("Content-Disposition:") != std::string::npos) {
+            size_t nameStart = line.find("name=\"") + 6;
+            size_t nameEnd = line.find("\"", nameStart);
+            multipartData.name = line.substr(nameStart, nameEnd - nameStart);
+            
+            size_t filenameStart = line.find("filename=\"");
+            if (filenameStart != std::string::npos) {
+                filenameStart += 10;
+                size_t filenameEnd = line.find("\"", filenameStart);
+                multipartData.filename = line.substr(filenameStart, filenameEnd - filenameStart);
             }
         }
+        else if (line.find("Content-Type:") != std::string::npos) {
+        size_t typeStart = line.find("Content-Type:") + 14;
+        multipartData.contentType = line.substr(typeStart);
+    }
+    }
+    std::string content((std::istreambuf_iterator<char>(partStream)),
+                        std::istreambuf_iterator<char>());
+    
+    multipartData.data.insert(multipartData.data.end(), content.begin(), content.end());
+    
+    return multipartData;
 }
+
+void printVectorAsHex(const std::vector<char>& vec) {
+    for (unsigned char c : vec) {
+        std::cout << std::hex << static_cast<int>(c) << " ";
+    }
+    std::cout << std::dec << std::endl;
+}
+
+void Request::parseMultipartData(const std::string& boundary) {
+    std::cout << "hello from multidata" << std::endl;
+    std::string delimiter =  "--" + boundary;
+    std::string data(body.begin(), body.end());
+    std::vector<std::string> parts = splitByBoundary(data, delimiter);
+    int i = 0;
+    for (std::string &part : parts)
+    {   
+        std::cout << "PART: " << part << std::endl;
+        //std::cout << delimiter << std::endl;
+        multipartData.push_back(createData(part));
+        std::cout << "PART NAME: " << multipartData[i].name << std::endl;
+        std::cout << "FILE NAME: " << multipartData[i].filename << std::endl;
+        std::cout << "CONTENT TYPE: " << multipartData[i].contentType << std::endl;
+        std::cout << "PART DATA: ";
+        printVectorAsHex(multipartData[i].data);
+        std::cout << std::endl;
+        i++;
+    }
 }

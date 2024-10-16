@@ -18,7 +18,7 @@ int main() {
     struct sockaddr_in serv_addr, client_addr;
     socklen_t client_len;
     int client_fd;
-    char buffer[1024];
+    char buffer[100000];
     size_t bytes_received;
 
     // Configure server address and port
@@ -74,15 +74,15 @@ int main() {
         std::cout << buffer << std::endl;
 
         Request req(buffer);
-        req.parse(buffer);
         std::cout << "Received request:\n" << std::endl;
         std::cout << "method: " << req.getMethod() << std::endl;
         std::cout << "path: " << req.getPath() << std::endl;
         std::cout << "version: " << req.getVersion() << std::endl;
         std::cout << "body: " << req.getBody() << std::endl;
         std::cout << "---------------" << std::endl;
-
         std::cout << "Serving file: " << req.getPath() << std::endl;
+        std::cout << "---------------" << std::endl;
+
 
         Response res;
         res.createResponse(req);
