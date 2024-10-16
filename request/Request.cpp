@@ -26,13 +26,6 @@ std::string Request::getBody() const {
     return body;
 }
 
-void printHex(const std::string& data) {
-    for (unsigned char c : data) {
-        std::cout << std::hex << (int)c << " ";
-    }
-    std::cout << std::dec << std::endl;
-}
-
 
 void Request::parse(const std::string& rawRequest) {
     
@@ -87,14 +80,13 @@ std::vector<std::string> splitByBoundary(std::string data, std::string boundary)
     std::vector<std::string> parts;
     std::string part;
     size_t start = 0;
-    
+
     while ((start = data.find(boundary, start)) != std::string::npos) {
         start += boundary.length();
         size_t end = data.find(boundary, start);
         part = data.substr(start, end - start);
-        if (part == "--\r\n")
-            break ;
         parts.push_back(part);
+        std::cout  << "added: \033[32m [" << part << "] \033[0m" << std::endl;
         start = end;
     }
     return parts;
