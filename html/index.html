@@ -1,0 +1,20 @@
+
+<html>
+<head>
+    <link rel="stylesheet" href="styles.css"> 
+    <title>Dynamic Server</title>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <h1>Submit Your Data</h1>
+    <form id="myForm" enctype="multipart/form-data">
+        <input type="text" name="name" placeholder="name" required>
+        <input type="text" name="favoriteFood" placeholder="name" required>
+        <input type="file" name="profilePic" accept="image/*"> 
+        <button type="submit">Submit</button>
+    </form>
+    <div id="response"></div>
+    <button onclick="window.location.href='other_page.html';">next</button>
+</body>
+</html>
+

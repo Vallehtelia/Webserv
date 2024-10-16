@@ -1,0 +1,48 @@
+
+#ifndef REQUEST_HPP
+# define REQUEST_HPP
+
+
+#include <iostream>
+#include <map>
+#include <sstream> 
+
+#include "RequestHandler.hpp"
+
+struct MultipartData
+{
+	std::string					name;
+	std::string					filename;
+	std::string					contentType;
+	std::vector<char>			data = {};
+	std::string					boundary;
+};
+
+class Request {
+    public:
+        Request();
+        Request(const std::string &rawRequest);
+        ~Request();
+        std::string getMethod() const;
+        std::string getPath() const;
+        std::string getVersion() const;
+        std::map<std::string, std::string> getHeaders() const {
+        return headers; // Return the headers map
+    }
+        std::string getBody() const;
+        void parse(const std::string& rawRequest);
+        void handleRequest(void);
+        void parseMultipartData(const std::string& boundary);
+        const std::vector<MultipartData>& getMultipartData() const { return multipartData; };
+    private:
+        std::string rawRequest;
+        std::string method;
+        std::string path;
+        std::string version;
+        std::map<std::string, std::string> headers;
+        std::string body;
+        std::vector<MultipartData> multipartData;
+
+} ;
+
+# endif
