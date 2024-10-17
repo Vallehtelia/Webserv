@@ -91,8 +91,8 @@ int main(int ac, char **av)
         }
         buffer[bytes_received] = '\0';
         std::cout << buffer << std::endl;
-
-        Request req(buffer);
+        std::string rawRequest(buffer, bytes_received);
+        Request req(rawRequest);
         std::cout << "Received request:\n" << std::endl;
         std::cout << "method: " << req.getMethod() << std::endl;
         std::cout << "path: " << req.getPath() << std::endl;

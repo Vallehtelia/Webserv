@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/submit', {
                 method: 'POST',
-                body: formData, // This contains the multipart data
+                body: formData,
             });
 
             if (response.ok) {

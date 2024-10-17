@@ -58,12 +58,16 @@ std::string Response::getContentType(const std::string& path) const {
 bool Response::validFile(const Request &req)
 {
     std::string method = req.getMethod();
-    filePath = "." + req.getPath();
-    if (req.getPath() == "/") {
-        filePath = "./html/index.html";
-    } else {
-        filePath = "./html" + req.getPath();
+    if (method == "GET")
+    {
+        if (req.getPath() == "/")
+            filePath = "./html/index.html";
+        else
+            filePath = "./html" + req.getPath();
+        std::cout << "FILEPATH: " << filePath << std::endl;
     }
+    else
+        filePath = "./html/uploads" + req.getPath(); 
     if (method == "POST" || method == "PUT")
     {
         std::ofstream file(filePath);
@@ -97,8 +101,7 @@ void Response::handlePostRequest(const Request& req) {
     if (!multipartData.empty()) {
         for (const auto& part : multipartData) {
             if (!part.filename.empty()) {
-
-                std::ofstream file("./html/" + part.filename, std::ios::binary);
+                std::ofstream file("./html/uploads/" + part.filename, std::ios::binary);
                 if (file) {
                     file.write(part.data.data(), part.data.size());
                     file.close();
@@ -111,7 +114,7 @@ void Response::handlePostRequest(const Request& req) {
                     return;
                 }
             } else {
-                std::ofstream file("./html/" + part.name, std::ios::binary);
+                std::ofstream file("./html/uploads/" + part.name, std::ios::binary);
                 if (file)
                 {
                     file.write(part.data.data(), part.data.size());
