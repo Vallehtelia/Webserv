@@ -72,7 +72,7 @@ bool Response::validFile(const Request &req)
     else if (method == "GET" || method == "DELETE")
     {
         std::ifstream file(filePath);
-        return file.is_open();      
+        return file.is_open();
     }
     return false;
 }
@@ -124,7 +124,7 @@ void Response::handlePostRequest(const Request& req) {
         statusCode = 200;
         body = "<html><body><h1>File uploaded successfully!</h1></body></html>";
         setResponse(200, "text/html", body.length());
-    } 
+    }
     else if (validFile(req))
     {
         std::ofstream file(filePath, std::ios::binary);

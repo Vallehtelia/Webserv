@@ -1,7 +1,10 @@
 #include "socket.hpp"
+#include "./parsing/ServerConfig.hpp"
 
-Socket::Socket() : _port(8080), _ip("69.69.69.1"), _socket_fd(0), _active(false)
+Socket::Socket(std::string port, std::string host) : _socket_fd(0), _active(false)
 {
+	this->_port = std::stoi(port);
+	this->_ip = host;
 	std::cout << "Socket default constructor\n";
 }
 

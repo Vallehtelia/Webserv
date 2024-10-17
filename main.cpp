@@ -11,19 +11,37 @@
 #include <map>
 #include "request/Request.hpp"
 #include "response/Response.hpp"
+#include "./parsing/ServerConfig.hpp"
 
 
-int main() {
-    Socket socket1;
+int main(int ac, char **av)
+{
+    std::vector<ServerConfig>	server; // Taa sisaltaa kaiken tiedon, Server name, port, host, root, client bodysize, index path, error pages in a map, locations in vector.
     struct sockaddr_in serv_addr, client_addr;
     socklen_t client_len;
     int client_fd;
     char buffer[100000];
     size_t bytes_received;
 
+    if (ac != 2)
+	{
+		std::cerr << "Error: wrong number of arguments" << std::endl;
+		return 1;
+	}
+    checkConfFile(av[1]);
+    std::cout << "\033[1;32mParsing file: " << av[1] << "\033[0m" << std::endl;
+    parseData(av[1], server);
+    // for (std::vector<ServerConfig>::iterator it = server.begin(); it != server.end(); it++)
+	// {
+	// 	it->printConfig();
+	// }
+
+    std::vector<ServerConfig>::iterator it = server.begin();
+    Socket socket1(it->getListenPort(), it->getHost());
+
     // Configure server address and port
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(8080);
+    serv_addr.sin_port = htons(std::stoi(it->getListenPort())); // otin tahan vaan ekan serverin portin, taa serv addr pitaa varmaan olla kans joku array tjtn et voidaan kuunnella useempia portteja samanaikasesti
     serv_addr.sin_addr.s_addr = INADDR_ANY;
 
     // Create socket
@@ -52,7 +70,8 @@ int main() {
         return 1;
     }
 
-    std::cout << "Server is listening on port 8080...\n";
+    std::cout << CYAN << "Server is listening on port " << it->getListenPort() << "...\n";
+    std::cout << "open 'localhost:" << std::stoi(it->getListenPort()) << "' on browser\n" << DEFAULT;
 
     while (true) {
         // Accept incoming connection
