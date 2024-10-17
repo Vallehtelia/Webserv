@@ -69,11 +69,9 @@ void Request::parse(const std::string& rawRequest) {
 
 void checkline(std::string line)
 {
-std::cout << "Line characters: ";
 for (char c : line) {
     std::cout << (c == '\n' ? std::string("\\n") : c == '\r' ? std::string("\\r") : std::string(1, c));
 }
-std::cout << std::endl;
 }
 
 std::vector<std::string> splitByBoundary(std::string data, std::string boundary) {
@@ -86,7 +84,9 @@ std::vector<std::string> splitByBoundary(std::string data, std::string boundary)
         size_t end = data.find(boundary, start);
         part = data.substr(start, end - start);
         parts.push_back(part);
-        std::cout  << "added: \033[32m [" << part << "] \033[0m" << std::endl;
+        std::cout  << "added: \033[32m [";
+        checkline(part);
+        std::cout << "] \033[0m" << std::endl;
         start = end;
     }
     return parts;
@@ -149,7 +149,7 @@ void Request::parseMultipartData(const std::string& boundary) {
     for (std::string &part : parts)
     {   
         std::cout << "PART: " << part << std::endl;
-        //std::cout << delimiter << std::endl;
+        std::cout << delimiter << std::endl;
         multipartData.push_back(createData(part));
         std::cout << "PART NAME: " << multipartData[i].name << std::endl;
         std::cout << "FILE NAME: " << multipartData[i].filename << std::endl;
