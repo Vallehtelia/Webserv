@@ -1,36 +1,25 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.querySelector('form');
+document.getElementById('myForm').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent the default form submission
 
-    form.addEventListener('submit', async (event) => {
-        event.preventDefault(); // Prevent the default form submission
+    const form = event.target;
+    const formData = new FormData(form); // Create a FormData object from the form
 
-        const nickname = document.getElementById('nickname').value;
-        const profilePic = document.getElementById('profilepic').files[0];
-
-        if (!nickname || !profilePic) {
-            alert('Please fill out all fields.');
-            return;
+    // Send the form data using fetch
+    fetch('http://localhost:8002', {
+        method: 'POST',
+        body: formData, // Send the form data as the request body
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
         }
-
-        const formData = new FormData();
-        formData.append('nickname', nickname);
-        formData.append('profilepic', profilePic);
-
-        try {
-            const response = await fetch('/submit', {
-                method: 'POST',
-                body: formData, // This contains the multipart data
-            });
-
-            if (response.ok) {
-                const responseText = await response.text();
-                alert(`Success: ${responseText}`);
-            } else {
-                alert('Upload failed. Please try again.');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('An error occurred. Please try again.');
-        }
+        return response.text(); // Convert response to text
+    })
+    .then(data => {
+        document.getElementById('response').innerText = data; // Display the response
+    })
+    .catch(error => {
+        console.error('There was a problem with the fetch operation:', error);
+        document.getElementById('response').innerText = 'Error: ' + error.message; // Show error
     });
 });
