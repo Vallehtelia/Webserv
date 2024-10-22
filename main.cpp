@@ -42,7 +42,7 @@ int main(int ac, char **av)
     // Configure server address and port
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(std::stoi(it->getListenPort())); // otin tahan vaan ekan serverin portin, taa serv addr pitaa varmaan olla kans joku array tjtn et voidaan kuunnella useempia portteja samanaikasesti
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
+	serv_addr.sin_addr.s_addr = INADDR_ANY;
 
     // Create socket
     socket1.setSocketFd(socket(AF_INET, SOCK_STREAM, 0));

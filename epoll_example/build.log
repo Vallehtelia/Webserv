@@ -1,0 +1,55 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.47kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/ubuntu:20.04
+#2 DONE 2.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/9] FROM docker.io/library/ubuntu:20.04@sha256:e341aa0d58bb9480bd092a137658bd1a7a5e8ae4fca31769df0eb7d6c4b8266e
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 523B done
+#5 DONE 0.0s
+
+#6 [2/9] RUN cat /etc/apt/sources.list
+#6 CACHED
+
+#7 [3/9] RUN echo "deb http://archive.ubuntu.com/ubuntu focal main restricted universe multiverse" > /etc/apt/sources.list &&     echo "deb http://archive.ubuntu.com/ubuntu focal-updates main restricted universe multiverse" >> /etc/apt/sources.list &&     echo "deb http://security.ubuntu.com/ubuntu focal-security main restricted universe multiverse" >> /etc/apt/sources.list
+#7 CACHED
+
+#8 [4/9] RUN apt-get update &&     apt-get dist-upgrade -y &&     apt-get install -y --fix-missing g++ &&     apt-get install -y --fix-missing make &&     apt-get install -y --fix-missing build-essential &&     apt-get clean &&     rm -rf /var/lib/apt/lists/*
+#8 CACHED
+
+#9 [5/9] WORKDIR /app
+#9 CACHED
+
+#10 [6/9] COPY . /app
+#10 DONE 0.0s
+
+#11 [7/9] RUN chmod +r /app/main.cpp
+#11 DONE 0.2s
+
+#12 [8/9] RUN ls -l /app
+#12 0.156 total 40
+#12 0.156 -rw-r--r-- 1 root root  1428 Oct 17 13:09 Dockerfile
+#12 0.156 -rw-r--r-- 1 root root   245 Oct 18 14:32 build.log
+#12 0.156 -rwxr-xr-x 1 root root 19936 Oct 18 14:18 client
+#12 0.156 -rw-r--r-- 1 root root  1718 Oct 18 14:18 client.cpp
+#12 0.156 -rw-r--r-- 1 root root  4708 Oct 18 14:06 main.cpp
+#12 DONE 0.2s
+
+#13 [9/9] RUN g++ -o server /app/main.cpp
+#13 DONE 0.4s
+
+#14 exporting to image
+#14 exporting layers 0.0s done
+#14 writing image sha256:c0da38120e8e87feedb44f9223319c7f01812c5056aa11f58ca1dc1031c29f03 done
+#14 naming to docker.io/library/cpp-webserver done
+#14 DONE 0.0s
