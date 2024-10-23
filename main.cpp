@@ -15,6 +15,7 @@
 #include "./parsing/ServerConfig.hpp"
 
 #define MAX_EVENTS 10 // taa varmaa conffii
+#define PORT 8002 // ja taa
 
 // Function to set a socket to non-blocking mode
 void set_non_blocking(int sockfd) 
@@ -57,7 +58,8 @@ int main(int ac, char **av)
 
     // Configure server address and port
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(std::stoi(it->getListenPort())); // otin tahan vaan ekan serverin portin, taa serv addr pitaa varmaan olla kans joku array tjtn et voidaan kuunnella useempia portteja samanaikasesti
+	serv_addr.sin_port = htons(PORT); // ehka helpompi et se on aina vaan sama
+    //serv_addr.sin_port = htons(std::stoi(it->getListenPort())); // otin tahan vaan ekan serverin portin, taa serv addr pitaa varmaan olla kans joku array tjtn et voidaan kuunnella useempia portteja samanaikasesti
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
 
     // Create socket
