@@ -87,6 +87,7 @@ static void	parseLocationData(LocationConfig &location, std::string line, int *d
 				location.allow_methods.push_back(value.substr(i, j - i));
 				i = j;
 			}
+			break;
 		case 2:
 			value = value.substr(10, value.find_first_of(";") - 10);
 			value = value.substr(value.find_first_not_of(" \t"), value.find_last_not_of(" \t") - value.find_first_not_of(" \t") + 1);

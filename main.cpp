@@ -1,5 +1,6 @@
 #include "socket.hpp"
 #include <sys/socket.h>
+#include <sys/epoll.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -13,6 +14,23 @@
 #include "response/Response.hpp"
 #include "./parsing/ServerConfig.hpp"
 
+#define MAX_EVENTS 10 // taa varmaa conffii
+#define PORT 8002 // ja taa
+
+// Function to set a socket to non-blocking mode
+void set_non_blocking(int sockfd) 
+{
+    int flags = fcntl(sockfd, F_GETFL, 0);
+    if (flags == -1) {
+        perror("fcntl 1");
+        exit(EXIT_FAILURE);
+    }
+    if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) == -1)
+	{
+        perror("fcntl 2");
+        exit(EXIT_FAILURE);
+    }
+}
 
 int main(int ac, char **av)
 {
@@ -20,8 +38,7 @@ int main(int ac, char **av)
     struct sockaddr_in serv_addr, client_addr;
     socklen_t client_len;
     int client_fd;
-    char buffer[100000];
-    size_t bytes_received;
+	int epoll_fd;
 
     if (ac != 2)
 	{
@@ -41,8 +58,9 @@ int main(int ac, char **av)
 
     // Configure server address and port
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(std::stoi(it->getListenPort())); // otin tahan vaan ekan serverin portin, taa serv addr pitaa varmaan olla kans joku array tjtn et voidaan kuunnella useempia portteja samanaikasesti
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
+	serv_addr.sin_port = htons(PORT); // ehka helpompi et se on aina vaan sama
+    //serv_addr.sin_port = htons(std::stoi(it->getListenPort())); // otin tahan vaan ekan serverin portin, taa serv addr pitaa varmaan olla kans joku array tjtn et voidaan kuunnella useempia portteja samanaikasesti
+	serv_addr.sin_addr.s_addr = INADDR_ANY;
 
     // Create socket
     socket1.setSocketFd(socket(AF_INET, SOCK_STREAM, 0));
@@ -64,25 +82,114 @@ int main(int ac, char **av)
         return 1;
     }
 
+	// Start listening for connections
     if (listen(socket1.getSocketFd(), 10) < 0) {
         std::cout << "Failed to listen: " << strerror(errno) << "\n";
         close(socket1.getSocketFd());
         return 1;
     }
 
+	// Create epoll instance
+    epoll_fd = epoll_create(1); // was epoll_create1(0), arg size must be > 0 but is ignored
+    if (epoll_fd == -1) 
+	{
+        perror("epoll_create");
+        exit(EXIT_FAILURE);
+    }
+
+	// Set the server socket to non-blocking mode
+    set_non_blocking(socket1.getSocketFd());
+
+	// Add the server socket to the epoll instance
+    struct epoll_event event;
+    event.events = EPOLLIN;
+    event.data.fd = socket1.getSocketFd();
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket1.getSocketFd(), &event) == -1) 
+	{
+        perror("epoll_ctl");
+        exit(EXIT_FAILURE);
+    }
+
+	// Event array for epoll_wait
+    struct epoll_event events[MAX_EVENTS];
+
     std::cout << CYAN << "Server is listening on port " << it->getListenPort() << "...\n";
     std::cout << "open 'localhost:" << std::stoi(it->getListenPort()) << "' on browser\n" << DEFAULT;
 
-    while (true) {
-        // Accept incoming connection
-        client_len = sizeof(client_addr);
-        client_fd = accept(socket1.getSocketFd(), (struct sockaddr*)&client_addr, &client_len);
-        if (client_fd < 0) {
-            std::cout << "Failed to create client fd: " << strerror(errno) << "\n";
-            close(socket1.getSocketFd());
-            return 1;
+	// Main loop
+    while (true) 
+	{
+		int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+        if (num_events == -1) 
+		{
+            perror("epoll_wait");
+            exit(EXIT_FAILURE);
         }
 
+		for (int i = 0; i < num_events; ++i) 
+		{
+			if (events[i].data.fd == socket1.getSocketFd()) 
+			{
+				// Accept incoming connection
+				client_len = sizeof(client_addr);
+				client_fd = accept(socket1.getSocketFd(), (struct sockaddr*)&client_addr, &client_len);
+				if (client_fd < 0) {
+					std::cout << "Failed to create client fd: " << strerror(errno) << "\n";
+					close(socket1.getSocketFd());
+					return 1;
+				}
+
+				// Set the new socket to non-blocking mode and add to epoll instance
+                set_non_blocking(client_fd);
+                event.events = EPOLLIN;
+                event.data.fd = client_fd;
+                if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) == -1) {
+                    perror("epoll_ctl");
+                    exit(EXIT_FAILURE);
+                }
+			}
+			else if (events[i].events & EPOLLIN) 
+			{
+				// Read incoming data
+				char buffer[1024] = {0};
+				int bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+				if (bytes_read <= 0) {
+					// Close connection if read fails or end of data
+					close(events[i].data.fd);
+				} else {
+					// Respond with the client's custom data or default data
+					buffer[bytes_read] = '\0'; // Ensure null-terminated string
+					//std::string response = "HTTP/1.1 200 OK\r\nContent-Length: " + std::to_string(strlen(buffer)) + "\r\n\r\n" + buffer;
+					//write(events[i].data.fd, response.c_str(), response.size());
+					//close(events[i].data.fd);
+					std::cout << buffer << std::endl;
+					std::string rawRequest(buffer, bytes_read);
+					Request req(rawRequest);
+					std::cout << "Received request:\n" << std::endl;
+					std::cout << "method: " << req.getMethod() << std::endl;
+					std::cout << "path: " << req.getPath() << std::endl;
+					std::cout << "version: " << req.getVersion() << std::endl;
+					std::cout << "body: " << req.getBody() << std::endl;
+					std::cout << "---------------" << std::endl;
+					std::cout << "Serving file: " << req.getPath() << std::endl;
+					std::cout << "---------------" << std::endl;
+					// Let the Response class handle everything
+					Response res;
+        			res.createResponse(req);
+					// Get the full HTTP response string from the Response class
+					std::string http_response = res.getResponseString();
+					// Send the response back to the client
+					if (send(events[i].data.fd, http_response.c_str(), http_response.length(), 0) < 0) {
+						std::cout << "Failed to send: " << strerror(errno) << "\n";
+						close(events[i].data.fd);
+						close(socket1.getSocketFd());
+						return 1;
+					}
+					close(events[i].data.fd);
+				}
+			}
+		}
+		/*
         bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
         if (bytes_received < 0) {
             std::cout << "Failed to receive: " << strerror(errno) << "\n";
@@ -101,8 +208,6 @@ int main(int ac, char **av)
         std::cout << "---------------" << std::endl;
         std::cout << "Serving file: " << req.getPath() << std::endl;
         std::cout << "---------------" << std::endl;
-
-
         Response res;
         res.createResponse(req);
         // Let the Response class handle everything
@@ -117,9 +222,11 @@ int main(int ac, char **av)
             return 1;
         }
         close(client_fd);
+		*/
     }
 
-    // Close server socket
+    // Close the other sockets
     close(socket1.getSocketFd());
+	close(epoll_fd);
     return 0;
 }
