@@ -32,18 +32,22 @@ class Request {
         return headers;
     }
         std::string getBody() const;
-        void parse(const std::string& rawRequest);
+        void parseRequest(const std::string& rawRequest);
         void handleRequest(void);
         void parseMultipartData(const std::string& boundary);
         const std::vector<MultipartData>& getMultipartData() const { return multipartData; };
+        void printRequest();
     private:
         std::string rawRequest;
         std::string method;
         std::string path;
         std::string version;
+        size_t contentLength;
         std::map<std::string, std::string> headers;
         std::string body;
         std::vector<MultipartData> multipartData;
+        void parseHeaders(std::istringstream& requestStream);
+        void parseBody(std::istringstream& requestStream);
 
 } ;
 

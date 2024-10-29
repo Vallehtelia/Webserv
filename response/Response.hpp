@@ -16,7 +16,7 @@ public:
     void handleGetRequest(const Request& req);
     void handleDeleteRequest(const Request &req);
     void handlePostRequest(const Request &req);
-
+    void printResponse();
 private:
     std::string statusLine;
     std::string headers;
@@ -30,6 +30,9 @@ private:
     std::string readFileContent(const std::string& filePath) const;
     std::string getStatusLine() const;
     void setResponse(int code, const std::string& contentType, size_t contentLength);
+    std::string getErrorPage();
+    void setError();
+    std::string createJsonResponse();
 };
 
 #endif
