@@ -6,14 +6,23 @@
 </head>
 <body>
     <h1>Create Your Profile</h1>
-    <form action="/submit" method="POST" enctype="multipart/form-data">
+    <form id="profileForm" action="/submit" method="POST" enctype="multipart/form-data">
         <label for="nickname">Nickname:</label>
         <input type="text" id="nickname" name="nickname" required><br><br>
 
         <label for="profilepic">Profile Picture:</label>
         <input type="file" id="profilepic" name="profilepic" accept="image/*" required><br><br>
 
+        <!-- Button to run CGI script -->
+        <button type="button" id="runScriptButton">Run CGI Script</button>
+
         <input type="submit" value="Submit">
     </form>
+
+    <!-- Div to display CGI output -->
+    <div id="cgiOutput" style="display:none;">
+        <h2>CGI Script Output:</h2>
+        <div id="outputContent"></div>
+    </div>
 </body>
 </html>

@@ -17,6 +17,10 @@ std::string Request::getPath() const {
     return path;
 }
 
+void Request::setPath(std::string newPath) {
+    path = newPath;
+}
+
 std::string Request::getVersion() const {
     return version;
 }
@@ -115,7 +119,7 @@ std::vector<std::string> splitByBoundary(std::string data, std::string boundary)
 
 MultipartData createData(std::string &part) {
     MultipartData multipartData;
-    
+
     part.erase(0, part.find_first_not_of("\r\n"));
     std::istringstream partStream(part);
     std::string line;
@@ -132,7 +136,7 @@ MultipartData createData(std::string &part) {
             size_t nameStart = line.find("name=\"") + 6;
             size_t nameEnd = line.find("\"", nameStart);
             multipartData.name = line.substr(nameStart, nameEnd - nameStart);
-            
+
             size_t filenameStart = line.find("filename=\"");
             if (filenameStart != std::string::npos) {
                 filenameStart += 10;
@@ -147,7 +151,7 @@ MultipartData createData(std::string &part) {
     }
     // Read the entire remaining content as raw binary data
     std::vector<char> buffer(std::istreambuf_iterator<char>(partStream), {});
-    
+
     // Copy the buffer into multipartData.data
     multipartData.data.insert(multipartData.data.end(), buffer.begin(), buffer.end());
 
@@ -171,7 +175,7 @@ void Request::parseMultipartData(const std::string& boundary) {
     std::vector<std::string> parts = splitByBoundary(data, delimiter);
     int i = 0;
     for (std::string &part : parts)
-    {   
+    {
         std::cout << "PART: " << part << std::endl;
         //std::cout << delimiter << std::endl;
         multipartData.push_back(createData(part));

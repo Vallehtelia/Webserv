@@ -62,12 +62,14 @@ bool Response::validFile(const Request &req)
     {
         if (req.getPath() == "/")
             filePath = "./html/index.html";
+        else if (req.getPath().find("cgi") != std::string::npos)
+            filePath = "./tmp" + req.getPath();
         else
             filePath = "./html" + req.getPath();
-        std::cout << "FILEPATH: " << filePath << std::endl;
+        std::cout << "FILEPATH: " << filePath << std::endl; // debugging
     }
     else
-        filePath = "./html/uploads" + req.getPath(); 
+        filePath = "./html/uploads" + req.getPath();
     if (method == "POST" || method == "PUT")
     {
         std::ofstream file(filePath);

@@ -5,7 +5,7 @@
 
 #include <iostream>
 #include <map>
-#include <sstream> 
+#include <sstream>
 #include <vector>
 
 #include "RequestHandler.hpp"
@@ -31,6 +31,8 @@ class Request {
         std::map<std::string, std::string> getHeaders() const {
         return headers;
     }
+        void setPath(std::string newPath);
+
         std::string getBody() const;
         void parse(const std::string& rawRequest);
         void handleRequest(void);
