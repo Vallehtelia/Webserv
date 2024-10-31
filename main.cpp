@@ -152,18 +152,23 @@ int main(int ac, char **av)
 			{
 				// Read incoming data
 				char buffer[4000] = {0};
-				int bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-				if (bytes_read <= 0) {
-					// Close connection if read fails or end of data
-					close(events[i].data.fd);
-				} else {
-					// Respond with the client's custom data or default data
-					buffer[bytes_read] = '\0'; // Ensure null-terminated string
-					//std::string response = "HTTP/1.1 200 OK\r\nContent-Length: " + std::to_string(strlen(buffer)) + "\r\n\r\n" + buffer;
-					//write(events[i].data.fd, response.c_str(), response.size());
-					//close(events[i].data.fd);
-                    std::cout << "RAW BUFFER: " << "\033[94m" << buffer << "\033[0m" << std::endl;
-					std::string rawRequest(buffer, bytes_read);
+				int bytes_read = 0;
+                size_t request_length = 0;
+                std::string rawRequest;
+                while ((bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0)) > 0)
+                {
+ 
+                    rawRequest.append(buffer, bytes_read);
+                    std::cout << "read " << bytes_read << " bytes" << std::endl;
+                    request_length += bytes_read;
+                }
+                if (request_length == 0)
+                    close(events[i].data.fd);
+                else
+                {
+                    std::cout << "DONE READIN, READ " << request_length << " BYTES" << std::endl;
+                    std::cout << "DEBUG BYTES_READ: " << bytes_read << std::endl;
+                    std::cout << "RAW REQUEST: " << "\033[94m" << rawRequest << "\033[0m" << std::endl;
 					Request req(rawRequest);
                     req.printRequest();
 					// std::cout << "Serving file: " << req.getPath() << std::endl;
@@ -182,8 +187,8 @@ int main(int ac, char **av)
 						return 1;
 					}
 					close(events[i].data.fd);
-				}
-			}
+                    }
+			    }
 		}
 		/*
         bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
