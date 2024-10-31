@@ -152,7 +152,7 @@ int main(int ac, char **av)
 			else if (events[i].events & EPOLLIN)
 			{
 				// Read incoming data
-				char buffer[1024] = {0};
+				char buffer[4000] = {0};
 				int bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
 				if (bytes_read <= 0) {
 					// Close connection if read fails or end of data
@@ -163,7 +163,7 @@ int main(int ac, char **av)
 					//std::string response = "HTTP/1.1 200 OK\r\nContent-Length: " + std::to_string(strlen(buffer)) + "\r\n\r\n" + buffer;
 					//write(events[i].data.fd, response.c_str(), response.size());
 					//close(events[i].data.fd);
-					std::cout << buffer << std::endl;
+                    std::cout << "RAW BUFFER: " << "\033[94m" << buffer << "\033[0m" << std::endl;
 					std::string rawRequest(buffer, bytes_read);
 					Request req(rawRequest);
                     // std::cout << "raw request: " << rawRequest << "raw request ended" << std::endl;
@@ -184,17 +184,13 @@ int main(int ac, char **av)
                         }
 
                     }
-					std::cout << "Received request:\n" << std::endl;
-					std::cout << "method: " << req.getMethod() << std::endl;
-					std::cout << "path: " << req.getPath() << std::endl;
-					std::cout << "version: " << req.getVersion() << std::endl;
-					std::cout << "body: " << req.getBody() << std::endl;
-					std::cout << "---------------" << std::endl;
-					std::cout << "Serving file: " << req.getPath() << std::endl;
-					std::cout << "---------------" << std::endl;
+                    req.printRequest();
+					// std::cout << "Serving file: " << req.getPath() << std::endl;
+					// std::cout << "---------------" << std::endl;
 					// Let the Response class handle everything
 					Response res;
         			res.createResponse(req);
+                    res.printResponse();
 					// Get the full HTTP response string from the Response class
 					std::string http_response = res.getResponseString();
 					// Send the response back to the client

@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 const responseText = await response.text();
+                console.log("haha");
                 alert(`Success: ${responseText}`);
             } else {
                 alert('Upload failed. Please try again.');

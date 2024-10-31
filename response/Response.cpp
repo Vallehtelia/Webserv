@@ -22,7 +22,6 @@ void Response::createResponse(const Request& req)
     }
     else
     {
-        body = "<html><body><h1>405 Method Not Allowed</h1></body></html>";
         setResponse(405, "text/html", body.length());
     }
 }
@@ -90,8 +89,19 @@ std::string Response::readFileContent(const std::string& filePath) const {
     }
     else
     {
+         std::cout << "\033[31m" << "failed to read file" <<"\033[0m" << std::endl;
         return "";
     }
+}
+
+
+std::string Response::createJsonResponse() {
+    std::ostringstream response;
+    response << "{\n"
+             << "  \"status\": \"success\",\n"
+             << "  \"message\": \"Files uploaded successfully\",\n"
+             << "}";
+    return response.str();
 }
 
 
@@ -99,9 +109,8 @@ void Response::handlePostRequest(const Request& req) {
 
     const auto& multipartData = req.getMultipartData();
 
-
     if (!multipartData.empty()) {
-        for (const auto& part : multipartData) {
+        for (const auto &part : multipartData) {
             if (!part.filename.empty()) {
                 std::ofstream file("./html/uploads/" + part.filename, std::ios::binary);
                 if (file) {
@@ -109,9 +118,6 @@ void Response::handlePostRequest(const Request& req) {
                     file.close();
                 }
                 else {
-
-                    statusCode = 500;
-                    body = "<html><body><h1>500 Internal Server Error</h1></body></html>";
                     setResponse(500, "text/html", body.length());
                     return;
                 }
@@ -122,13 +128,10 @@ void Response::handlePostRequest(const Request& req) {
                     file.write(part.data.data(), part.data.size());
                     file.close();
                 }
-                std::cout << "Form field: " << part.name << ", Value: " << std::string(part.data.begin(), part.data.end()) << std::endl;
             }
         }
-
-        statusCode = 200;
-        body = "<html><body><h1>File uploaded successfully!</h1></body></html>";
-        setResponse(200, "text/html", body.length());
+        body = createJsonResponse();
+        setResponse(200, "application/json", body.length());
     }
     else if (validFile(req))
     {
@@ -137,31 +140,26 @@ void Response::handlePostRequest(const Request& req) {
         {
             file << body;
             file.close();
-            body = "<html><body><h1>File uploaded successfully!</h1></body></html>";
-            setResponse(200, "text/html", body.length());
+            body = createJsonResponse();
+            setResponse(200, "application/json", body.length());
         }
     }
     else {
-
-        statusCode = 400;
-        body = "<html><body><h1>400 Bad Request</h1></body></html>";
-        setResponse(400, "text/html", body.length());
+        setResponse(404, "text/html", body.length());
     }
-    std::cout << "added" << std::endl;
-    //statusLine = getStatusLine();
 }
 
 
 void Response::handleGetRequest(const Request& req) {
 
+    std::cout << "HANDLE GET" << std::endl;
     if (validFile(req)) {
+        std::cout << "FILE IS LEGIT" << std::endl;
         body = readFileContent(filePath);
-        statusCode = 200;
         setResponse(200, getContentType(filePath), body.length());
     } else {
-        statusCode = 404;
-        body = "<html><body><h1>404 Not Found</h1></body></html>";
-        setResponse(404, getContentType(filePath), body.length());
+        std::cout << "FILE IS NOT LEGIT" << std::endl;
+        setResponse(404, "text/html", body.length());
     }
     statusLine = getStatusLine();
 }
@@ -173,26 +171,30 @@ void Response::handleDeleteRequest(const Request &req)
     if (validFile(req))
     {
         if (remove(filePath.c_str()) == 0)
-        {
-            body = "<html><body><h1>file deleted</h1></body></html>";
             setResponse(200, "text/plain", 0);
-        }
         else
-        {
-            body = "<html><body><h1>500 Internal Server Error</h1></body></html>";
-            setResponse(500, "text/plain", 0);
-        }
+            setResponse(500, "text/html", 0);
     }
     else
-    {
-        body = "<html><body><h1>404 Not Found</h1><p>The requested file does not exist.</p></body></html>";
-        setResponse(404, "text/plain", 0);
-    }
+        setResponse(404, "text/html", 0);
+}
+
+
+void    Response::setError()
+{
+    std::string errorPage = getErrorPage();
+    std::cout << "fetching error page: " << errorPage << std::endl;
+    body = readFileContent(errorPage);
 }
 
 void Response::setResponse(int code, const std::string& contentType, size_t contentLength) {
     statusCode = code;
     statusLine = getStatusLine();
+    if (statusCode != 200)
+    {
+        setError();
+        contentLength = body.size();
+    }
     headers = "Content-Type: " + contentType + "\r\n" +
               "Content-Length: " + std::to_string(contentLength) + "\r\n";
 }
@@ -208,4 +210,28 @@ std::string Response::getStatusLine() const {
         default:
             return "HTTP/1.1 500 Internal Server Error\r\n";
     }
+}
+
+std::string Response::getErrorPage()
+{
+    switch (statusCode) {
+        case 404:
+            return "./html/error_pages/404.html";
+        case 405:
+            return "./html/error_pages/405.html";
+        default:
+            return "./html/error_pages/500.html";
+    }
+}
+
+
+void Response::printResponse()
+{
+   std::cout << std::endl;
+   std::cout << "RESPONSE:" << "\033[32m" << std::endl;
+   std::cout << headers << std::endl;
+   std::cout << statusLine << std::endl;
+   std::cout << statusCode << std::endl;
+   std::cout << body << "\033[0m" << std::endl;
+
 }
