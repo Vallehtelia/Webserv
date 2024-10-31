@@ -87,6 +87,8 @@ int main(void)
 
     // Event array for epoll_wait
     struct epoll_event events[MAX_EVENTS];
+	// Map to store data being read from each socket
+    std::unordered_map<int, std::vector<char>> socket_data;
 
     // Main loop
     while (true) 
@@ -116,8 +118,39 @@ int main(void)
                     perror("epoll_ctl");
                     exit(EXIT_FAILURE);
                 }
-            } 
-			// Replace this block in the server's EPOLLIN section:
+
+				// Initialize data buffer for the new socket
+                socket_data[new_socket] = std::vector<char>();
+            }
+			else if (events[i].events & EPOLLIN) {
+				
+				int sockfd = events[i].data.fd;
+				char temp[1024];
+				int bytes_read;
+
+				while ((bytes_read = read(sockfd, temp, sizeof(temp))) > 0) {
+					socked_data[sockfd].insert(socked_data[sockfd].end(), temp, temp + bytes_read);
+				}
+
+				if (bytes_read == -1 && errno != EAGAIN) {
+					// Error occurred
+					perror("read");
+					close(sockfd);
+					socket_data.erase(sockfd);
+				} 
+				else if (bytes_read == 0) {
+					// Write some shit
+					std::ofstream output_file("uploads/received_file.jpg", std::ios::binary);
+                    output_file.write(socket_data[sockfd].data(), socket_data[sockfd].size());
+                    output_file.close();
+					// End of data, send the response
+					std::string headers = "HTTP/1.1 200 OK\r\nContent-Length: " + std::to_string(buffer.size()) + "\r\n\r\n";
+					write(events[i].data.fd, headers.c_str(), headers.size());
+					write(events[i].data.fd, buffer.data(), buffer.size());
+					close(events[i].data.fd);
+				}
+			}
+			/*
 			else if (events[i].events & EPOLLIN) 
 			{
 				// Read incoming data
@@ -134,26 +167,9 @@ int main(void)
 					close(events[i].data.fd);
 				}
 			}
-			/*
-			else if (events[i].events & EPOLLIN) 
-			{
-                // Read incoming data
-                char buffer[1024] = {0};
-                int bytes_read = read(events[i].data.fd, buffer, sizeof(buffer) - 1);
-                if (bytes_read <= 0) {
-                    // Close connection if read fails or end of data
-                    close(events[i].data.fd);
-                } else {
-                    // Respond with a simple HTTP message
-                    const char *response = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!";
-                    write(events[i].data.fd, response, strlen(response));
-                    close(events[i].data.fd);
-                }
-            }
 			*/
         }
     }
-    // Cleanup
     close(server_fd);
     close(epoll_fd);
     return 0;
