@@ -97,8 +97,6 @@ void Request::parseRequestLine() {
     }
 }
 
-
-
 void Request::parseHeaders() {
     std::string headerLine;
     while (std::getline(requestStream, headerLine) && headerLine != "\r") {
@@ -119,7 +117,6 @@ void Request::parseHeaders() {
         currentState = State::COMPLETE;
     }
 }
-
 
 void Request::parseBody()
 {
@@ -164,14 +161,11 @@ std::vector<std::string> splitByBoundary(std::string data, std::string boundary)
 }
 
 
-
-MultipartData createData(std::string &part) {
-    MultipartData multipartData;
-    
-    part.erase(0, part.find_first_not_of("\r\n"));
-    std::istringstream partStream(part);
+void    Request::createMultipartHeaders(MultipartData &multipartData, std::istringstream &rawDataStream)
+{
+    // READ THE HEADERS LINE BY LINE
     std::string line;
-    while (std::getline(partStream, line))
+    while (std::getline(rawDataStream, line))
     {
         if (line == "\r")
             break ;
@@ -195,11 +189,22 @@ MultipartData createData(std::string &part) {
         multipartData.contentType = line.substr(typeStart);
     }
     }
-    // Read the entire remaining content as raw binary data
-    std::vector<char> buffer(std::istreambuf_iterator<char>(partStream), {});
-    // Copy the buffer into multipartData.data
+}
+
+void    Request::createMultipartBody(MultipartData &multipartData, std::istringstream &rawMultipartData)
+{
+    // PUT THE REST OF THE MULTIPARTDATA TO ITS BODY
+    std::vector<char> buffer(std::istreambuf_iterator<char>(rawMultipartData), {});
     multipartData.data.insert(multipartData.data.end(), buffer.begin(), buffer.end());
-    //std::cout << "BODY DATA SIZE: " << multipartData.data.size() << "\nDATA: ";
+}
+
+MultipartData Request::createData(std::string &rawData) {
+    MultipartData multipartData;
+    
+    rawData.erase(0, rawData.find_first_not_of("\r\n"));
+    std::istringstream rawDataStream(rawData);
+    createMultipartHeaders(multipartData, rawDataStream);
+    createMultipartBody(multipartData, rawDataStream);
     return multipartData;
 }
 

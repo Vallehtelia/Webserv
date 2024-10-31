@@ -76,6 +76,9 @@ class Request {
         void handleError(const std::string& errorMsg);
         void parseRequestLine();
         void printMultipartdata();
+        MultipartData createData(std::string &rawData);
+        void createMultipartBody(MultipartData &multipartData, std::istringstream &rawMultipartData);
+        void createMultipartHeaders(MultipartData &multipartData, std::istringstream &rawDataStream);
 
 } ;
 
