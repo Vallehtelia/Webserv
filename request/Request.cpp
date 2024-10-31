@@ -3,8 +3,8 @@
 
 Request::Request() : method(""), path(""), version(""), body("") {}
 
-Request::Request(const std::string& rawRequest) {
-    parseRequest(rawRequest);
+Request::Request(const std::string& rawRequest) : currentState(State::REQUEST_LINE), requestStream(rawRequest), contentLength(0)  {
+    parseRequest();
 }
 
 Request::~Request() {}
@@ -27,27 +27,79 @@ std::string Request::getBody() const {
 }
 
 
-#include <iomanip> // For std::hex and std::setfill
 
-// static void printBodyHex(std::vector<char> bodyBuffer)
-// {
-//         std::cout << "Body (Hex): ";
-//         for (unsigned char c : bodyBuffer) {
-//             std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c) << " ";
-//         }
-//         std::cout << std::dec << std::endl;
-// }
+static std::string stateToString(State state) {
+    switch (state) {
+        case State::REQUEST_LINE: return "REQUEST_LINE";
+        case State::HEADERS: return "HEADERS";
+        case State::BODY: return "BODY";
+        case State::MULTIPARTDATA: return "MULTIPARTDATA";
+        case State::COMPLETE: return "COMPLETE";
+        case State::ERROR: return "ERROR";
+        default: return "UNKNOWN";
+    }
+}
 
-void Request::parseHeaders(std::istringstream& requestStream)
-{
+
+void Request::handleError(const std::string& errorMsg) {
+    std::cerr << "Error: " << errorMsg << std::endl;
+    currentState = State::ERROR;
+}
+
+void Request::parseRequest() {
+    while (currentState != State::COMPLETE && currentState != State::ERROR) {
+        std::cout << "STATE: " << stateToString(currentState) << std::endl;
+        switch (currentState) {
+            case State::REQUEST_LINE:
+                parseRequestLine();
+                break;
+            case State::HEADERS:
+                parseHeaders();
+                break;
+            case State::BODY:
+                parseBody();
+                break;
+            case State::MULTIPARTDATA:
+                parseMultipartData();
+                break;
+            case State::COMPLETE:
+                break;
+            case State::ERROR:
+                std::cerr << "Error in parsing request\n";
+                break;
+        }
+    }
+}
+
+static bool isValidRequestLine(const std::string& requestLine) {
+    for (char c : requestLine) {
+        if (!isalnum(c) && std::string("-._~:/?#[]@!$&'()*+,;=% ").find(c) == std::string::npos) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void Request::parseRequestLine() {
     std::string requestLine;
+    if (std::getline(requestStream, requestLine)) {
+        if (!isValidRequestLine(requestLine))
+            handleError("Invalid characters in request line.");
+        std::istringstream lineStream(requestLine);
+        lineStream >> method >> path >> version;
+        if (!method.empty() && !path.empty() && !version.empty()) {
+            currentState = State::HEADERS;
+        } else {
+            handleError("Invalid request line format.");
+        }
+    } else {
+        handleError("Request line missing.");
+    }
+}
 
-    // Read the first line (Request Line)
-    std::getline(requestStream, requestLine);
-    std::istringstream requestLineStream(requestLine);
-    requestLineStream >> method >> path >> version;
 
-    // Read headers
+
+void Request::parseHeaders() {
     std::string headerLine;
     while (std::getline(requestStream, headerLine) && headerLine != "\r") {
         size_t colonPos = headerLine.find(':');
@@ -61,33 +113,30 @@ void Request::parseHeaders(std::istringstream& requestStream)
             }
         }
     }
-}
-
-void Request::parseBody(std::istringstream& requestStream)
-{
-        std::vector<char> bodyBuffer(contentLength);
-        requestStream.read(bodyBuffer.data(), contentLength);  // Read as raw binary
-
-        body = std::string(bodyBuffer.begin(), bodyBuffer.end());
-        // Debugging: Print the body content as hexadecimal
-        //printBodyHex(bodyBuffer);
-        if (method == "POST" && headers["Content-Type"].find("multipart/form-data") != std::string::npos) {
-            size_t boundaryPos = headers["Content-Type"].find("boundary=");
-            if (boundaryPos != std::string::npos) {
-                std::string boundary = headers["Content-Type"].substr(boundaryPos + 9);
-                parseMultipartData(boundary);
-            }
-        }
-}
-
-void Request::parseRequest(const std::string& rawRequest) {
-    std::istringstream requestStream(rawRequest);
-    parseHeaders(requestStream);
     if (contentLength > 0) {
-        parseBody(requestStream);
+        currentState = State::BODY;
+    } else {
+        currentState = State::COMPLETE;
     }
 }
 
+
+void Request::parseBody()
+{
+        std::vector<char> bodyBuffer(contentLength);
+        requestStream.read(bodyBuffer.data(), contentLength);
+        body = std::string(bodyBuffer.begin(), bodyBuffer.end());
+
+        if (method == "POST" && headers["Content-Type"].find("multipart/form-data") != std::string::npos) {
+            size_t boundaryPos = headers["Content-Type"].find("boundary=");
+            if (boundaryPos != std::string::npos) {
+                boundary = headers["Content-Type"].substr(boundaryPos + 9);
+                currentState = State::MULTIPARTDATA;
+                return;
+            }
+        }
+        currentState = State::COMPLETE;
+}
 
 void checkline(std::string line)
 {
@@ -134,7 +183,6 @@ MultipartData createData(std::string &part) {
             size_t nameStart = line.find("name=\"") + 6;
             size_t nameEnd = line.find("\"", nameStart);
             multipartData.name = line.substr(nameStart, nameEnd - nameStart);
-            
             size_t filenameStart = line.find("filename=\"");
             if (filenameStart != std::string::npos) {
                 filenameStart += 10;
@@ -149,41 +197,48 @@ MultipartData createData(std::string &part) {
     }
     // Read the entire remaining content as raw binary data
     std::vector<char> buffer(std::istreambuf_iterator<char>(partStream), {});
-    
     // Copy the buffer into multipartData.data
     multipartData.data.insert(multipartData.data.end(), buffer.begin(), buffer.end());
-
     //std::cout << "BODY DATA SIZE: " << multipartData.data.size() << "\nDATA: ";
     return multipartData;
 }
 
-void printVectorAsHex(const std::vector<char>& vec) {
+void Request::parseMultipartData() {
+    std::string delimiter =  "--" + boundary;
+    std::string data(body.begin(), body.end());
+    delimiter.erase(delimiter.find_last_not_of("\r") + 1);
+    
+    std::vector<std::string> parts = splitByBoundary(data, delimiter);
+    for (std::string &part : parts)
+        multipartData.push_back(createData(part));
+    printMultipartdata();
+    currentState = State::COMPLETE;
+}
+
+
+
+static void printVectorAsHex(const std::vector<char>& vec) {
     for (unsigned char c : vec) {
         std::cout << std::hex << static_cast<int>(c) << " ";
     }
     std::cout << std::dec << std::endl;
 }
 
-void Request::parseMultipartData(const std::string& boundary) {
-    std::cout << "PARSING MULTIPART DATA" << std::endl;
-    std::string delimiter =  "--" + boundary;
-    std::string data(body.begin(), body.end());
-    delimiter.erase(delimiter.find_last_not_of("\r") + 1);
-    std::vector<std::string> parts = splitByBoundary(data, delimiter);
+void Request::printMultipartdata()
+{
     int i = 0;
-    for (std::string &part : parts)
+    for (const auto &part : multipartData)
     {   
-        multipartData.push_back(createData(part));
-        std::cout << "CREATED MULTIPART DATA:" << std::endl;
+        std::cout << "MULTIPART DATA:" << std::endl;
         std::cout << "\033[32m" << "PART: " << i << std::endl;
-        std::cout << "PART NAME: " << multipartData[i].name << std::endl;
-        std::cout << "FILE NAME: " << multipartData[i].filename << std::endl;
-        std::cout << "CONTENT TYPE: " << multipartData[i].contentType << std::endl;
+        std::cout << "PART NAME: " << part.name << std::endl;
+        std::cout << "FILE NAME: " << part.filename << std::endl;
+        std::cout << "CONTENT TYPE: " << part.contentType << std::endl;
         std::cout << "PART DATA: ";
-        printVectorAsHex(multipartData[i].data);
+        printVectorAsHex(part.data);
         std::cout << "\033[0m" << std::endl;
         i++;
-    }
+    }   
 }
 
 void Request::printRequest()

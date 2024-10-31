@@ -7,8 +7,30 @@
 #include <map>
 #include <sstream> 
 #include <vector>
+#include <iomanip> 
 
 #include "RequestHandler.hpp"
+
+#define URICHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-.~:/?#[]@!$&'()*+,;="
+#define FIELDCHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-"
+
+enum class State {
+    REQUEST_LINE,
+    HEADERS,
+    BODY,
+    MULTIPARTDATA,
+    COMPLETE,
+    ERROR
+};
+
+enum class multipartState {
+    SPLIT_DATA,
+    CREATE_DATA,
+    BODY,
+    MULTIPARTDATA,
+    COMPLETE,
+    ERROR
+};
 
 struct MultipartData
 {
@@ -32,13 +54,16 @@ class Request {
         return headers;
     }
         std::string getBody() const;
-        void parseRequest(const std::string& rawRequest);
+        void parseRequest();
         void handleRequest(void);
-        void parseMultipartData(const std::string& boundary);
+        void parseMultipartData();
         const std::vector<MultipartData>& getMultipartData() const { return multipartData; };
         void printRequest();
     private:
+        State currentState;
         std::string rawRequest;
+        std::istringstream requestStream;
+        std::string boundary;
         std::string method;
         std::string path;
         std::string version;
@@ -46,8 +71,11 @@ class Request {
         std::map<std::string, std::string> headers;
         std::string body;
         std::vector<MultipartData> multipartData;
-        void parseHeaders(std::istringstream& requestStream);
-        void parseBody(std::istringstream& requestStream);
+        void parseHeaders();
+        void parseBody();
+        void handleError(const std::string& errorMsg);
+        void parseRequestLine();
+        void printMultipartdata();
 
 } ;
 
