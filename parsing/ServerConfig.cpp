@@ -33,6 +33,11 @@ void	ServerConfig::setClientMaxBodySize(int size)
 	_client_max_body_size = std::to_string(size) + "m";
 }
 
+void   ServerConfig::setMaxEvents(std::string max_events)
+{
+	_max_events = max_events;
+}
+
 void	ServerConfig::setIndex(std::string index)
 {
 	_index = index;
@@ -73,6 +78,11 @@ std::string	ServerConfig::getBodySize() const
 	return _client_max_body_size;
 }
 
+std::string	ServerConfig::getMaxEvents() const
+{
+	return _max_events;
+}
+
 std::string	ServerConfig::getIndex() const
 {
 	return _index;
@@ -104,6 +114,7 @@ void	ServerConfig::printConfig() const
 	std::cout << "Host: " << _host << std::endl;
 	std::cout << "Root: " << _root << std::endl;
 	std::cout << "Client max body size: " << _client_max_body_size << std::endl;
+	std::cout << "Max events: " << _max_events << std::endl;
 	std::cout << "Index: " << _index << std::endl;
 	std::cout << "Error pages:" << std::endl;
 	for (std::map<int, std::string>::const_iterator it = _error_pages.begin(); it != _error_pages.end(); it++)

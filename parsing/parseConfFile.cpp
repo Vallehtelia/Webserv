@@ -44,9 +44,12 @@ static void	parseServerdata(ServerConfig &server, std::string line, int data)
 			server.setClientMaxBodySize(std::stoi(value.substr(22, value.find_first_of(";") - 22)));
 			break ;
 		case 5:
-			server.setIndex(value.substr(6, value.find_first_of(";") - 6));
+			server.setMaxEvents(value.substr(10, value.find_first_of(";") - 10));
 			break ;
 		case 6:
+			server.setIndex(value.substr(6, value.find_first_of(";") - 6));
+			break ;
+		case 7:
 			while (std::isspace(value[i]))
 				i++;
 			code = std::stoi(value.substr(i, 3));
@@ -141,7 +144,7 @@ static void	parseLocationBlock(LocationConfig &location, std::ifstream &file, st
 static int	parseServerBlock(std::ifstream &file, ServerConfig &server)
 {
 	std::string		line;
-	std::string		data[7] = {"listen", "server_name", "host", "root", "client_max_body_size", "index", "error_page"};
+	std::string		data[8] = {"listen", "server_name", "host", "root", "client_max_body_size", "max_size," "index", "error_page"};
 
 	while (std::getline(file, line))
 	{
