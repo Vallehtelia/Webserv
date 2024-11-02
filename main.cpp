@@ -155,7 +155,7 @@ int main(int ac, char **av)
 				int bytes_read = 0;
                 size_t request_length = 0;
                 std::string rawRequest;
-                while ((bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0)) > 0)
+                while ((bytes_read = read(client_fd, buffer, sizeof(buffer) - 1)) > 0)
                 {
  
                     rawRequest.append(buffer, bytes_read);
