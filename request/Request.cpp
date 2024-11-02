@@ -1,10 +1,9 @@
 #include "Request.hpp"
 #include <iostream>
 
-Request::Request() : method(""), path(""), version(""), body("") {}
+Request::Request() : currentState(State::REQUEST_LINE), method(""), path(""), version(""), contentLength(0), body("") {}
 
 Request::Request(const std::string& rawRequest) : currentState(State::REQUEST_LINE), requestStream(rawRequest), contentLength(0)  {
-    parseRequest();
 }
 
 Request::~Request() {}
@@ -41,12 +40,18 @@ static std::string stateToString(State state) {
 }
 
 
+std::string Request::getState()
+{
+    return stateToString(currentState);
+}
+
 void Request::handleError(const std::string& errorMsg) {
     std::cerr << "Error: " << errorMsg << std::endl;
     currentState = State::ERROR;
 }
 
-void Request::parseRequest() {
+void Request::parseRequest(std::string &rawRequest) {
+    requestStream.str(rawRequest);
     while (currentState != State::COMPLETE && currentState != State::ERROR) {
         std::cout << "STATE: " << stateToString(currentState) << std::endl;
         switch (currentState) {
@@ -70,6 +75,8 @@ void Request::parseRequest() {
         }
     }
 }
+
+
 
 static bool isValidRequestLine(const std::string& requestLine) {
     for (char c : requestLine) {
@@ -123,16 +130,19 @@ void Request::parseBody()
         std::vector<char> bodyBuffer(contentLength);
         requestStream.read(bodyBuffer.data(), contentLength);
         body = std::string(bodyBuffer.begin(), bodyBuffer.end());
-
-        if (method == "POST" && headers["Content-Type"].find("multipart/form-data") != std::string::npos) {
-            size_t boundaryPos = headers["Content-Type"].find("boundary=");
-            if (boundaryPos != std::string::npos) {
-                boundary = headers["Content-Type"].substr(boundaryPos + 9);
-                currentState = State::MULTIPARTDATA;
-                return;
+        if (body.length() == contentLength)
+        {
+            if (method == "POST" && headers["Content-Type"].find("multipart/form-data") != std::string::npos) {
+                size_t boundaryPos = headers["Content-Type"].find("boundary=");
+                if (boundaryPos != std::string::npos) {
+                    boundary = headers["Content-Type"].substr(boundaryPos + 9);
+                    currentState = State::MULTIPARTDATA;
+                    return;
+                }
+            else
+                currentState = State::COMPLETE;
             }
         }
-        currentState = State::COMPLETE;
 }
 
 void checkline(std::string line)

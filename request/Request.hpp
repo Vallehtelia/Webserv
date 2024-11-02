@@ -54,11 +54,12 @@ class Request {
         return headers;
     }
         std::string getBody() const;
-        void parseRequest();
+        void parseRequest(std::string &rawReques);
         void handleRequest(void);
         void parseMultipartData();
         const std::vector<MultipartData>& getMultipartData() const { return multipartData; };
         void printRequest();
+        std::string getState();
     private:
         State currentState;
         std::string rawRequest;

@@ -13,7 +13,6 @@
 #include "request/Request.hpp"
 #include "response/Response.hpp"
 #include "./parsing/ServerConfig.hpp"
-#include <unordered_map>
 
 #define MAX_EVENTS 10 // taa varmaa conffii
 #define PORT 8002 // ja taa
@@ -40,7 +39,6 @@ int main(int ac, char **av)
     socklen_t client_len;
     int client_fd;
 	int epoll_fd;
-    std::unordered_map<int, std::vector<char>> client_data;
 
     if (ac != 2)
 	{
@@ -130,7 +128,6 @@ int main(int ac, char **av)
 
 		for (int i = 0; i < num_events; ++i) 
 		{
-            Request req;
 			if (events[i].data.fd == socket1.getSocketFd()) 
 			{
 				// Accept incoming connection
@@ -150,7 +147,6 @@ int main(int ac, char **av)
                     perror("epoll_ctl");
                     exit(EXIT_FAILURE);
                 }
-                client_data[client_fd] = std::vector<char>();
 			}
 			else if (events[i].events & EPOLLIN) 
 			{
@@ -160,13 +156,19 @@ int main(int ac, char **av)
 				if (bytes_read <= 0) {
 					// Close connection if read fails or end of data
 					close(events[i].data.fd);
-                	client_data.erase(client_fd); 
 				} else {
-					client_data[client_fd].insert(client_data[client_fd].end(), buffer, buffer + bytes_read);
-                    std::string rawRequest(client_data[client_fd].begin(), client_data[client_fd].end());
-					std::cout << "RAW BUFFER: " << "\033[94m" << rawRequest << "\033[0m" << std::endl;
-					req.parseRequest(rawRequest);
+					// Respond with the client's custom data or default data
+					buffer[bytes_read] = '\0'; // Ensure null-terminated string
+					//std::string response = "HTTP/1.1 200 OK\r\nContent-Length: " + std::to_string(strlen(buffer)) + "\r\n\r\n" + buffer;
+					//write(events[i].data.fd, response.c_str(), response.size());
+					//close(events[i].data.fd);
+                    std::cout << "RAW BUFFER: " << "\033[94m" << buffer << "\033[0m" << std::endl;
+					std::string rawRequest(buffer, bytes_read);
+					Request req(rawRequest);
                     req.printRequest();
+					// std::cout << "Serving file: " << req.getPath() << std::endl;
+					// std::cout << "---------------" << std::endl;
+					// Let the Response class handle everything
 					Response res;
         			res.createResponse(req);
                     res.printResponse();
