@@ -18,7 +18,6 @@ class ServerConfig
 		std::string	_host;
 		std::string	_root;
 		std::string	_client_max_body_size;
-		std::string	_max_events;
 		std::string	_index;
 		std::map<int, std::string>	_error_pages;
 		std::vector<LocationConfig>	_locations;
@@ -32,7 +31,6 @@ class ServerConfig
 		void	setHost(std::string host);
 		void	setRoot(std::string root);
 		void	setClientMaxBodySize(int size);
-		void	setMaxEvents(std::string max_events);
 		void	setIndex(std::string index);
 		void	addLocation(LocationConfig location);
 		void	addErrorPage(int code, const std::string &path);
@@ -43,7 +41,6 @@ class ServerConfig
 		std::string getHost() const;
 		std::string getRoot() const;
 		std::string getBodySize() const;
-		std::string getMaxEvents() const;
 		std::string getIndex() const;
 		std::string	getErrorPage(int code) const;
 		std::string getLocation(std::string key) const;

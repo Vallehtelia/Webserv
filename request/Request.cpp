@@ -1,10 +1,9 @@
 #include "Request.hpp"
 #include <iostream>
 
-Request::Request() : method(""), path(""), version(""), body("") {}
+Request::Request() : currentState(State::REQUEST_LINE), method(""), path(""), version(""), contentLength(0), body("") {}
 
 Request::Request(const std::string& rawRequest) : currentState(State::REQUEST_LINE), requestStream(rawRequest), contentLength(0)  {
-    parseRequest();
 }
 
 Request::~Request() {}
@@ -52,7 +51,7 @@ void Request::handleError(const std::string& errorMsg) {
 }
 
 void Request::parseRequest(std::string &rawRequest) {
-    requestStream = rawRequest;
+    requestStream.str(rawRequest);
     while (currentState != State::COMPLETE && currentState != State::ERROR) {
         std::cout << "STATE: " << stateToString(currentState) << std::endl;
         switch (currentState) {
@@ -131,7 +130,7 @@ void Request::parseBody()
         std::vector<char> bodyBuffer(contentLength);
         requestStream.read(bodyBuffer.data(), contentLength);
         body = std::string(bodyBuffer.begin(), bodyBuffer.end());
-        if (body.length == reques.contentLength)
+        if (body.length() == contentLength)
         {
             if (method == "POST" && headers["Content-Type"].find("multipart/form-data") != std::string::npos) {
                 size_t boundaryPos = headers["Content-Type"].find("boundary=");
