@@ -154,59 +154,24 @@ int main(int ac, char **av)
 			else if (events[i].events & EPOLLIN) 
 			{
 				// Read incoming data
-				int client_fd = events[i].data.fd;
-				char buffer[1024] = {0};
-				int bytes_read = recv(client_fd, buffer, sizeof(buffer), 0);
-				
-				if (bytes_read <= 0) {
-					// If bytes_read <= 0, it means the client has disconnected or there's an error
-					close(client_fd);
-					client_data.erase(client_fd); // Remove client data from map
-				} 
-				else {
-					// Append received data to the client's vector in the map
-					client_data[client_fd].insert(client_data[client_fd].end(), buffer, buffer + bytes_read);
-
-					// Check if we've received the full HTTP request (look for "\r\n\r\n" sequence)
-					std::string request_data(client_data[client_fd].begin(), client_data[client_fd].end());
-					std::cout << "RAW BUFFER: " << "\033[94m" << request_data << "\033[0m" << std::endl;
-                    req.parseRequest(request_data);
-                    std::cout << req.getState() << std::endl;
-					if (req.getState() == "COMPLETE") {
-						// Full request received, process it
-						
-						req.printRequest();
-						
-						// Create and send the Response
-						Response res;
-						res.createResponse(req);
-						res.printResponse();
-						
-						std::string http_response = res.getResponseString();
-						if (send(client_fd, http_response.c_str(), http_response.length(), 0) < 0) {
-							std::cout << "Failed to send: " << strerror(errno) << "\n";
-						}
-
-						// Close the connection and clean up
-						close(client_fd);
-						client_data.erase(client_fd); // Clear accumulated data for this client
-					}
-				}
-				/*
-				while ((bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0)) > 0) {
-					if (bytes_read == -1) {
-						if (errno == EAGAIN || errno == EWOULDBLOCK) {
-							break;
-						} else {
-							std::cout << "Failed to read: " << strerror(errno) << "\n";
-							close(events[i].data.fd);
-							close(server.getSocketFd());
-							return 1;
-						}
-					}
-					buffer[bytes_read] = '\0'; // Ensure null-terminated string
-                    std::cout << "RAW BUFFER: " << "\033[94m" << buffer << "\033[0m" << std::endl;
-					std::string rawRequest(buffer, bytes_read);
+				char buffer[4000] = {0};
+				int bytes_read = 0;
+                size_t request_length = 0;
+                std::string rawRequest;
+                while ((bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0)) > 0)
+                {
+ 
+                    rawRequest.append(buffer, bytes_read);
+                    std::cout << "read " << bytes_read << " bytes" << std::endl;
+                    request_length += bytes_read;
+                }
+                if (request_length == 0)
+                    close(events[i].data.fd);
+                else
+                {
+                    std::cout << "DONE READIN, READ " << request_length << " BYTES" << std::endl;
+                    std::cout << "DEBUG BYTES_READ: " << bytes_read << std::endl;
+                    std::cout << "RAW REQUEST: " << "\033[94m" << rawRequest << "\033[0m" << std::endl;
 					Request req(rawRequest);
                     req.printRequest();
 					Response res;
