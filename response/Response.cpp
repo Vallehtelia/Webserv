@@ -40,7 +40,10 @@ std::string Response::getContentType(const std::string& path) const {
         {".jpeg", "image/jpeg"},
         {".png", "image/png"},
         {".gif", "image/gif"},
-        {".json", "application/json"}
+        {".json", "application/json"},
+        {".mp3", "audio/mpeg"},
+        {".mp4", "video/mp4"} 
+
     };
 
     size_t dot_pos = path.find_last_of(".");
