@@ -3,10 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const todoForm = document.getElementById('todo-form');
     const todoTitleInput = document.getElementById('todo-title');
 
-    // Function to load the to-do list from the server
     const loadTodos = async () => {
         try {
-            const response = await fetch('todos.json'); // Adjust the path to your JSON file
+            const response = await fetch('todos.json'); 
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
             renderTodos(data.todos);
@@ -15,25 +14,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Function to render to-do items
     const renderTodos = (todos) => {
-        todoList.innerHTML = ''; // Clear the existing list
+        todoList.innerHTML = ''; 
         todos.forEach((todo, index) => {
             const listItem = document.createElement('li');
             listItem.textContent = todo.title;
             listItem.className = todo.completed ? 'completed' : 'not-completed';
 
-            // Create a remove button for each item
+            const toggleButton = document.createElement('button');
+            toggleButton.textContent = todo.completed ? 'Mark as Incomplete' : 'Mark as Complete';
+            toggleButton.className = 'toggle';
+            toggleButton.addEventListener('click', () => toggleTodo(index));
+
             const removeButton = document.createElement('button');
             removeButton.textContent = 'Remove';
+            removeButton.className = 'remove';
             removeButton.addEventListener('click', () => removeTodo(index));
 
+            listItem.appendChild(toggleButton);
             listItem.appendChild(removeButton);
             todoList.appendChild(listItem);
         });
     };
 
-    // Function to add a new to-do item
     todoForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const newTodo = {
@@ -41,61 +44,58 @@ document.addEventListener('DOMContentLoaded', () => {
             completed: false
         };
         await addTodo(newTodo);
-        todoTitleInput.value = ''; // Clear the input field
+        todoTitleInput.value = ''; 
     });
 
-    // Function to send a POST request to add a new to-do
     const addTodo = async (newTodo) => {
         try {
-            // Fetch the current todos
             const response = await fetch('todos.json');
             const data = await response.json();
-
-            // Add the new todo to the current list
             data.todos.push(newTodo);
-
-            // Send the updated list back to the server
             await saveTodos(data.todos);
         } catch (error) {
             console.error('Error adding todo:', error);
         }
     };
 
-    // Function to remove a to-do item
     const removeTodo = async (index) => {
         try {
-            // Fetch the current todos
             const response = await fetch('todos.json');
             const data = await response.json();
-
-            // Remove the specified todo from the list
             data.todos.splice(index, 1);
-
-            // Send the updated list back to the server
             await saveTodos(data.todos);
         } catch (error) {
             console.error('Error removing todo:', error);
         }
     };
 
-    // Function to save the full to-do list to the server
-	const saveTodos = async (todos) => {
-		console.log(JSON.stringify({ todos }, null, 2));
-		try {
-			const response = await fetch('todos.json', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				// Use a second argument in JSON.stringify to add indentation
-				body: JSON.stringify({ todos }, null, 2) // Indent with 2 spaces
-			});
-			if (!response.ok) throw new Error('Network response was not ok');
-			loadTodos(); // Reload the todo list
-		} catch (error) {
-			console.error('Error saving todos:', error);
-		}
-	};
+    const toggleTodo = async (index) => {
+        try {
+            const response = await fetch('todos.json');
+            const data = await response.json();
+            data.todos[index].completed = !data.todos[index].completed; // Toggle completed status
+            await saveTodos(data.todos);
+        } catch (error) {
+            console.error('Error toggling todo:', error);
+        }
+    };
 
-    loadTodos(); // Initial load of the to-do list
+    const saveTodos = async (todos) => {
+        console.log(JSON.stringify({ todos }, null, 2));
+        try {
+            const response = await fetch('todos.json', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ todos }, null, 2)
+            });
+            if (!response.ok) throw new Error('Network response was not ok');
+            loadTodos(); 
+        } catch (error) {
+            console.error('Error saving todos:', error);
+        }
+    };
+
+    loadTodos(); 
 });
