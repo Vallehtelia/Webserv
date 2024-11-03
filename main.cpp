@@ -156,10 +156,12 @@ int main(int ac, char **av)
                     exit(EXIT_FAILURE);
                 }
                 client_data[client_fd] = std::vector<char>();
+                std::cout << "ACCEPTED CONNECTION FD: " << client_fd << std::endl;
 			}
 			else if (events[i].events & EPOLLIN) 
 			{
 				// Read incoming data
+                std::cout << "RECEIVING DATA FROM FD: " << client_fd << std::endl;
 				char buffer[4000] = {0};
 				int bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
 				if (bytes_read <= 0) {
@@ -172,26 +174,29 @@ int main(int ac, char **av)
                 {
 					//client_data[client_fd].insert(client_data[client_fd].end(), buffer, buffer + bytes_read);
                     std::string rawRequest(buffer, bytes_read);
-					std::cout << "RAW BUFFER: " << "\033[94m" << rawRequest << "\033[0m" << std::endl;
+					//std::cout << "RAW BUFFER: " << "\033[94m" << rawRequest << "\033[0m" << std::endl;
 					req.parseRequest(rawRequest);
                     currentState = req.StateFromString(req.getState());
-                    req.printRequest();
+                    //req.printRequest();
                     if (req.getState() == "COMPLETE")
                     {
                         currentState = State::REQUEST_LINE;
-                        req.printRequest();
 					    Response res;
+                        req.printRequest();
         			    res.createResponse(req);
                         res.printResponse();
 					    // Get the full HTTP response string from the Response class
 					    std::string http_response = res.getResponseString();
 					    // Send the response back to the client
+                        
 					    if (send(events[i].data.fd, http_response.c_str(), http_response.length(), 0) < 0) {
 						    std::cout << "Failed to send: " << strerror(errno) << "\n";
 						    close(events[i].data.fd);
 						    close(socket1.getSocketFd());
 						    return 1;
 					    }
+                        std::cout << "RESPONSE SENT" << std::endl;
+                        requests[events[i].data.fd].reset();
 					    close(events[i].data.fd);
                     }
 				}

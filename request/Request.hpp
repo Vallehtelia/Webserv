@@ -55,6 +55,7 @@ class Request {
         std::string getMethod() const;
         std::string getPath() const;
         std::string getVersion() const;
+        void    reset();
         std::map<std::string, std::string> getHeaders() const {
         return headers;
     }

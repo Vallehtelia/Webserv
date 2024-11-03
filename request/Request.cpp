@@ -28,7 +28,25 @@ std::string Request::getBody() const {
     return body;
 }
 
-
+void Request::reset()
+{
+    currentState = State::REQUEST_LINE;
+    chunked = false;
+    received = false;
+    rawRequest.clear();
+    requestStream.str("");
+    requestStream.clear();
+    rawChunkedData.clear();
+    boundary.clear();
+    method.clear();
+    path.clear();
+    version.clear();
+    contentLength = 0;
+    body_size = 0;
+    headers.clear();
+    body.clear();
+    multipartData.clear();
+}
 
 std::string Request::stateToString(State state) {
     switch (state) {
@@ -175,9 +193,8 @@ void Request::parseChunks()
     std::cout << "PARSING CHUNKS" << std::endl;
     static bool inChunk = false;
     static size_t chunkSize = 0;
-    rawChunkedData.append(std::string(buffer.begin(), buffer.end())); // Append new data to raw buffer
+    rawChunkedData.append(std::string(buffer.begin(), buffer.end()));
     checkline(rawChunkedData);
-    // If we're not currently processing a chunk, check for chunk size
     if (!inChunk) {
         size_t pos = rawChunkedData.find("\r\n");
         if (pos == std::string::npos) {
@@ -218,12 +235,12 @@ void Request::parseBody()
     std::cout << "PARSING BODY" << std::endl;
     std::vector<char> buffer(std::istreambuf_iterator<char>(requestStream), {});
     body.append(std::string(buffer.begin(), buffer.end()));
+    std::cout << "BODY SIZE: " << body.size() << std::endl;
     //std::cout << "METHOD: " << method << " PATH: " << path << std::endl;
     //std::cout << " BODY SIZE: " << buffer.size() << " CONTENT LENGTH: " << contentLength << "BODY_SIZE: " << body_size << std::endl; 
     if ((body.size() >= contentLength))
     {   
         std::cout << "CHECKING FOR MULTIPART DATA" << std::endl;
-        printRequest();
         if (method == "POST" && headers["Content-Type"].find("multipart/form-data") != std::string::npos) {
             size_t boundaryPos = headers["Content-Type"].find("boundary=");
             if (boundaryPos != std::string::npos) {
@@ -240,6 +257,7 @@ void Request::parseBody()
     }
     else
         currentState = State::INCOMPLETE;
+    std::cout << "STATE:" << stateToString(currentState) << std::endl;
 }
 
 void checkline(std::string line)
@@ -323,7 +341,7 @@ void Request::parseMultipartData() {
     std::vector<std::string> parts = splitByBoundary(data, delimiter);
     for (std::string &part : parts)
         multipartData.push_back(createData(part));
-    printMultipartdata();
+    //printMultipartdata();
     currentState = State::COMPLETE;
 }
 
@@ -340,7 +358,7 @@ void Request::printMultipartdata()
 {
     int i = 0;
     for (const auto &part : multipartData)
-    {   
+    {
         std::cout << "MULTIPART DATA:" << std::endl;
         std::cout << "\033[32m" << "PART: " << i << std::endl;
         std::cout << "PART NAME: " << part.name << std::endl;
@@ -364,6 +382,7 @@ void Request::printRequest()
     for (const auto& pair : headers) {
         std::cout << pair.first << ": " << pair.second << std::endl;
     }
-	//std::cout << "body: " << body << std::endl;
+    if (body.size() < 2000)
+	    std::cout << "body: \n" << body << std::endl;
 	std::cout << "---------------" << "\033[0m" << std::endl;
 }

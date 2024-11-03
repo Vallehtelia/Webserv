@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include "../request/Request.hpp"
 
 Response::Response() {}
 Response::~Response() {}
@@ -20,6 +21,8 @@ void Response::createResponse(const Request& req)
     {
         handlePostRequest(req);
     }
+    // else if (req.getMethod() == "PUT")
+    //     handlePutRequest(req);
     else
     {
         setResponse(405, "text/html", body.length());
@@ -59,19 +62,28 @@ std::string Response::getContentType(const std::string& path) const {
 
 bool Response::validFile(const Request &req)
 {
+    std::string tempContentType = getContentType(req.getPath());
     std::string method = req.getMethod();
+        std::cout << getContentType(req.getPath()) << std::endl;
     if (method == "GET")
     {
         if (req.getPath() == "/")
-            filePath = "./html/index.html";
-        else
+                filePath = "./html/index.html";
+        else if (tempContentType == "text/html" || tempContentType == "text/css" || tempContentType == "application/javascript")
+        {
             filePath = "./html" + req.getPath();
+        }
+        else
+            filePath = "./html/uploads" + req.getPath();
         std::cout << "FILEPATH: " << filePath << std::endl;
+        std::ifstream file(filePath);
+        return file.is_open();
     }
-    else
-        filePath = "./html/uploads" + req.getPath(); 
-    if (method == "POST" || method == "PUT")
+    else if (method == "POST" || method == "PUT")
     {
+        std::cout << "DOES IT GET HERE?" << std::endl;
+        filePath = "./html/uploads" + req.getPath();
+        std::cout << "FILEPATH: " << filePath << std::endl;
         std::ofstream file(filePath);
         return file.is_open();
     }
@@ -80,7 +92,8 @@ bool Response::validFile(const Request &req)
         std::ifstream file(filePath);
         return file.is_open();
     }
-    return false;
+    else
+        return false;
 }
 
 std::string Response::readFileContent(const std::string& filePath) const {
@@ -106,10 +119,56 @@ std::string Response::createJsonResponse() {
 }
 
 
+// void handlePutRequest(const Request &req)
+// {
+//     const auto& multipartData = req.getMultipartData();
+//     if (!multipartData.empty()) {
+//         for (const auto &part : multipartData) {
+//             if (!part.filename.empty()) {
+//                 std::ofstream file("./html/uploads/" + part.filename, std::ios::binary);
+//                 if (file) {
+//                     file.write(part.data.data(), part.data.size());
+//                     file.close();
+//                 }
+//                 else {
+//                     setResponse(500, "text/html", body.length());
+//                     return;
+//                 }
+//             } else {
+//                 std::ofstream file("./html/uploads/" + part.name, std::ios::binary);
+//                 if (file)
+//                 {
+//                     file.write(part.data.data(), part.data.size());
+//                     file.close();
+//                 }
+//             }
+//         }
+//         body = createJsonResponse();
+//         setResponse(200, "application/json", body.length());
+//     }
+//     else if (validFile(req))
+//     {
+//         std::ofstream file(filePath, std::ios::binary);
+//         if (file)
+//         {
+//             file << body;
+//             file.close();
+//             body = createJsonResponse();
+//             setResponse(200, "application/json", body.length());
+//         }
+//     }
+//     else {
+//         setResponse(404, "text/html", body.length());
+//     }
+
+// }
+
 void Response::handlePostRequest(const Request& req) {
 
     const auto& multipartData = req.getMultipartData();
 
+    std::cout << "HANDLING POST REQUEST" << std::endl;
+    std::cout << "MULTIPART DATA EMPTY: " << (multipartData.empty() ? "TRUE" : "FALSE") << std::endl;
     if (!multipartData.empty()) {
         for (const auto &part : multipartData) {
             if (!part.filename.empty()) {
@@ -136,12 +195,12 @@ void Response::handlePostRequest(const Request& req) {
     }
     else if (validFile(req))
     {
-        std::ofstream file(filePath, std::ios::binary);
+        std::cout << "FILE IS VALID" << std::endl;
+        std::ofstream file(filePath, std::ios::out | std::ios::trunc | std::ios::binary);
         if (file)
         {
             file << body;
             file.close();
-            body = createJsonResponse();
             setResponse(200, "application/json", body.length());
         }
     }
@@ -228,11 +287,8 @@ std::string Response::getErrorPage()
 
 void Response::printResponse()
 {
-   std::cout << std::endl;
-   std::cout << "RESPONSE:" << "\033[32m" << std::endl;
-   std::cout << headers << std::endl;
-   std::cout << statusLine << std::endl;
-   std::cout << statusCode << std::endl;
-   std::cout << body << "\033[0m" << std::endl;
-
+    std::cout << std::endl;
+    std::cout << "RESPONSE:" << "\033[32m" << std::endl;
+    std::cout << getResponseString() << std::endl;
+    std::cout << "\033[0m" << std::endl;
 }
