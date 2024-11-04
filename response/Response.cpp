@@ -7,34 +7,11 @@
 Response::Response() {}
 Response::~Response() {}
 
-// void Response::createResponse(const Request& req)
-// {
-//     _body = req.getBody();
-//     if (req.getMethod() == "GET") {
-//         handleGetRequest(req);
-//     }
-//     else if (req.getMethod() == "DELETE")
-//     {
-//         handleDeleteRequest(req);
-//     }
-//     else if (req.getMethod() == "POST")
-//     {
-//         handlePostRequest(req);
-//     }
-//     // else if (req.getMethod() == "PUT")
-//     //     handlePutRequest(req);
-//     else
-//     {
-//         setResponse(405, "text/html", body.length());
-//     }
-// }
 
 std::string Response::getResponseString() const
 {
     return _statusLine + _headers + "\r\n" + _body;
 }
-
-
 
 void Response::printResponse()
 {
@@ -64,14 +41,9 @@ void Response::setUri(std::string &URI)
     _uri = URI;
 }
 
-void Response::setFilePath(std::string &filepath)
-{
-    _filePath = filepath;
-}
 
-
-void Response::setResponse(int statusCode, const std::string& contentType, size_t contentLength) {
-    (void)contentLength;
+void Response::setResponse(int statusCode, const std::string& contentType, const std::string &body) {
+    _body = body;
     _statusCode = statusCode;
     setStatusLine();
     _contentLength = _body.size();
@@ -91,11 +63,20 @@ void Response::setStatusLine()
         case 200:
             _statusLine = "HTTP/1.1 200 OK\r\n";
             break;
+        case 201:
+            _statusLine = "HTTP/1.1 201 Created\r\n";
+            break;
+        case 403:
+            _statusLine = "HTTP/1.1 403 Forbidden\r\n";
+            break;
         case 404:
             _statusLine = "HTTP/1.1 404 Not Found\r\n";
             break;
         case 405:
             _statusLine = "HTTP/1.1 405 Method Not Allowed\r\n";
+            break;
+        case 409:
+            _statusLine = "HTTP/1.1 409 Conflict\r\n";
             break;
         default:
             _statusLine = "HTTP/1.1 500 Internal Server Error\r\n";
@@ -103,13 +84,18 @@ void Response::setStatusLine()
     }
 }
 
+
 std::string Response::getErrorPage() const
 {
     switch (_statusCode) {
+        case 403:
+            return ".html/error_pages/403.html";
         case 404:
             return "./html/error_pages/404.html";
         case 405:
             return "./html/error_pages/405.html";
+        case 409:
+            return "./html/error_pages/409.html";
         default:
             return "./html/error_pages/500.html";
     }
@@ -135,3 +121,4 @@ std::string Response::readFileContent(std::string& filePath)
         return "";
     }
 }
+

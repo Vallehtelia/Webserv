@@ -4,6 +4,7 @@
 Request::Request() : currentState(State::REQUEST_LINE), method(""), uri(""), version(""), contentLength(0), body("") {
     chunked = false;
     received = false;
+    _isMultiPart = false;
 }
 
 Request::Request(const std::string& rawRequest) : currentState(State::REQUEST_LINE), requestStream(rawRequest), contentLength(0)  {
@@ -33,6 +34,7 @@ void Request::reset()
     currentState = State::REQUEST_LINE;
     chunked = false;
     received = false;
+    _isMultiPart = false;
     rawRequest.clear();
     requestStream.str("");
     requestStream.clear();
@@ -172,6 +174,8 @@ void Request::parseHeaders() {
                     chunked = true;
                 }
             }
+            if (key == "Content-Type")
+                contentType = value;
             std::cout << key  << value << std::endl;
         }
     }
@@ -246,6 +250,7 @@ void Request::parseBody()
             if (boundaryPos != std::string::npos) {
                 boundary = headers["Content-Type"].substr(boundaryPos + 9);
                 currentState = State::MULTIPARTDATA;
+                _isMultiPart = true;
                 return;
                 }
         }
@@ -385,4 +390,14 @@ void Request::printRequest()
     if (body.size() < 2000)
 	    std::cout << "body: \n" << body << std::endl;
 	std::cout << "---------------" << "\033[0m" << std::endl;
+}
+
+bool Request::isMultiPart() const
+{
+    return _isMultiPart;
+}
+
+std::string Request::getContentType() const
+{
+    return contentType;
 }

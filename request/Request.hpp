@@ -68,6 +68,8 @@ class Request {
         void setState(State state);
         std::string stateToString(State state);
         State StateFromString(const std::string& stateStr);
+        bool isMultiPart() const;
+        std::string getContentType() const;
     private:
         State currentState;
         bool    chunked;
@@ -81,8 +83,10 @@ class Request {
         std::string version;
         size_t contentLength;
         size_t body_size = 0;
+        bool _isMultiPart;
         std::map<std::string, std::string> headers;
         std::string body;
+        std::string contentType;
         std::vector<MultipartData> multipartData;
         //std::vector<char> bodyBuffer;
         void parseHeaders();
