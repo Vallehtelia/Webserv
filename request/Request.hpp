@@ -9,7 +9,6 @@
 #include <vector>
 #include <iomanip> 
 
-#include "RequestHandler.hpp"
 
 #define URICHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-.~:/?#[]@!$&'()*+,;="
 #define FIELDCHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-"
@@ -53,7 +52,7 @@ class Request {
         Request(const std::string &rawRequest);
         ~Request();
         std::string getMethod() const;
-        std::string getPath() const;
+        std::string getUri() const;
         std::string getVersion() const;
         void    reset();
         std::map<std::string, std::string> getHeaders() const {
@@ -78,7 +77,7 @@ class Request {
         std::string rawChunkedData;
         std::string boundary;
         std::string method;
-        std::string path;
+        std::string uri;
         std::string version;
         size_t contentLength;
         size_t body_size = 0;

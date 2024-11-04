@@ -1,7 +1,7 @@
 #include "Request.hpp"
 #include <iostream>
 
-Request::Request() : currentState(State::REQUEST_LINE), method(""), path(""), version(""), contentLength(0), body("") {
+Request::Request() : currentState(State::REQUEST_LINE), method(""), uri(""), version(""), contentLength(0), body("") {
     chunked = false;
     received = false;
 }
@@ -15,8 +15,8 @@ std::string Request::getMethod() const {
     return method;
 }
 
-std::string Request::getPath() const {
-    return path;
+std::string Request::getUri() const {
+    return uri;
 }
 
 std::string Request::getVersion() const {
@@ -39,7 +39,7 @@ void Request::reset()
     rawChunkedData.clear();
     boundary.clear();
     method.clear();
-    path.clear();
+    uri.clear();
     version.clear();
     contentLength = 0;
     body_size = 0;
@@ -142,8 +142,8 @@ void Request::parseRequestLine() {
         if (!isValidRequestLine(requestLine))
             handleError("Invalid characters in request line.");
         std::istringstream lineStream(requestLine);
-        lineStream >> method >> path >> version;
-        if (!method.empty() && !path.empty() && !version.empty()) {
+        lineStream >> method >> uri >> version;
+        if (!method.empty() && !uri.empty() && !version.empty()) {
             currentState = State::HEADERS;
         } else {
             handleError("Invalid request line format.");
@@ -236,7 +236,7 @@ void Request::parseBody()
     std::vector<char> buffer(std::istreambuf_iterator<char>(requestStream), {});
     body.append(std::string(buffer.begin(), buffer.end()));
     std::cout << "BODY SIZE: " << body.size() << std::endl;
-    //std::cout << "METHOD: " << method << " PATH: " << path << std::endl;
+    //std::cout << "METHOD: " << method << " URI: " << uri << std::endl;
     //std::cout << " BODY SIZE: " << buffer.size() << " CONTENT LENGTH: " << contentLength << "BODY_SIZE: " << body_size << std::endl; 
     if ((body.size() >= contentLength))
     {   
@@ -377,7 +377,7 @@ void Request::printRequest()
 	std::cout << "method: " << method << std::endl;
     std::cout << "Content-length: " << contentLength << std::endl;
     std::cout << "Body size: " << body.size() << std::endl;
-	std::cout << "path: " << path << std::endl;
+	std::cout << "uri: " << uri << std::endl;
 	std::cout << "version: " << version << std::endl;
     for (const auto& pair : headers) {
         std::cout << pair.first << ": " << pair.second << std::endl;

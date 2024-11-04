@@ -10,10 +10,11 @@
 #include <iostream>
 #include <fstream>
 #include <map>
-#include "request/Request.hpp"
-#include "response/Response.hpp"
-#include "./parsing/ServerConfig.hpp"
 #include <unordered_map>
+#include "./parsing/ServerConfig.hpp"
+#include "request/Request.hpp"
+#include "request/RequestHandler.hpp"
+#include "response/Response.hpp"
 
 #define MAX_EVENTS 10 // taa varmaa conffii
 #define PORT 8002 // ja taa
@@ -180,10 +181,10 @@ int main(int ac, char **av)
                     //req.printRequest();
                     if (req.getState() == "COMPLETE")
                     {
-                        currentState = State::REQUEST_LINE;
-					    Response res;
                         req.printRequest();
-        			    res.createResponse(req);
+					    Response res;
+                        RequestHandler requestHandler;
+        			    requestHandler.handleRequest(req, res);
                         res.printResponse();
 					    // Get the full HTTP response string from the Response class
 					    std::string http_response = res.getResponseString();
@@ -197,6 +198,7 @@ int main(int ac, char **av)
 					    }
                         std::cout << "RESPONSE SENT" << std::endl;
                         requests[events[i].data.fd].reset();
+                        currentState = State::REQUEST_LINE;
 					    close(events[i].data.fd);
                     }
 				}

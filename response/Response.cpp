@@ -7,274 +7,105 @@
 Response::Response() {}
 Response::~Response() {}
 
-void Response::createResponse(const Request& req)
-{
-    body = req.getBody();
-    if (req.getMethod() == "GET") {
-        handleGetRequest(req);
-    }
-    else if (req.getMethod() == "DELETE")
-    {
-        handleDeleteRequest(req);
-    }
-    else if (req.getMethod() == "POST")
-    {
-        handlePostRequest(req);
-    }
-    // else if (req.getMethod() == "PUT")
-    //     handlePutRequest(req);
-    else
-    {
-        setResponse(405, "text/html", body.length());
-    }
-}
+// void Response::createResponse(const Request& req)
+// {
+//     _body = req.getBody();
+//     if (req.getMethod() == "GET") {
+//         handleGetRequest(req);
+//     }
+//     else if (req.getMethod() == "DELETE")
+//     {
+//         handleDeleteRequest(req);
+//     }
+//     else if (req.getMethod() == "POST")
+//     {
+//         handlePostRequest(req);
+//     }
+//     // else if (req.getMethod() == "PUT")
+//     //     handlePutRequest(req);
+//     else
+//     {
+//         setResponse(405, "text/html", body.length());
+//     }
+// }
 
 std::string Response::getResponseString() const
 {
-    return statusLine + headers + "\r\n" + body;
+    return _statusLine + _headers + "\r\n" + _body;
 }
 
-std::string Response::getContentType(const std::string& path) const {
-    std::map<std::string, std::string> mime_types = {
-        {".html", "text/html"},
-        {".css", "text/css"},
-        {".js", "application/javascript"},
-        {".jpg", "image/jpeg"},
-        {".jpeg", "image/jpeg"},
-        {".png", "image/png"},
-        {".gif", "image/gif"},
-        {".json", "application/json"},
-        {".mp3", "audio/mpeg"},
-        {".mp4", "video/mp4"} 
 
-    };
 
-    size_t dot_pos = path.find_last_of(".");
-    if (dot_pos != std::string::npos) {
-        std::string ext = path.substr(dot_pos);
-        if (mime_types.count(ext)) {
-            return mime_types.at(ext);
-        }
-    }
-
-    return "text/plain";
-}
-
-bool Response::validFile(const Request &req)
+void Response::printResponse()
 {
-    std::string tempContentType = getContentType(req.getPath());
-    std::string method = req.getMethod();
-        std::cout << getContentType(req.getPath()) << std::endl;
-    if (method == "GET")
-    {
-        if (req.getPath() == "/")
-                filePath = "./html/index.html";
-        else if (tempContentType == "text/html" || tempContentType == "text/css" || tempContentType == "application/javascript")
-        {
-            filePath = "./html" + req.getPath();
-        }
-        else
-            filePath = "./html/uploads" + req.getPath();
-        std::cout << "FILEPATH: " << filePath << std::endl;
-        std::ifstream file(filePath);
-        return file.is_open();
-    }
-    else if (method == "POST" || method == "PUT")
-    {
-        std::cout << "DOES IT GET HERE?" << std::endl;
-        filePath = "./html/uploads" + req.getPath();
-        std::cout << "FILEPATH: " << filePath << std::endl;
-        std::ofstream file(filePath);
-        return file.is_open();
-    }
-    else if (method == "GET" || method == "DELETE")
-    {
-        std::ifstream file(filePath);
-        return file.is_open();
-    }
-    else
-        return false;
+    std::cout << std::endl;
+    std::cout << "RESPONSE:" << "\033[32m" << std::endl;
+    std::cout << getResponseString() << std::endl;
+    std::cout << "\033[0m" << std::endl;
 }
 
-std::string Response::readFileContent(const std::string& filePath) const {
-    std::ifstream file(filePath, std::ios::binary);
-    if (file) {
-        return  std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    }
-    else
-    {
-         std::cout << "\033[31m" << "failed to read file" <<"\033[0m" << std::endl;
-        return "";
-    }
-}
-
-
-std::string Response::createJsonResponse() {
-    std::ostringstream response;
-    response << "{\n"
-             << "  \"status\": \"success\",\n"
-             << "  \"message\": \"Files uploaded successfully\",\n"
-             << "}";
-    return response.str();
-}
-
-
-// void handlePutRequest(const Request &req)
-// {
-//     const auto& multipartData = req.getMultipartData();
-//     if (!multipartData.empty()) {
-//         for (const auto &part : multipartData) {
-//             if (!part.filename.empty()) {
-//                 std::ofstream file("./html/uploads/" + part.filename, std::ios::binary);
-//                 if (file) {
-//                     file.write(part.data.data(), part.data.size());
-//                     file.close();
-//                 }
-//                 else {
-//                     setResponse(500, "text/html", body.length());
-//                     return;
-//                 }
-//             } else {
-//                 std::ofstream file("./html/uploads/" + part.name, std::ios::binary);
-//                 if (file)
-//                 {
-//                     file.write(part.data.data(), part.data.size());
-//                     file.close();
-//                 }
-//             }
-//         }
-//         body = createJsonResponse();
-//         setResponse(200, "application/json", body.length());
-//     }
-//     else if (validFile(req))
-//     {
-//         std::ofstream file(filePath, std::ios::binary);
-//         if (file)
-//         {
-//             file << body;
-//             file.close();
-//             body = createJsonResponse();
-//             setResponse(200, "application/json", body.length());
-//         }
-//     }
-//     else {
-//         setResponse(404, "text/html", body.length());
-//     }
-
-// }
-
-void Response::handlePostRequest(const Request& req) {
-
-    const auto& multipartData = req.getMultipartData();
-
-    std::cout << "HANDLING POST REQUEST" << std::endl;
-    std::cout << "MULTIPART DATA EMPTY: " << (multipartData.empty() ? "TRUE" : "FALSE") << std::endl;
-    if (!multipartData.empty()) {
-        for (const auto &part : multipartData) {
-            if (!part.filename.empty()) {
-                std::ofstream file("./html/uploads/" + part.filename, std::ios::binary);
-                if (file) {
-                    file.write(part.data.data(), part.data.size());
-                    file.close();
-                }
-                else {
-                    setResponse(500, "text/html", body.length());
-                    return;
-                }
-            } else {
-                std::ofstream file("./html/uploads/" + part.name, std::ios::binary);
-                if (file)
-                {
-                    file.write(part.data.data(), part.data.size());
-                    file.close();
-                }
-            }
-        }
-        body = createJsonResponse();
-        setResponse(200, "application/json", body.length());
-    }
-    else if (validFile(req))
-    {
-        std::cout << "FILE IS VALID" << std::endl;
-        std::ofstream file(filePath, std::ios::out | std::ios::trunc | std::ios::binary);
-        if (file)
-        {
-            file << body;
-            file.close();
-            setResponse(200, "application/json", body.length());
-        }
-    }
-    else {
-        setResponse(404, "text/html", body.length());
-    }
-}
-
-
-void Response::handleGetRequest(const Request& req) {
-
-    std::cout << "HANDLE GET" << std::endl;
-    if (validFile(req)) {
-        std::cout << "FILE IS LEGIT" << std::endl;
-        body = readFileContent(filePath);
-        setResponse(200, getContentType(filePath), body.length());
-    } else {
-        std::cout << "FILE IS NOT LEGIT" << std::endl;
-        setResponse(404, "text/html", body.length());
-    }
-    statusLine = getStatusLine();
-}
-
-
-void Response::handleDeleteRequest(const Request &req)
+void Response::setStatusLine(std::string &statusline)
 {
-
-    if (validFile(req))
-    {
-        if (remove(filePath.c_str()) == 0)
-            setResponse(200, "text/plain", 0);
-        else
-            setResponse(500, "text/html", 0);
-    }
-    else
-        setResponse(404, "text/html", 0);
+    _statusLine = statusline;
 }
 
-
-void    Response::setError()
+void Response::setHeaders(std::string &headers)
 {
-    std::string errorPage = getErrorPage();
-    std::cout << "fetching error page: " << errorPage << std::endl;
-    body = readFileContent(errorPage);
+    _headers = headers;
 }
 
-void Response::setResponse(int code, const std::string& contentType, size_t contentLength) {
-    statusCode = code;
-    statusLine = getStatusLine();
-    if (statusCode != 200)
+void Response::setBody(std::string &body)
+{
+    _body = body;
+}
+
+void Response::setUri(std::string &URI)
+{
+    _uri = URI;
+}
+
+void Response::setFilePath(std::string &filepath)
+{
+    _filePath = filepath;
+}
+
+
+void Response::setResponse(int statusCode, const std::string& contentType, size_t contentLength) {
+    (void)contentLength;
+    _statusCode = statusCode;
+    setStatusLine();
+    _contentLength = _body.size();
+    _contentType = contentType;
+    if (_statusCode != 200)
     {
         setError();
-        contentLength = body.size();
+        _contentLength = _body.size();
     }
-    headers = "Content-Type: " + contentType + "\r\n" +
-              "Content-Length: " + std::to_string(contentLength) + "\r\n";
+    _headers = "Content-Type: " + _contentType + "\r\n" +
+              "Content-Length: " + std::to_string(_contentLength) + "\r\n";
 }
 
-std::string Response::getStatusLine() const {
-    switch (statusCode) {
-        case 200:
-            return "HTTP/1.1 200 OK\r\n";
-        case 404:
-            return "HTTP/1.1 404 Not Found\r\n";
-        case 405:
-            return "HTTP/1.1 405 Method Not Allowed\r\n";
-        default:
-            return "HTTP/1.1 500 Internal Server Error\r\n";
-    }
-}
-
-std::string Response::getErrorPage()
+void Response::setStatusLine()
 {
-    switch (statusCode) {
+    switch (_statusCode) {
+        case 200:
+            _statusLine = "HTTP/1.1 200 OK\r\n";
+            break;
+        case 404:
+            _statusLine = "HTTP/1.1 404 Not Found\r\n";
+            break;
+        case 405:
+            _statusLine = "HTTP/1.1 405 Method Not Allowed\r\n";
+            break;
+        default:
+            _statusLine = "HTTP/1.1 500 Internal Server Error\r\n";
+            break;
+    }
+}
+
+std::string Response::getErrorPage() const
+{
+    switch (_statusCode) {
         case 404:
             return "./html/error_pages/404.html";
         case 405:
@@ -284,11 +115,23 @@ std::string Response::getErrorPage()
     }
 }
 
-
-void Response::printResponse()
+void    Response::setError()
 {
-    std::cout << std::endl;
-    std::cout << "RESPONSE:" << "\033[32m" << std::endl;
-    std::cout << getResponseString() << std::endl;
-    std::cout << "\033[0m" << std::endl;
+    std::string errorPage = getErrorPage();
+    std::cout << "fetching error page: " << errorPage << std::endl;
+	_body = readFileContent(errorPage);
+}
+
+
+std::string Response::readFileContent(std::string& filePath)
+{
+    std::ifstream file(filePath, std::ios::binary);
+    if (file) {
+        return  std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    }
+    else
+    {
+        std::cout << "\033[31m" << "failed to read file" <<"\033[0m" << std::endl;
+        return "";
+    }
 }
