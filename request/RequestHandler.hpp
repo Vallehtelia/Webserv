@@ -21,7 +21,7 @@ public:
 private:
 	void prepareHandler(const Request &req);
     void handleGetRequest(Response& res);
-    //void handlePostRequest(const Request& req, Response& res);
+    void handlePutRequest(const Request& req, Response& res);
     void handleDeleteRequest(Response& res);
 	void handlePostRequest(const Request& req, Response& res);
     std::string createJsonResponse(const std::unordered_map<std::string, std::string>& formData);

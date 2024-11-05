@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(JSON.stringify({ todos }, null, 2));
         try {
             const response = await fetch('todos.json', {
-                method: 'POST',
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },
