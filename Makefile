@@ -19,7 +19,7 @@ SRC += $(addprefix $(PARSE_DIR), $(PARSE_FILES))
 
 
 OBJ = $(SRC:.cpp=.o)
-COMPILER = c++ -std=c++11
+COMPILER = c++ -std=c++17
 FLAGS = -Wall -Wextra -Werror
 
 all: $(NAME)
