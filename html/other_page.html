@@ -18,16 +18,29 @@
         <label for="audio">Audio (MP3):</label>
         <input type="file" id="audio" name="audio" accept=".mp3"><br><br>
 
-        <!-- Button to run CGI script -->
-        <button type="button" id="runScriptButton">Run CGI Script</button>
+        <!-- Existing Get CGI button -->
+        <button type="button" id="runScriptButton">Run GET CGI Script</button>
 
+        <!-- Submit button for form -->
         <input type="submit" value="Submit">
     </form>
 
-    <!-- Div to display CGI output -->
-    <div id="cgiOutput" style="display:none;">
-        <h2>CGI Script Output:</h2>
-        <div id="outputContent"></div>
-    </div>
+    <h1>Upload and Edit Your Image</h1>
+
+    <!-- POST Request Form for Image Upload -->
+    <form id="imageUploadForm" enctype="multipart/form-data">
+        <label for="name">Your Name:</label>
+        <input type="text" id="name" name="name"><br><br>
+
+        <label for="image">Upload Image:</label>
+        <input type="file" id="image" name="image" accept="image/*"><br><br>
+
+        <button type="button" id="submitPostRequest">Submit Image for Processing</button>
+    </form>
+
+    <div id="postResponse"></div>
 </body>
 </html>
+
+
+

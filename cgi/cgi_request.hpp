@@ -16,8 +16,9 @@ class cgiRequest
 		std::string	query_str;
 		std::string	httpProtocol;
 		std::map<std::string, std::string> env;
+		std::string	body_data;
 	public:
-		cgiRequest(const std::string &path, const std::string &method, const std::string &queryString, const std::string &protocol);
+		cgiRequest(const std::string &path, const std::string &method, const std::string &queryString, const std::string &protocol, const std::string &bodyData);
 		~cgiRequest();
 
 		void		setEnvironmentVariables();
@@ -31,6 +32,7 @@ class cgiRequest
 		std::string	getRequestMethod();
 		std::string	getQueryString();
 		std::string	getProtocol();
+		std::string	getBodyData();
 		std::map<std::string, std::string>	getEnv();
 };
 

@@ -1,54 +1,48 @@
-document.getElementById('myForm').addEventListener('submit', function(event) {
-    event.preventDefault(); // Prevent the default form submission
 document.addEventListener('DOMContentLoaded', () => {
-    const runScriptButton = document.getElementById('runScriptButton');
-    const cgiOutputDiv = document.getElementById('cgiOutput');
-    const outputContent = document.getElementById('outputContent');
+    // Elements for the POST image upload form
+    const imageUploadForm = document.getElementById('imageUploadForm');
+    const submitPostRequestButton = document.getElementById('submitPostRequest');
+    const postResponseDiv = document.getElementById('postResponse');
 
-    // Run CGI script -button
-    runScriptButton.addEventListener('click', async () => {
+    // Existing GET request button
+    const runScriptButton = document.getElementById('runScriptButton');
+
+    // Handle POST request for image upload and processing
+    submitPostRequestButton.addEventListener('click', async () => {
+        const formData = new FormData(imageUploadForm); // Create FormData from the form
+
         try {
-            // Fetch the CGI output directly from the expected file location
-            const response = await fetch('/cgi-bin/hello.py');  // Adjusted to fetch the static file
+            const response = await fetch('/cgi-bin/edit_image.py', {
+                method: 'POST',
+                body: formData
+            });
 
             if (response.ok) {
-                const fileText = await response.text();
-                outputContent.innerHTML = fileText; // Display file content in the output div
-                cgiOutputDiv.style.display = 'block';
+                const resultHtml = await response.text();
+                postResponseDiv.innerHTML = resultHtml;
             } else {
-                outputContent.innerHTML = '<p style="color: red;">Failed to load CGI output file.</p>';
-                cgiOutputDiv.style.display = 'block';
+                postResponseDiv.innerHTML = '<p style="color:red;">Failed to upload image</p>';
             }
         } catch (error) {
             console.error('Error:', error);
-            outputContent.innerHTML = '<p style="color: red;">An error occurred while loading CGI output.</p>';
-            cgiOutputDiv.style.display = 'block';
+            postResponseDiv.innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
         }
     });
 
-    // Lomakkeen lähetys
-    form.addEventListener('submit', async (event) => {
-        event.preventDefault(); // Prevent the default form submission
-
-    const form = event.target;
-    const formData = new FormData(form); // Create a FormData object from the form
-
-    // Send the form data using fetch
-    fetch('http://localhost:8002', {
-        method: 'POST',
-        body: formData, // Send the form data as the request body
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
+    // Handle existing GET request button
+    runScriptButton.addEventListener('click', async () => {
+        try {
+            const response = await fetch('/cgi-bin/hello.py'); // Update path to your GET CGI script
+            if (response.ok) {
+                const fileText = await response.text();
+                alert("CGI GET Output:\n" + fileText);
+            } else {
+                alert("Failed to load CGI GET output.");
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert("An error occurred while loading CGI GET output.");
         }
-        return response.text(); // Convert response to text
-    })
-    .then(data => {
-        document.getElementById('response').innerText = data; // Display the response
-    })
-    .catch(error => {
-        console.error('There was a problem with the fetch operation:', error);
-        document.getElementById('response').innerText = 'Error: ' + error.message; // Show error
     });
 });
+

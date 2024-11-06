@@ -21,11 +21,7 @@ std::string Request::getUri() const {
 }
 
 void Request::setPath(std::string newPath) {
-    path = newPath;
-}
-
-void Request::setPath(std::string newPath) {
-    path = newPath;
+    uri = newPath;
 }
 
 std::string Request::getVersion() const {

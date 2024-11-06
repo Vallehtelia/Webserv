@@ -180,18 +180,19 @@ int main(int ac, char **av)
 					//std::cout << "RAW BUFFER: " << "\033[94m" << rawRequest << "\033[0m" << std::endl;
 					req.parseRequest(rawRequest);
                     currentState = req.StateFromString(req.getState());
-                    //req.printRequest();
+                    req.printRequest();
                     if (req.getState() == "COMPLETE")
                     {
-                        /*std::string path = req.getPath();
+                        std::string path = req.getUri();
+                        std::cout << "do i even get here?!?" << path << std::endl;
                         bool    cgi_req = (path.find("/cgi-bin/") != std::string::npos || (path.size() > 3 && path.substr(path.size() - 3) == ".py"));
                         if (cgi_req)
                         {
                             std::cout << "cgi request found" << std::endl;
-                            std::string queryString = findQueryStr(req.getPath());
+                            std::string queryString = findQueryStr(req.getUri());
                             std::string directPath;
-                            directPath = findPath(req.getPath());
-                            cgiRequest cgireg(directPath, req.getMethod(), queryString, req.getVersion());
+                            directPath = findPath(req.getUri());
+                            cgiRequest cgireg(directPath, req.getMethod(), queryString, req.getVersion(), req.getBody());
                             cgireg.printCgiRequestData();
                             int execute_result = cgireg.execute();
                             if (execute_result == 0)
@@ -199,12 +200,12 @@ int main(int ac, char **av)
                                 req.setPath("/cgi_output.html");
                             }
 
-                        }*/
-                        req.printRequest();
+                        }
+                        //req.printRequest();
 					    Response res;
                         RequestHandler requestHandler;
         			    requestHandler.handleRequest(req, res);
-                        res.printResponse();
+                        //res.printResponse();
 					    // Get the full HTTP response string from the Response class
 					    std::string http_response = res.getResponseString();
 					    // Send the response back to the client
@@ -219,7 +220,7 @@ int main(int ac, char **av)
                         requests[events[i].data.fd].reset();
                         currentState = State::REQUEST_LINE;
 					    close(events[i].data.fd);
-                        /*std::string tempFilePath = "./tmp/cgi_output.html";
+                        /*std::string tempFilePath = "./html/tmp/cgi_output.html";
                         if (std::ifstream(tempFilePath))
                         {
                             if (std::remove(tempFilePath.c_str()) != 0)

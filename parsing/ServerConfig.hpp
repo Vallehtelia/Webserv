@@ -10,6 +10,9 @@
 #define CYAN "\033[1;36m"
 #define DEFAULT "\033[0m"
 
+#ifndef SERVERCONFIG_HPP
+#define SERVERCONFIG_HPP
+
 class ServerConfig
 {
 	private:
@@ -50,3 +53,4 @@ class ServerConfig
 
 bool	checkConfFile(char *filename);
 void	parseData(char *filename, std::vector<ServerConfig> &server);
+#endif
