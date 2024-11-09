@@ -6,6 +6,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Existing GET request button
     const runScriptButton = document.getElementById('runScriptButton');
+    const getResponseDiv = document.getElementById('getResponse'); // Div for GET response
+
+    const showImageButton = document.getElementById('showImageRequest');
+    const imageDiv = document.getElementById('showImageDiv');
 
     // Handle POST request for image upload and processing
     submitPostRequestButton.addEventListener('click', async () => {
@@ -19,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 const resultHtml = await response.text();
-                postResponseDiv.innerHTML = resultHtml;
+                postResponseDiv.innerHTML = resultHtml; // Display HTML response in postResponseDiv
             } else {
                 postResponseDiv.innerHTML = '<p style="color:red;">Failed to upload image</p>';
             }
@@ -32,17 +36,34 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle existing GET request button
     runScriptButton.addEventListener('click', async () => {
         try {
-            const response = await fetch('/cgi-bin/hello.py'); // Update path to your GET CGI script
+            const response = await fetch('/cgi-bin/hello.py'); // Executes the CGI script
             if (response.ok) {
                 const fileText = await response.text();
-                alert("CGI GET Output:\n" + fileText);
+                getResponseDiv.innerHTML = fileText; // Display HTML response in getResponseDiv
             } else {
-                alert("Failed to load CGI GET output.");
+                getResponseDiv.innerHTML = '<p style="color:red;">Failed to load CGI GET output.</p>';
             }
         } catch (error) {
             console.error('Error:', error);
-            alert("An error occurred while loading CGI GET output.");
+            getResponseDiv.innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
+        }
+    });
+
+    // Handle GET request for image display
+    showImageButton.addEventListener('click', async () => {
+        try {
+            const response = await fetch('/cgi-bin/show_image.py');
+            if (response.ok) {
+                const imageBlob = await response.blob();
+                const imageUrl = URL.createObjectURL(imageBlob);
+                imageDiv.innerHTML = `<img src="${imageUrl}" alt="Processed image">`;
+            } else {
+                imageDiv.innerHTML = '<p style="color:red;">Failed to load image.</p>';
+            }
+        } catch (error) {
+            imageDiv.innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
         }
     });
 });
+
 

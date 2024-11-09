@@ -42,7 +42,7 @@ std::string RequestHandler::getContentType(const std::string& path) const {
         {".gif", "image/gif"},
         {".json", "application/json"},
         {".mp3", "audio/mpeg"},
-        {".mp4", "video/mp4"} 
+        {".mp4", "video/mp4"}
 
     };
 
@@ -93,34 +93,34 @@ std::string RequestHandler::getFilepath(std::string filepath)
     std::cout << "valle filepath: " << filepath << std::endl;
     std::filesystem::path baseDir = std::filesystem::current_path() / "html";
     std::filesystem::path path;
-    if (_method == "GET") {
+    if (filepath.find("cgi") != std::string::npos)
+        path = baseDir / "tmp" / filepath;
+    else if (_method == "GET") {
         if (filepath == "/") {
             path = baseDir / "index.html";
         }
-        else if (filepath.find("cgi") != std::string::npos)
-            path = baseDir / "tmp" / filepath;
         else if (_contentType == "text/html" || _contentType == "text/css" || _contentType == "application/javascript") {
             path = baseDir / filepath;
-        } 
+        }
         else {
             path = baseDir / "uploads" / filepath;
         }
-    } 
+    }
     else if (_method == "POST" || _method == "PUT" || _method == "DELETE") {
         path = baseDir / "uploads" / filepath;
-    } 
+    }
     else {
 		std::cout << "somethings off!" << std::endl;
         path = std::filesystem::path(filepath);
     }
 	std::cout << "FILEPATH CREATED: " << path.string() << std::endl;
-    return path.string();  
+    return path.string();
 }
 
 
 bool RequestHandler::validFile(const std::string& filePath) {
     try {
-        std::filesystem::path fullPath = std::filesystem::path(filePath); 
+        std::filesystem::path fullPath = std::filesystem::path(filePath);
         const std::filesystem::path baseDir = std::filesystem::current_path() / "html";
         std::filesystem::path dirPath = std::filesystem::canonical(baseDir);
 
@@ -146,7 +146,7 @@ bool RequestHandler::validFile(const std::string& filePath) {
             }
 			_statusCode = 200;
             return true;
-        } 
+        }
         else if (_method == "POST" || _method == "PUT") {
             std::filesystem::path dir = fullPath.parent_path();
             if (!std::filesystem::exists(dir)) {
@@ -231,14 +231,14 @@ void RequestHandler::handlePostRequest(const Request& req, Response& res)
 	std::cout << "CONTENT TYPE: " << req.getContentType() << std::endl;
     if (req.isMultiPart()) {
         handleMultipartRequest(req, res);
-    } 
+    }
     else if (req.getContentType() == "application/json\r") {
 		std::cout << "hola" << std::endl;
         handleJsonData(req, res);
-    } 
+    }
     // else if (req.getContentType() == "text/plain") {
     //     handlePlainText(req, res);
-    // } 
+    // }
     else {
         res.setResponse(400, "text/html", "Bad Request: Unsupported Content Type");
     }
@@ -251,11 +251,11 @@ void RequestHandler::handlePutRequest(const Request& req, Response& res)
 
     if (req.isMultiPart()) {
         handleMultipartRequest(req, res);
-    } 
+    }
     else if (req.getContentType() == "application/json\r") {
 		std::cout << "Processing JSON Data for PUT" << std::endl;
         handleJsonData(req, res);
-    } 
+    }
     else {
         res.setResponse(400, "text/html", "Bad Request: Unsupported Content Type");
     }
@@ -284,11 +284,19 @@ void RequestHandler::handleMultipartRequest(const Request &req, Response &res) {
 	std::cout << "HANDLE MULTIPART REQUEST" << std::endl;
     const auto& multipartData = req.getMultipartData();
     std::unordered_map<std::string, std::string> formData;
+    bool isCgi = false;
 
     for (const auto& part : multipartData) {
         if (part.filename.empty()) {
             handleFormField(part, formData);
-        } else {
+        }
+        else if (req.getUri().find("cgi") != std::string::npos) {
+            // edited file uploaded to tmp folder
+            std::string response_body = readFileContent(_filePath);
+            res.setResponse(200, getContentType(_filePath), response_body);
+            isCgi = true;
+        }
+        else {
             handleFileUpload(part, res);
 			if (_statusCode != 200 && _statusCode != 201)
 			{
@@ -297,8 +305,10 @@ void RequestHandler::handleMultipartRequest(const Request &req, Response &res) {
 			}
         }
     }
-    _body = createJsonResponse(formData);
-    res.setResponse(200, "application/json", _body);
+    if (!isCgi) {
+        _body = createJsonResponse(formData);
+        res.setResponse(200, "application/json", _body);
+    }
 }
 
 void RequestHandler::handleFileUpload(const MultipartData& part, Response& res)

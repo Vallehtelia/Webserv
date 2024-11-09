@@ -1,28 +1,37 @@
-#!/home/codespace/.python/current/bin/python3
+#!/usr/bin/env python3
 import os
 import sys
-from PIL import Image, ImageFilter, ImageDraw, ImageFont
+import re
+from PIL import Image, ImageFilter, ImageDraw, ImageFont, ImageStat
+
+def get_contrasting_color(avg_color):
+    return tuple(255 - int(c) for c in avg_color)
 
 def save_image_and_process(temp_path, filename, name):
     try:
-        print("<p>Opening temporary image file for processing...</p>")
-        
-        # Ladataan kuva väliaikaisesta tiedostosta
         with Image.open(temp_path) as img:
-            print("<p>Image opened successfully.</p>")
-            
-            # Lisätään suodatin ja teksti
-            img = img.filter(ImageFilter.BLUR)
+            if img.mode == 'P':
+                img = img.convert("RGB")
+
+
+            avg_color = ImageStat.Stat(img).mean[:3]
+            text_color = get_contrasting_color(avg_color)
+            img = img.filter(ImageFilter.SMOOTH_MORE)
+
+            if name:
+                nameLength = len(name)
+            else:
+                nameLength = 1
             draw = ImageDraw.Draw(img)
-            font = ImageFont.load_default()
-            text_position = (10, 10)
-            draw.text(text_position, name, fill="white", font=font)
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", img.width // nameLength * 4 // 3)
+            text_width, text_height = draw.textsize(name, font=font)
+            text_position = (img.width // 2 - text_width // 2, img.height - text_height - 10)
+
+            draw.text(text_position, name, fill=text_color, font=font)
             print("<p>Image processed with text overlay.</p>")
-            
-            # Tallennetaan muokattu kuva "edited" kansioon
+
             edited_directory = "./html/edited"
             os.makedirs(edited_directory, exist_ok=True)
-            
             edited_filename = f"edited_{filename}"
             output_path = os.path.join(edited_directory, edited_filename)
             img.save(output_path)
@@ -32,46 +41,43 @@ def save_image_and_process(temp_path, filename, name):
         print(f"<p>Error: Could not process the image. {str(e)}</p>")
 
 def main():
-    print("Content-Type: text/html\n")
-    print("<html><body><p>Python script started</p>")
-
     content_type = os.environ.get("CONTENT_TYPE", "")
     boundary = content_type.split("boundary=")[-1]
     content_length = int(os.environ.get("CONTENT_LENGTH", 0))
-    data = sys.stdin.read(content_length)
-    
-    print("<p>Received data from POST request.</p>")
-    parts = data.split(f"--{boundary}")
-    
+    data = sys.stdin.buffer.read(content_length)
+
+    parts = data.split(f"--{boundary}".encode())
+
     for part in parts:
-        if "Content-Disposition" in part:
-            headers, file_data = part.split("\r\n\r\n", 1)
-            file_data = file_data.rstrip("--\r\n")
+        # Skip empty parts
+        if not part.strip():
+            continue
+
+        if b"Content-Disposition" in part:
+            headers_end = part.rfind(b"\r\n\r\n")
+            headers = part[:headers_end].decode("utf-8", errors="replace")
+            file_data = part[headers_end + 4:]
 
             if 'filename="' in headers:
-                filename = headers.split('filename="')[1].split('"')[0]
-                name_field = headers.split('name="')[1].split('"')[0]
-                name = name_field or "User"
-                
-                print(f"<p>Received file with filename: {filename}</p>")
-                
-                # Luodaan väliaikainen tiedosto kuvan käsittelyä varten
+                filename = re.search(r'filename="(.+?)"', headers).group(1)
+                name_index = part.find(b"\r\n\r\n")
+                name_match = part[name_index + 4:].split(b"\r\n")[0].decode("utf-8", errors="replace")
+                name = name_match
+
+                file_data = file_data.split(b"\r\n--")[0]
+
                 temp_path = f"/tmp/{filename}"
                 with open(temp_path, "wb") as f:
-                    f.write(file_data.encode('latin1'))  # Tallennetaan binääridata oikein
-                    print("<p>Temporary image file written.</p>")
-                
-                # Käsitellään kuva ja tallennetaan muokattu versio
-                edited_filename = save_image_and_process(temp_path, filename, name)
+                    f.write(file_data)
 
-                # CGI-vastaus, jossa on linkki muokattuun kuvaan
-                print("<h1>Image uploaded and edited successfully!</h1>")
-                print(f'<p><a href="/edited/{edited_filename}">Download edited image</a></p>')
+                if os.path.exists(temp_path):
+                    edited_filename = save_image_and_process(temp_path, filename, name)
+                    print("<h1>Image uploaded and edited successfully!</h1>")
+                    os.remove(temp_path)
+                else:
+                    print("<p>Error: Temporary file could not be created.</p>")
+
                 print("</body></html>")
-                
-                # Poistetaan väliaikainen tiedosto lopuksi
-                os.remove(temp_path)
-                print("<p>Temporary file removed.</p>")
                 return
 
 if __name__ == "__main__":

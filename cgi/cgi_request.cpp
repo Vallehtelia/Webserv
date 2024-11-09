@@ -1,5 +1,7 @@
 
+#include <iostream>
 #include "cgi_request.hpp"
+#include "../socket.hpp"
 
 cgiRequest::cgiRequest(const std::string &path, const std::string &method, const std::string &queryString, const std::string &protocol, const std::string &bodyData) : script_path(path), request_method(method), httpProtocol(protocol), body_data(bodyData)
 {
@@ -159,56 +161,28 @@ int	cgiRequest::execute()
 			close(outputFile);
 			if (request_method == "POST" && !body_data.empty())
 			{
-				std::cerr << "pipeing body" << std::endl; // debugging
-				std::cerr << "Body data length: " << body_data.size() << std::endl;
-				
-				int inputPipe[2];
-				if (pipe(inputPipe) == -1) {
-					std::cerr << "Failed to create input pipe for CGI script" << std::endl;
+				std::string	tmpFilePath = "./html/tmp/cgi_input.html";
+				std::ofstream	tmpFile(tmpFilePath);
+				if (!tmpFile)
+				{
+					std::cerr << "Failed to open temporary file for CGI script" << std::endl;
 					exit(500);
 				}
+				tmpFile.write(body_data.c_str(), body_data.size());
+				tmpFile.close();
 
-				// Set the write-end of the pipe to non-blocking
-				int flags = fcntl(inputPipe[1], F_GETFL, 0);
-				if (flags == -1 || fcntl(inputPipe[1], F_SETFL, flags | O_NONBLOCK) == -1) {
-					std::cerr << "Failed to set non-blocking mode on input pipe" << std::endl;
-					close(inputPipe[0]);
-					close(inputPipe[1]);
+				int	inputFile = open(tmpFilePath.c_str(), O_RDONLY);
+				if (inputFile == -1)
+				{
+					std::cerr << "Failed to open input file for CGI script" << std::endl;
 					exit(500);
 				}
-
-				const size_t buffer_size = 8192; // 8 KB buffer
-				size_t written = 0;
-				while (written < body_data.size()) {
-					size_t to_write = std::min(buffer_size, body_data.size() - written);
-					ssize_t result = write(inputPipe[1], body_data.c_str() + written, to_write);
-					if (result == -1) {
-						perror("write to pipe");
-						std::cerr << "Write to pipe failed" << std::endl;
-						close(inputPipe[0]);
-						close(inputPipe[1]);
-						exit(500);
-					}
-					written += result;
-				}
-				
-				close(inputPipe[1]); // Close write-end after writing all data
-				dup2(inputPipe[0], STDIN_FILENO); // Redirect stdin to read-end of pipe
-				close(inputPipe[0]); // Close original read-end
-				std::cerr << "done pipeing data" << std::endl; // debugging
+				dup2(inputFile, STDIN_FILENO);
+				close(inputFile);
 			}
 			char	*args[] = {const_cast<char *>(script_path.c_str()), nullptr};
 			char	**envp = buildEnv();
-			// std::cout << "script path: " << script_path.c_str() << std::endl;
-			// for (int i = 0; args[i]; i++)
-			// {
-			// 	std::cout << "arg[" << i << "]: " << args[i] << std::endl;
-			// }
-			// for (int i = 0; envp[i]; i++)
-			// {
-			// 	std::cout << "envp[" << i << "]: " << envp[i] << std::endl;
-			// }
-			std::cerr << "running execve script: " << script_path.c_str() << std::endl; // debugging
+			// std::cerr << "running execve script: " << script_path.c_str() << std::endl; // debugging
 			execve(script_path.c_str(), args, envp);
 			perror("execve"); // Lisää tämä rivi, jotta näet tarkemman virheen syyn
 			std::cerr << "Execve failed!" << std::endl;

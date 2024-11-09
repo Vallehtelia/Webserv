@@ -53,7 +53,7 @@ void Response::setResponse(int statusCode, const std::string& contentType, const
         setError();
         _contentLength = _body.size();
     }
-    _headers = "Content-Type: " + _contentType + "\r\n" +
+    _headers = "Content-Type4: " + _contentType + "\r\n" +
               "Content-Length: " + std::to_string(_contentLength) + "\r\n";
 }
 

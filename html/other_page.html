@@ -20,9 +20,10 @@
 
         <!-- Existing Get CGI button -->
         <button type="button" id="runScriptButton">Run GET CGI Script</button>
-
         <!-- Submit button for form -->
         <input type="submit" value="Submit">
+        <div id="getResponse"></div> <!-- Div for displaying GET response -->
+
     </form>
 
     <h1>Upload and Edit Your Image</h1>
@@ -36,9 +37,12 @@
         <input type="file" id="image" name="image" accept="image/*"><br><br>
 
         <button type="button" id="submitPostRequest">Submit Image for Processing</button>
+        <button type="button" id="showImageRequest">show image</button>
     </form>
 
     <div id="postResponse"></div>
+
+    <div id="showImageDiv"></div>
 </body>
 </html>
 

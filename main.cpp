@@ -126,7 +126,7 @@ int main(int ac, char **av)
 
 	// Main loop
     std::unordered_map<int, Request> requests;
-    while (true) 
+    while (true)
 	{
 		int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
         if (num_events == -1)
@@ -134,11 +134,11 @@ int main(int ac, char **av)
             perror("epoll_wait");
             exit(EXIT_FAILURE);
         }
-		for (int i = 0; i < num_events; ++i) 
+		for (int i = 0; i < num_events; ++i)
 		{
             Request &req = requests[events[i].data.fd];
             req.setState(currentState);
-			if (events[i].data.fd == socket1.getSocketFd()) 
+			if (events[i].data.fd == socket1.getSocketFd())
 			{
 				// Accept incoming connection
 				client_len = sizeof(client_addr);
@@ -172,28 +172,24 @@ int main(int ac, char **av)
 					close(events[i].data.fd);
                 	client_data.erase(client_fd);
                     currentState = State::REQUEST_LINE;
-				} 
-                else 
+				}
+                else
                 {
-					//client_data[client_fd].insert(client_data[client_fd].end(), buffer, buffer + bytes_read);
                     std::string rawRequest(buffer, bytes_read);
-					//std::cout << "RAW BUFFER: " << "\033[94m" << rawRequest << "\033[0m" << std::endl;
 					req.parseRequest(rawRequest);
                     currentState = req.StateFromString(req.getState());
-                    req.printRequest();
+                    // req.printRequest();
                     if (req.getState() == "COMPLETE")
                     {
                         std::string path = req.getUri();
-                        std::cout << "do i even get here?!?" << path << std::endl;
                         bool    cgi_req = (path.find("/cgi-bin/") != std::string::npos || (path.size() > 3 && path.substr(path.size() - 3) == ".py"));
                         if (cgi_req)
                         {
-                            std::cout << "cgi request found" << std::endl;
                             std::string queryString = findQueryStr(req.getUri());
                             std::string directPath;
                             directPath = findPath(req.getUri());
+                            std::cout << "DIRECT PATH: " << directPath << std::endl;
                             cgiRequest cgireg(directPath, req.getMethod(), queryString, req.getVersion(), req.getBody());
-                            cgireg.printCgiRequestData();
                             int execute_result = cgireg.execute();
                             if (execute_result == 0)
                             {
@@ -209,7 +205,7 @@ int main(int ac, char **av)
 					    // Get the full HTTP response string from the Response class
 					    std::string http_response = res.getResponseString();
 					    // Send the response back to the client
-                        
+
 					    if (send(events[i].data.fd, http_response.c_str(), http_response.length(), 0) < 0) {
 						    std::cout << "Failed to send: " << strerror(errno) << "\n";
 						    close(events[i].data.fd);
@@ -220,12 +216,18 @@ int main(int ac, char **av)
                         requests[events[i].data.fd].reset();
                         currentState = State::REQUEST_LINE;
 					    close(events[i].data.fd);
-                        /*std::string tempFilePath = "./html/tmp/cgi_output.html";
-                        if (std::ifstream(tempFilePath))
+                        std::string tempInFilePath = "./html/tmp/cgi_output.html";
+                        std::string tempOutFilePath = "./html/tmp/cgi_input.html";
+                        if (std::ifstream(tempInFilePath))
                         {
-                            if (std::remove(tempFilePath.c_str()) != 0)
+                            if (std::remove(tempInFilePath.c_str()) != 0)
                                 std::cerr << "Failed to delete temp file: " << strerror(errno) << "\n";
-                        }*/
+                        }
+                        if (std::ifstream(tempOutFilePath))
+                        {
+                            if (std::remove(tempOutFilePath.c_str()) != 0)
+                                std::cerr << "Failed to delete temp file: " << strerror(errno) << "\n";
+                        }
                     }
 				}
 			}
