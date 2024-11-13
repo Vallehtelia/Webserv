@@ -1,18 +1,18 @@
 #include "Request.hpp"
 #include <iostream>
 
-Request::Request() : currentState(State::REQUEST_LINE), method(""), uri(""), version(""), contentLength(0), body("") {
+Request::Request() : currentState(State::REQUEST_LINE), contentLength(0), body(""), method(""), uri(""), version("") {
     chunked = false;
     received = false;
     _isMultiPart = false;
 }
 
-Request::Request(const std::string& rawRequest) : currentState(State::REQUEST_LINE), requestStream(rawRequest), contentLength(0)  {
+Request::Request(const std::string& rawRequest) : currentState(State::REQUEST_LINE), contentLength(0), requestStream(rawRequest)  {
 }
 
 Request::Request(const Request &other)
 {
-
+    (void)other;
 }
 
 Request::~Request() {}

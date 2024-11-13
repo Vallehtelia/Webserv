@@ -60,13 +60,12 @@ class Request {
         std::string                         stateToString(State state);
         State                               StateFromString(const std::string& stateStr);
         std::string                         getContentType() const;
+        bool                                isMultiPart() const;
     private:
 
-        // MEMBER VARIABLES
         bool                                received;
         bool                                chunked;
         bool                                _isMultiPart;
-        bool                                isMultiPart() const;
         State                               currentState;
         size_t                              contentLength;
         size_t                              body_size = 0;
@@ -82,17 +81,16 @@ class Request {
         std::map<std::string, std::string>  headers;
         std::vector<MultipartData>          multipartData;
 
-        // PRIVATE MEMBER FUNCTIONS
-        MultipartData createData(std::string &rawData);
-        void parseMultipartData();
-        void parseHeaders();
-        void parseBody();
-        void handleError(const std::string& errorMsg);
-        void parseRequestLine();
-        void printMultipartdata();
-        void createMultipartBody(MultipartData &multipartData, std::istringstream &rawMultipartData);
-        void createMultipartHeaders(MultipartData &multipartData, std::istringstream &rawDataStream);
-        void parseChunks();
+        MultipartData                       createData(std::string &rawData);
+        void                                parseMultipartData();
+        void                                parseHeaders();
+        void                                parseBody();
+        void                                handleError(const std::string& errorMsg);
+        void                                parseRequestLine();
+        void                                printMultipartdata();
+        void                                createMultipartBody(MultipartData &multipartData, std::istringstream &rawMultipartData);
+        void                                createMultipartHeaders(MultipartData &multipartData, std::istringstream &rawDataStream);
+        void                                parseChunks();
 
 } ;
 
