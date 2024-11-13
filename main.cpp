@@ -231,40 +231,7 @@ int main(int ac, char **av)
 				}
 			}
 		}
-		/*
-        bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-        if (bytes_received < 0) {
-            std::cout << "Failed to receive: " << strerror(errno) << "\n";
-            close(socket1.getSocketFd());
-            return 1;
-        }
-        buffer[bytes_received] = '\0';
-        std::cout << buffer << std::endl;
-        std::string rawRequest(buffer, bytes_received);
-        Request req(rawRequest);
-        std::cout << "Received request:\n" << std::endl;
-        std::cout << "method: " << req.getMethod() << std::endl;
-        std::cout << "path: " << req.getPath() << std::endl;
-        std::cout << "version: " << req.getVersion() << std::endl;
-        std::cout << "body: " << req.getBody() << std::endl;
-        std::cout << "---------------" << std::endl;
-        std::cout << "Serving file: " << req.getPath() << std::endl;
-        std::cout << "---------------" << std::endl;
-        Response res;
-        res.createResponse(req);
-        // Let the Response class handle everything
 
-        // Get the full HTTP response string from the Response class
-        std::string http_response = res.getResponseString();
-        // Send the response back to the client
-        if (send(client_fd, http_response.c_str(), http_response.length(), 0) < 0) {
-            std::cout << "Failed to send: " << strerror(errno) << "\n";
-            close(client_fd);
-            close(socket1.getSocketFd());
-            return 1;
-        }
-        close(client_fd);
-		*/
     }
 
     // Close the other sockets

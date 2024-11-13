@@ -10,6 +10,11 @@ Request::Request() : currentState(State::REQUEST_LINE), method(""), uri(""), ver
 Request::Request(const std::string& rawRequest) : currentState(State::REQUEST_LINE), requestStream(rawRequest), contentLength(0)  {
 }
 
+Request::Request(const Request &other)
+{
+
+}
+
 Request::~Request() {}
 
 std::string Request::getMethod() const {
@@ -38,6 +43,11 @@ void Request::setReceived(bool state)
     received = state;
 }
 
+std::map<std::string, std::string> Request::getHeaders() const {
+    return headers;
+}
+
+
 void Request::reset()
 {
     currentState = State::REQUEST_LINE;
@@ -63,7 +73,7 @@ std::string Request::stateToString(State state) {
     switch (state) {
         case State::REQUEST_LINE: return "REQUEST_LINE";
         case State::HEADERS: return "HEADERS";
-         case State::UNCHUNK: return "UNCHUNK";
+        case State::UNCHUNK: return "UNCHUNK";
         case State::BODY: return "BODY";
         case State::MULTIPARTDATA: return "MULTIPARTDATA";
         case State::COMPLETE: return "COMPLETE";
