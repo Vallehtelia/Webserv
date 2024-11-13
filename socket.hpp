@@ -28,4 +28,6 @@ class	Socket
 		bool			getActiveMode() const;
 };
 
+void set_non_blocking(int sockfd);
+
 #endif

@@ -15,13 +15,15 @@
 #include "request/Request.hpp"
 #include "request/RequestHandler.hpp"
 #include "response/Response.hpp"
+#include "./parsing/ServerConfig.hpp"
+#include "./cgi/cgi_request.hpp"
 
 #define MAX_EVENTS 10 // taa varmaa conffii
 #define PORT 8002 // ja taa
 
 
 // Function to set a socket to non-blocking mode
-void set_non_blocking(int sockfd) 
+void set_non_blocking(int sockfd)
 {
     int flags = fcntl(sockfd, F_GETFL, 0);
     if (flags == -1) {
@@ -97,7 +99,7 @@ int main(int ac, char **av)
 
 	// Create epoll instance
     epoll_fd = epoll_create(1); // was epoll_create1(0), arg size must be > 0 but is ignored
-    if (epoll_fd == -1) 
+    if (epoll_fd == -1)
 	{
         perror("epoll_create");
         exit(EXIT_FAILURE);
@@ -110,7 +112,7 @@ int main(int ac, char **av)
     struct epoll_event event;
     event.events = EPOLLIN;
     event.data.fd = socket1.getSocketFd();
-    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket1.getSocketFd(), &event) == -1) 
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket1.getSocketFd(), &event) == -1)
 	{
         perror("epoll_ctl");
         exit(EXIT_FAILURE);
@@ -124,19 +126,19 @@ int main(int ac, char **av)
 
 	// Main loop
     std::unordered_map<int, Request> requests;
-    while (true) 
+    while (true)
 	{
 		int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-        if (num_events == -1) 
+        if (num_events == -1)
 		{
             perror("epoll_wait");
             exit(EXIT_FAILURE);
         }
-		for (int i = 0; i < num_events; ++i) 
+		for (int i = 0; i < num_events; ++i)
 		{
             Request &req = requests[events[i].data.fd];
             req.setState(currentState);
-			if (events[i].data.fd == socket1.getSocketFd()) 
+			if (events[i].data.fd == socket1.getSocketFd())
 			{
 				// Accept incoming connection
 				client_len = sizeof(client_addr);
@@ -159,7 +161,7 @@ int main(int ac, char **av)
                 client_data[client_fd] = std::vector<char>();
                 std::cout << "ACCEPTED CONNECTION FD: " << client_fd << std::endl;
 			}
-			else if (events[i].events & EPOLLIN) 
+			else if (events[i].events & EPOLLIN)
 			{
 				// Read incoming data
                 std::cout << "RECEIVING DATA FROM FD: " << client_fd << std::endl;
@@ -170,26 +172,39 @@ int main(int ac, char **av)
 					close(events[i].data.fd);
                 	client_data.erase(client_fd);
                     currentState = State::REQUEST_LINE;
-				} 
-                else 
+				}
+                else
                 {
-					//client_data[client_fd].insert(client_data[client_fd].end(), buffer, buffer + bytes_read);
                     std::string rawRequest(buffer, bytes_read);
-					//std::cout << "RAW BUFFER: " << "\033[94m" << rawRequest << "\033[0m" << std::endl;
 					req.parseRequest(rawRequest);
                     currentState = req.StateFromString(req.getState());
-                    //req.printRequest();
-                    if (req.getState() == "COMPLETE")
+                     req.printRequest();
+                    if (req.getState() == "COMPLETE" || req.getState() == "ERROR")
                     {
-                        req.printRequest();
+                        if (req.getState() != "ERROR")
+                        {
+                        std::string path = req.getUri();
+                        bool    cgi_req = (path.find("/cgi-bin/") != std::string::npos || (path.size() > 3 && path.substr(path.size() - 3) == ".py"));
+                        if (cgi_req)
+                        {
+                            std::string queryString = findQueryStr(req.getUri());
+                            std::string directPath;
+                            directPath = findPath(req.getUri());
+                            std::cout << "DIRECT PATH: " << directPath << std::endl;
+                            cgiRequest cgireg(directPath, req.getMethod(), queryString, req.getVersion(), req.getBody());
+                            int execute_result = cgireg.execute();
+                            if (execute_result == 0)
+                            {
+                                req.setPath("/cgi_output.html");
+                            }
+                        }  
+                        }
 					    Response res;
                         RequestHandler requestHandler;
         			    requestHandler.handleRequest(req, res);
                         res.printResponse();
-					    // Get the full HTTP response string from the Response class
 					    std::string http_response = res.getResponseString();
-					    // Send the response back to the client
-                        
+
 					    if (send(events[i].data.fd, http_response.c_str(), http_response.length(), 0) < 0) {
 						    std::cout << "Failed to send: " << strerror(errno) << "\n";
 						    close(events[i].data.fd);
@@ -200,44 +215,23 @@ int main(int ac, char **av)
                         requests[events[i].data.fd].reset();
                         currentState = State::REQUEST_LINE;
 					    close(events[i].data.fd);
+                        std::string tempInFilePath = "./html/tmp/cgi_output.html";
+                        std::string tempOutFilePath = "./html/tmp/cgi_input.html";
+                        if (std::ifstream(tempInFilePath))
+                        {
+                            if (std::remove(tempInFilePath.c_str()) != 0)
+                                std::cerr << "Failed to delete temp file: " << strerror(errno) << "\n";
+                        }
+                        if (std::ifstream(tempOutFilePath))
+                        {
+                            if (std::remove(tempOutFilePath.c_str()) != 0)
+                                std::cerr << "Failed to delete temp file: " << strerror(errno) << "\n";
+                        }
                     }
 				}
 			}
 		}
-		/*
-        bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-        if (bytes_received < 0) {
-            std::cout << "Failed to receive: " << strerror(errno) << "\n";
-            close(socket1.getSocketFd());
-            return 1;
-        }
-        buffer[bytes_received] = '\0';
-        std::cout << buffer << std::endl;
-        std::string rawRequest(buffer, bytes_received);
-        Request req(rawRequest);
-        std::cout << "Received request:\n" << std::endl;
-        std::cout << "method: " << req.getMethod() << std::endl;
-        std::cout << "path: " << req.getPath() << std::endl;
-        std::cout << "version: " << req.getVersion() << std::endl;
-        std::cout << "body: " << req.getBody() << std::endl;
-        std::cout << "---------------" << std::endl;
-        std::cout << "Serving file: " << req.getPath() << std::endl;
-        std::cout << "---------------" << std::endl;
-        Response res;
-        res.createResponse(req);
-        // Let the Response class handle everything
 
-        // Get the full HTTP response string from the Response class
-        std::string http_response = res.getResponseString();
-        // Send the response back to the client
-        if (send(client_fd, http_response.c_str(), http_response.length(), 0) < 0) {
-            std::cout << "Failed to send: " << strerror(errno) << "\n";
-            close(client_fd);
-            close(socket1.getSocketFd());
-            return 1;
-        }
-        close(client_fd);
-		*/
     }
 
     // Close the other sockets

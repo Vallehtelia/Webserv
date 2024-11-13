@@ -3,6 +3,9 @@
 #include <string>
 #include <vector>
 
+#ifndef LOCATIONCONFIG_HPP
+#define LOCATIONCONFIG_HPP
+
 class LocationConfig {
 public:
     std::string path;
@@ -27,3 +30,5 @@ public:
     std::string getRedirect() const;
     std::string getCgiPath() const;
 };
+
+#endif

@@ -1,13 +1,18 @@
 #include "Request.hpp"
 #include <iostream>
 
-Request::Request() : currentState(State::REQUEST_LINE), method(""), uri(""), version(""), contentLength(0), body("") {
+Request::Request() : currentState(State::REQUEST_LINE), contentLength(0), body(""), method(""), uri(""), version("") {
     chunked = false;
     received = false;
     _isMultiPart = false;
 }
 
-Request::Request(const std::string& rawRequest) : currentState(State::REQUEST_LINE), requestStream(rawRequest), contentLength(0)  {
+Request::Request(const std::string& rawRequest) : currentState(State::REQUEST_LINE), contentLength(0), requestStream(rawRequest)  {
+}
+
+Request::Request(const Request &other)
+{
+    (void)other;
 }
 
 Request::~Request() {}
@@ -20,6 +25,10 @@ std::string Request::getUri() const {
     return uri;
 }
 
+void Request::setPath(std::string newPath) {
+    uri = newPath;
+}
+
 std::string Request::getVersion() const {
     return version;
 }
@@ -28,6 +37,16 @@ std::string Request::getVersion() const {
 std::string Request::getBody() const {
     return body;
 }
+
+void Request::setReceived(bool state)
+{
+    received = state;
+}
+
+std::map<std::string, std::string> Request::getHeaders() const {
+    return headers;
+}
+
 
 void Request::reset()
 {
@@ -54,7 +73,7 @@ std::string Request::stateToString(State state) {
     switch (state) {
         case State::REQUEST_LINE: return "REQUEST_LINE";
         case State::HEADERS: return "HEADERS";
-         case State::UNCHUNK: return "UNCHUNK";
+        case State::UNCHUNK: return "UNCHUNK";
         case State::BODY: return "BODY";
         case State::MULTIPARTDATA: return "MULTIPARTDATA";
         case State::COMPLETE: return "COMPLETE";
@@ -98,8 +117,10 @@ void Request::parseRequest(std::string &rawRequest) {
     requestStream.str(rawRequest);
     if (currentState == State::INCOMPLETE)
         currentState = State::BODY;
+    if (chunked)
+        currentState = State::UNCHUNK;
     while (currentState != State::COMPLETE && currentState != State::ERROR && currentState != State::INCOMPLETE) {
-        //std::cout << "STATE: " << stateToString(currentState) << std::endl;
+        std::cout << "REQUEST PARSING: " << stateToString(currentState) << std::endl;
         switch (currentState) {
             case State::REQUEST_LINE:
                 parseRequestLine();
@@ -108,7 +129,7 @@ void Request::parseRequest(std::string &rawRequest) {
                 parseHeaders();
                 break;
             case State::UNCHUNK:
-                parseBody();
+                parseChunks();
                 break;
             case State::BODY:
                 parseBody();
@@ -128,21 +149,32 @@ void Request::parseRequest(std::string &rawRequest) {
 }
 
 
+#include <regex>
 
 static bool isValidRequestLine(const std::string& requestLine) {
-    for (char c : requestLine) {
-        if (!isalnum(c) && std::string("-._~:/?#[]@!$&'()*+,;=% ").find(c) == std::string::npos) {
-            return false;
-        }
+    std::regex requestLinePattern(R"(^[A-Z]+ [^\s]+ HTTP/\d+\.\d+$)");
+    return std::regex_match(requestLine, requestLinePattern);
+}
+
+
+static void removeCarriageReturn(std::string& str) {
+    size_t pos = str.find_last_not_of("\r");
+    
+    if (pos != std::string::npos) {
+        str.erase(pos + 1);
     }
-    return true;
 }
 
 void Request::parseRequestLine() {
     std::string requestLine;
     if (std::getline(requestStream, requestLine)) {
+        removeCarriageReturn(requestLine);
+        checkline(requestLine);
         if (!isValidRequestLine(requestLine))
+        {
             handleError("Invalid characters in request line.");
+            return ;
+        }
         std::istringstream lineStream(requestLine);
         lineStream >> method >> uri >> version;
         if (!method.empty() && !uri.empty() && !version.empty()) {
@@ -215,6 +247,8 @@ void Request::parseChunks()
             currentState = State::BODY;
             chunked = false;
             std::cout << "CHUNKS PARSED" << std::endl;
+            contentLength = body.size();
+            checkline(body);
             return;
         }
         inChunk = true;
@@ -236,23 +270,26 @@ void Request::parseChunks()
 
 void Request::parseBody()
 {
-    std::cout << "PARSING BODY" << std::endl;
     std::vector<char> buffer(std::istreambuf_iterator<char>(requestStream), {});
     body.append(std::string(buffer.begin(), buffer.end()));
-    std::cout << "BODY SIZE: " << body.size() << std::endl;
-    //std::cout << "METHOD: " << method << " URI: " << uri << std::endl;
-    //std::cout << " BODY SIZE: " << buffer.size() << " CONTENT LENGTH: " << contentLength << "BODY_SIZE: " << body_size << std::endl; 
-    if ((body.size() >= contentLength))
+    if (body.size() > contentLength)
+    {
+        handleError("body size and content length dont match");
+        std::cout << "\033[33m" << "body size: " << body.size() << " contentLength: " << contentLength << "\033[0m" << std::endl;
+        return ;
+    }
+    else if ((body.size() == contentLength))
     {   
         std::cout << "CHECKING FOR MULTIPART DATA" << std::endl;
         if (method == "POST" && headers["Content-Type"].find("multipart/form-data") != std::string::npos) {
             size_t boundaryPos = headers["Content-Type"].find("boundary=");
-            if (boundaryPos != std::string::npos) {
+            if (boundaryPos != std::string::npos)
+            {
                 boundary = headers["Content-Type"].substr(boundaryPos + 9);
                 currentState = State::MULTIPARTDATA;
                 _isMultiPart = true;
                 return;
-                }
+            }
         }
         else
         {
@@ -262,7 +299,6 @@ void Request::parseBody()
     }
     else
         currentState = State::INCOMPLETE;
-    std::cout << "STATE:" << stateToString(currentState) << std::endl;
 }
 
 void checkline(std::string line)
@@ -346,7 +382,7 @@ void Request::parseMultipartData() {
     std::vector<std::string> parts = splitByBoundary(data, delimiter);
     for (std::string &part : parts)
         multipartData.push_back(createData(part));
-    //printMultipartdata();
+    printMultipartdata();
     currentState = State::COMPLETE;
 }
 
