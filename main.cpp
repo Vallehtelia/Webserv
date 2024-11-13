@@ -178,9 +178,11 @@ int main(int ac, char **av)
                     std::string rawRequest(buffer, bytes_read);
 					req.parseRequest(rawRequest);
                     currentState = req.StateFromString(req.getState());
-                    // req.printRequest();
-                    if (req.getState() == "COMPLETE")
+                     req.printRequest();
+                    if (req.getState() == "COMPLETE" || req.getState() == "ERROR")
                     {
+                        if (req.getState() != "ERROR")
+                        {
                         std::string path = req.getUri();
                         bool    cgi_req = (path.find("/cgi-bin/") != std::string::npos || (path.size() > 3 && path.substr(path.size() - 3) == ".py"));
                         if (cgi_req)
@@ -195,16 +197,13 @@ int main(int ac, char **av)
                             {
                                 req.setPath("/cgi_output.html");
                             }
-
+                        }  
                         }
-                        //req.printRequest();
 					    Response res;
                         RequestHandler requestHandler;
         			    requestHandler.handleRequest(req, res);
-                        //res.printResponse();
-					    // Get the full HTTP response string from the Response class
+                        res.printResponse();
 					    std::string http_response = res.getResponseString();
-					    // Send the response back to the client
 
 					    if (send(events[i].data.fd, http_response.c_str(), http_response.length(), 0) < 0) {
 						    std::cout << "Failed to send: " << strerror(errno) << "\n";

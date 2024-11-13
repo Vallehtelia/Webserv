@@ -72,6 +72,7 @@ class Request {
         State StateFromString(const std::string& stateStr);
         bool isMultiPart() const;
         std::string getContentType() const;
+        void setReceived(bool state);
     private:
         State currentState;
         bool    chunked;
