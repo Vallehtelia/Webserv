@@ -17,6 +17,7 @@
 #include "response/Response.hpp"
 #include "./parsing/ServerConfig.hpp"
 #include "./cgi/cgi_request.hpp"
+#include "utils.hpp"
 
 #define MAX_EVENTS 10 // taa varmaa conffii
 #define PORT 8002 // ja taa
@@ -45,8 +46,6 @@ int main(int ac, char **av)
     int client_fd;
 	int epoll_fd;
     std::unordered_map<int, std::vector<char>> client_data;
-    State currentState;
-    currentState = State::REQUEST_LINE;
 
     if (ac != 2)
 	{
@@ -137,7 +136,6 @@ int main(int ac, char **av)
 		for (int i = 0; i < num_events; ++i)
 		{
             Request &req = requests[events[i].data.fd];
-            req.setState(currentState);
 			if (events[i].data.fd == socket1.getSocketFd())
 			{
 				// Accept incoming connection
@@ -145,11 +143,9 @@ int main(int ac, char **av)
 				client_fd = accept(socket1.getSocketFd(), (struct sockaddr*)&client_addr, &client_len);
 				if (client_fd < 0) {
 					std::cout << "Failed to create client fd: " << strerror(errno) << "\n";
-                    currentState = State::REQUEST_LINE;
 					close(socket1.getSocketFd());
 					return 1;
 				}
-
 				// Set the new socket to non-blocking mode and add to epoll instance
                 set_non_blocking(client_fd);
                 event.events = EPOLLIN;
@@ -167,21 +163,20 @@ int main(int ac, char **av)
                 std::cout << "RECEIVING DATA FROM FD: " << client_fd << std::endl;
 				char buffer[4000] = {0};
 				int bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+                std::cout << "BYTES READ: " << bytes_read << std::endl;
 				if (bytes_read <= 0) {
 					// Close connection if read fails or end of data
 					close(events[i].data.fd);
                 	client_data.erase(client_fd);
-                    currentState = State::REQUEST_LINE;
 				}
                 else
                 {
                     std::string rawRequest(buffer, bytes_read);
 					req.parseRequest(rawRequest);
-                    currentState = req.StateFromString(req.getState());
-                     req.printRequest();
-                    if (req.getState() == "COMPLETE" || req.getState() == "ERROR")
+                    req.printRequest();
+                    if (req.getState() == State::COMPLETE || req.getState() == State::ERROR)
                     {
-                        if (req.getState() != "ERROR")
+                        if (req.getState() != State::ERROR)
                         {
                         std::string path = req.getUri();
                         bool    cgi_req = (path.find("/cgi-bin/") != std::string::npos || (path.size() > 3 && path.substr(path.size() - 3) == ".py"));
@@ -213,7 +208,6 @@ int main(int ac, char **av)
 					    }
                         std::cout << "RESPONSE SENT" << std::endl;
                         requests[events[i].data.fd].reset();
-                        currentState = State::REQUEST_LINE;
 					    close(events[i].data.fd);
                         std::string tempInFilePath = "./html/tmp/cgi_output.html";
                         std::string tempOutFilePath = "./html/tmp/cgi_input.html";

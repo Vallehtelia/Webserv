@@ -8,10 +8,8 @@
 #include <sstream>
 #include <vector>
 #include <iomanip> 
-
-
-#define URICHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-.~:/?#[]@!$&'()*+,;="
-#define FIELDCHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-"
+#include <regex>
+#include "../utils.hpp"
 
 
 void checkline(std::string line);
@@ -40,10 +38,9 @@ struct MultipartData
 class Request {
     public:
         Request();
-        Request(const std::string &rawRequest);
-        Request(const Request &other);
-        Request &operator=(const Request &rhs);
         ~Request();
+        Request(const std::string &rawRequest);
+        
         void                                reset();
         void                                printRequest();
         void                                parseRequest(std::string &rawReques);
@@ -56,19 +53,20 @@ class Request {
         std::string                         getBody() const;
         std::map<std::string, std::string>  getHeaders() const;
         const std::vector<MultipartData>    &getMultipartData() const { return multipartData; };
-        std::string                         getState();
-        std::string                         stateToString(State state);
-        State                               StateFromString(const std::string& stateStr);
+        State                               getState();
         std::string                         getContentType() const;
         bool                                isMultiPart() const;
-    private:
 
+    private:
+        Request(const Request &other);
+        Request &operator=(const Request &rhs);
         bool                                received;
         bool                                chunked;
         bool                                _isMultiPart;
         State                               currentState;
         size_t                              contentLength;
         size_t                              body_size = 0;
+        std::string                         requestBuffer;
         std::string                         rawRequest;
         std::string                         body;
         std::string                         rawChunkedData;
@@ -81,7 +79,6 @@ class Request {
         std::map<std::string, std::string>  headers;
         std::vector<MultipartData>          multipartData;
 
-        MultipartData                       createData(std::string &rawData);
         void                                parseMultipartData();
         void                                parseHeaders();
         void                                parseBody();
@@ -91,7 +88,8 @@ class Request {
         void                                createMultipartBody(MultipartData &multipartData, std::istringstream &rawMultipartData);
         void                                createMultipartHeaders(MultipartData &multipartData, std::istringstream &rawDataStream);
         void                                parseChunks();
-
+        MultipartData                       createData(std::string &rawData);
+        std::vector<std::string>            splitMultipartData(std::string data, std::string boundary);
 } ;
 
 # endif

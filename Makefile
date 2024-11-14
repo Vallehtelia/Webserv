@@ -7,7 +7,7 @@ RESPONSE_DIR = ./response/
 RESPONSE_FILES = Response.cpp
 
 SRC_DIR = ./
-SRC_FILES = main.cpp socket.cpp
+SRC_FILES = main.cpp socket.cpp utils.cpp
 
 PARSE_DIR = ./parsing/
 PARSE_FILES = ServerConfig.cpp LocationConfig.cpp parseConfFile.cpp

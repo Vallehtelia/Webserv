@@ -8,7 +8,7 @@ RequestHandler::~RequestHandler() {}
 
 void RequestHandler::handleRequest(Request& req, Response& res)
 {
-    if (req.getState() == "ERROR")
+    if (req.getState() == State::ERROR)
     {
         std::cout << "it gets here!" << std::endl;
         res.setResponse(400, "text/html", "");
@@ -67,7 +67,6 @@ std::string RequestHandler::getContentType(const std::string& path) const {
 
 void RequestHandler::prepareHandler(const Request &req)
 {
-
     std::string _headers;
 	_uri = req.getUri();
 	_method = req.getMethod();
