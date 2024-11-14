@@ -90,7 +90,6 @@ std::string RequestHandler::getFilepath(std::string filepath)
 	if (filepath.front() == '/' && filepath.length() > 1) {
             filepath.erase(0, 1);
     }
-    std::cout << "valle filepath: " << filepath << std::endl;
     std::filesystem::path baseDir = std::filesystem::current_path() / "html";
     std::filesystem::path path;
     if (filepath.find("cgi") != std::string::npos)
