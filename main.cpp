@@ -55,10 +55,10 @@ int main(int ac, char **av)
     checkConfFile(av[1]);
     std::cout << "\033[1;32mParsing file: " << av[1] << "\033[0m" << std::endl;
     parseData(av[1], server);
-    // for (std::vector<ServerConfig>::iterator it = server.begin(); it != server.end(); it++)
-	// {
-	// 	it->printConfig();
-	// }
+    for (std::vector<ServerConfig>::iterator it = server.begin(); it != server.end(); it++)
+	{
+		it->printConfig();
+	}
 
     std::vector<ServerConfig>::iterator it = server.begin();
     Socket socket1(it->getListenPort(), it->getHost());
