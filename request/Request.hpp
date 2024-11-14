@@ -7,7 +7,7 @@
 #include <map>
 #include <sstream>
 #include <vector>
-#include <iomanip> 
+#include <iomanip>
 #include <regex>
 #include "../utils.hpp"
 
@@ -40,7 +40,7 @@ class Request {
         Request();
         ~Request();
         Request(const std::string &rawRequest);
-        
+
         void                                reset();
         void                                printRequest();
         void                                parseRequest(std::string &rawReques);
