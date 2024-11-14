@@ -8,6 +8,13 @@ RequestHandler::~RequestHandler() {}
 
 void RequestHandler::handleRequest(Request& req, Response& res)
 {
+    if (req.getState() == State::ERROR)
+    {
+        std::cout << "it gets here!" << std::endl;
+        res.setResponse(400, "text/html", "");
+        std::cout << "but not here" << std::endl;
+        return ;
+    }
 	prepareHandler(req);
     if (_method == "GET")
 	{
@@ -27,7 +34,7 @@ void RequestHandler::handleRequest(Request& req, Response& res)
     }
 	else
 	{
-        res.setResponse(405, "text/html", 0);
+        res.setResponse(405, "text/html", "");
     }
 }
 
@@ -60,7 +67,6 @@ std::string RequestHandler::getContentType(const std::string& path) const {
 
 void RequestHandler::prepareHandler(const Request &req)
 {
-
     std::string _headers;
 	_uri = req.getUri();
 	_method = req.getMethod();
@@ -232,7 +238,6 @@ void RequestHandler::handlePostRequest(const Request& req, Response& res)
         handleMultipartRequest(req, res);
     }
     else if (req.getContentType() == "application/json\r") {
-		std::cout << "hola" << std::endl;
         handleJsonData(req, res);
     }
     // else if (req.getContentType() == "text/plain") {

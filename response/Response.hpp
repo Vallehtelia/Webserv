@@ -11,25 +11,26 @@ public:
     Response();
     ~Response();
 
+    void        printResponse();
+    void        setResponse(int code, const std::string& contentType, const std::string &body);
+    void        setStatusLine(std::string &statusline);
+    void        setBody(std::string &body);
+    void        setHeaders(std::string &headers);
+    void        setUri(std::string &URI);
     std::string getResponseString() const;
-    void printResponse();
-    void setResponse(int code, const std::string& contentType, const std::string &body);
-    void setStatusLine(std::string &statusline);
-    void setBody(std::string &body);
-    void setHeaders(std::string &headers);
-    void setUri(std::string &URI);
 private:
+    int         _statusCode;
+    int         _contentLength;
     std::string _statusLine;
     std::string _headers;
     std::string _body;
     std::string _uri;
-    int         _contentLength;
     std::string _contentType;
-    int _statusCode;
+
+    void        setStatusLine();
+    void        setError();
     std::string getErrorPage() const;
-    void setStatusLine();
     std::string readFileContent(std::string& filePath);
-    void setError();
 };
 
 #endif

@@ -1,14 +1,15 @@
 #include "Request.hpp"
 #include <iostream>
 
-Request::Request() : currentState(State::REQUEST_LINE), method(""), uri(""), version(""), contentLength(0), body("") {
+Request::Request() : currentState(State::REQUEST_LINE), contentLength(0), body(""), method(""), uri(""), version("") {
     chunked = false;
     received = false;
     _isMultiPart = false;
 }
 
-Request::Request(const std::string& rawRequest) : currentState(State::REQUEST_LINE), requestStream(rawRequest), contentLength(0)  {
+Request::Request(const std::string& rawRequest) : currentState(State::REQUEST_LINE), contentLength(0), requestStream(rawRequest)  {
 }
+
 
 Request::~Request() {}
 
@@ -33,6 +34,35 @@ std::string Request::getBody() const {
     return body;
 }
 
+void Request::setReceived(bool state)
+{
+    received = state;
+}
+
+std::map<std::string, std::string> Request::getHeaders() const {
+    return headers;
+}
+
+bool Request::isMultiPart() const
+{
+    return _isMultiPart;
+}
+
+std::string Request::getContentType() const
+{
+    return contentType;
+}
+
+State Request::getState()
+{
+    return currentState;
+}
+
+void Request::setState(State state)
+{
+    currentState = state;
+}
+
 void Request::reset()
 {
     currentState = State::REQUEST_LINE;
@@ -54,44 +84,6 @@ void Request::reset()
     multipartData.clear();
 }
 
-std::string Request::stateToString(State state) {
-    switch (state) {
-        case State::REQUEST_LINE: return "REQUEST_LINE";
-        case State::HEADERS: return "HEADERS";
-         case State::UNCHUNK: return "UNCHUNK";
-        case State::BODY: return "BODY";
-        case State::MULTIPARTDATA: return "MULTIPARTDATA";
-        case State::COMPLETE: return "COMPLETE";
-        case State::ERROR: return "ERROR";
-        case State::INCOMPLETE: return "INCOMPLETE";
-        default: return "UNKNOWN";
-    }
-}
-
-State Request::StateFromString(const std::string& stateStr) {
-    if (stateStr == "REQUEST_LINE") return State::REQUEST_LINE;
-    if (stateStr == "HEADERS") return State::HEADERS;
-    if (stateStr == "UNCHUNK") return State::UNCHUNK;
-    if (stateStr == "BODY") return State::BODY;
-    if (stateStr == "MULTIPARTDATA") return State::MULTIPARTDATA;
-    if (stateStr == "COMPLETE") return State::COMPLETE;
-    if (stateStr == "ERROR") return State::ERROR;
-    if (stateStr == "INCOMPLETE") return State::INCOMPLETE;
-
-    // Return a default state if no match found
-    return State::ERROR; // or another appropriate default state
-}
-
-
-std::string Request::getState()
-{
-    return stateToString(currentState);
-}
-
-void Request::setState(State state)
-{
-    currentState = state;
-}
 
 void Request::handleError(const std::string& errorMsg) {
     std::cerr << "Error: " << errorMsg << std::endl;
@@ -102,8 +94,10 @@ void Request::parseRequest(std::string &rawRequest) {
     requestStream.str(rawRequest);
     if (currentState == State::INCOMPLETE)
         currentState = State::BODY;
+    if (chunked)
+        currentState = State::UNCHUNK;
     while (currentState != State::COMPLETE && currentState != State::ERROR && currentState != State::INCOMPLETE) {
-        //std::cout << "STATE: " << stateToString(currentState) << std::endl;
+        std::cout << "REQUEST PARSING: " << stateToString(currentState) << std::endl;
         switch (currentState) {
             case State::REQUEST_LINE:
                 parseRequestLine();
@@ -112,7 +106,7 @@ void Request::parseRequest(std::string &rawRequest) {
                 parseHeaders();
                 break;
             case State::UNCHUNK:
-                parseBody();
+                parseChunks();
                 break;
             case State::BODY:
                 parseBody();
@@ -132,21 +126,22 @@ void Request::parseRequest(std::string &rawRequest) {
 }
 
 
-
 static bool isValidRequestLine(const std::string& requestLine) {
-    for (char c : requestLine) {
-        if (!isalnum(c) && std::string("-._~:/?#[]@!$&'()*+,;=% ").find(c) == std::string::npos) {
-            return false;
-        }
-    }
-    return true;
+    std::regex requestLinePattern(R"(^[A-Z]+ [^\s]+ HTTP/1\.1$)");
+    return std::regex_match(requestLine, requestLinePattern);
 }
+
 
 void Request::parseRequestLine() {
     std::string requestLine;
     if (std::getline(requestStream, requestLine)) {
+        removeCarriageReturn(requestLine);
+        checkline(requestLine);
         if (!isValidRequestLine(requestLine))
+        {
             handleError("Invalid characters in request line.");
+            return ;
+        }
         std::istringstream lineStream(requestLine);
         lineStream >> method >> uri >> version;
         if (!method.empty() && !uri.empty() && !version.empty()) {
@@ -159,38 +154,76 @@ void Request::parseRequestLine() {
     }
 }
 
+void Request::checkHeaders()
+{
+    if ((method == "POST" || method == "PUT"))
+    {
+        if (headers.find("Content-Length") != headers.end()) {
+            contentLength = std::stoi(headers["Content-Length"]);
+        } else {
+            handleError("Content-Length missing on a POST request");
+            return ;
+        }
+    }
+    if (headers.find("Transfer-Encoding") != headers.end())
+        if (headers["Transfer-Encoding"] == "chunked")
+            chunked = true;
+    if (headers.find("Content-Type") != headers.end())
+        contentType = headers["Content-Type"];
+
+    if (chunked == true)
+        currentState = State::UNCHUNK;
+    else if (contentLength > 0)
+    {
+        if (method == "GET")
+        {
+            handleError("body in a GET request");
+            return ;
+        }
+        else
+            currentState = State::BODY;
+    }
+    else 
+        currentState = State::COMPLETE;
+}
+
+bool Request::isValidHeaderKey(const std::string& key) {
+    return std::regex_match(key, std::regex("^[A-Za-z0-9\\-]+$"));
+}
+
+bool Request::isValidHeaderValue(const std::string& key, const std::string& value) {
+    if (key == "Content-Length") {
+        return std::regex_match(value, std::regex("^\\d+$"));
+    }
+    if (key == "Content-Type") {
+        return std::regex_match(value, std::regex("^[a-zA-Z0-9\\-]+/[a-zA-Z0-9\\-]+(;\\s*[^;]+=[^;]+)*$"));
+    }
+    return true;
+}
+
 void Request::parseHeaders() {
     std::string headerLine;
     while (std::getline(requestStream, headerLine) && headerLine != "\r") {
+        removeCarriageReturn(headerLine);
         size_t colonPos = headerLine.find(':');
         if (colonPos != std::string::npos) {
             std::string key = headerLine.substr(0, colonPos);
             std::string value = headerLine.substr(colonPos + 1);
             value.erase(0, value.find_first_not_of(" \t"));
+            if (!isValidHeaderKey(key)) {
+                handleError("Invalid header key format: " + key);
+                return;
+            }
+            if (!isValidHeaderValue(key, value)) {
+                handleError("Invalid header value format for " + key + ": " + value);
+                return;
+            }
             headers[key] = value;
-            if (key == "Content-Length") {
-                contentLength = std::stoi(value);
-            }
-            if (key == "Transfer-Encoding")
-            {
-                if (value == "chunked\r")
-                {
-                    chunked = true;
-                }
-            }
-            if (key == "Content-Type")
-                contentType = value;
             std::cout << key  << value << std::endl;
         }
     }
-    std::cout << "CHUNKED: " << chunked << std::endl;
-    if (chunked == true)
-        currentState = State::UNCHUNK;
-    else if (contentLength > 0) {
-        currentState = State::BODY;
-    } else {
-        currentState = State::COMPLETE;
-    }
+    checkHeaders();
+
 }
 
 
@@ -219,6 +252,8 @@ void Request::parseChunks()
             currentState = State::BODY;
             chunked = false;
             std::cout << "CHUNKS PARSED" << std::endl;
+            contentLength = body.size();
+            checkline(body);
             return;
         }
         inChunk = true;
@@ -237,26 +272,28 @@ void Request::parseChunks()
 
 
 
-
 void Request::parseBody()
 {
-    std::cout << "PARSING BODY" << std::endl;
     std::vector<char> buffer(std::istreambuf_iterator<char>(requestStream), {});
     body.append(std::string(buffer.begin(), buffer.end()));
-    std::cout << "BODY SIZE: " << body.size() << std::endl;
-    //std::cout << "METHOD: " << method << " URI: " << uri << std::endl;
-    //std::cout << " BODY SIZE: " << buffer.size() << " CONTENT LENGTH: " << contentLength << "BODY_SIZE: " << body_size << std::endl; 
-    if ((body.size() >= contentLength))
+    if (body.size() > contentLength)
+    {
+        handleError("body size and content length dont match");
+        std::cout << "\033[33m" << "body size: " << body.size() << " contentLength: " << contentLength << "\033[0m" << std::endl;
+        return ;
+    }
+    else if ((body.size() == contentLength))
     {   
-        std::cout << "CHECKING FOR MULTIPART DATA" << std::endl;
-        if (method == "POST" && headers["Content-Type"].find("multipart/form-data") != std::string::npos) {
+        // CHECK FOR MULTIPARTDATA
+        if ((method == "POST" || method == "PUT") && headers["Content-Type"].find("multipart/form-data") != std::string::npos) {
             size_t boundaryPos = headers["Content-Type"].find("boundary=");
-            if (boundaryPos != std::string::npos) {
+            if (boundaryPos != std::string::npos)
+            {
                 boundary = headers["Content-Type"].substr(boundaryPos + 9);
                 currentState = State::MULTIPARTDATA;
                 _isMultiPart = true;
                 return;
-                }
+            }
         }
         else
         {
@@ -266,19 +303,10 @@ void Request::parseBody()
     }
     else
         currentState = State::INCOMPLETE;
-    std::cout << "STATE:" << stateToString(currentState) << std::endl;
 }
 
-void checkline(std::string line)
-{
-std::cout << "Line characters: ";
-for (char c : line) {
-    std::cout << (c == '\n' ? std::string("\\n") : c == '\r' ? std::string("\\r") : std::string(1, c));
-}
-std::cout << std::endl;
-}
 
-std::vector<std::string> splitByBoundary(std::string data, std::string boundary) {
+std::vector<std::string> Request::splitMultipartData(std::string data, std::string boundary) {
     std::vector<std::string> parts;
     std::string part;
     size_t start = 0;
@@ -327,7 +355,6 @@ void    Request::createMultipartHeaders(MultipartData &multipartData, std::istri
 
 void    Request::createMultipartBody(MultipartData &multipartData, std::istringstream &rawMultipartData)
 {
-    // PUT THE REST OF THE MULTIPARTDATA TO ITS BODY
     std::vector<char> buffer(std::istreambuf_iterator<char>(rawMultipartData), {});
     multipartData.data.insert(multipartData.data.end(), buffer.begin(), buffer.end());
 }
@@ -347,20 +374,11 @@ void Request::parseMultipartData() {
     std::string data(body.begin(), body.end());
     delimiter.erase(delimiter.find_last_not_of("\r") + 1);
     
-    std::vector<std::string> parts = splitByBoundary(data, delimiter);
+    std::vector<std::string> parts = splitMultipartData(data, delimiter);
     for (std::string &part : parts)
         multipartData.push_back(createData(part));
-    //printMultipartdata();
+    printMultipartdata();
     currentState = State::COMPLETE;
-}
-
-
-
-static void printVectorAsHex(const std::vector<char>& vec) {
-    for (unsigned char c : vec) {
-        std::cout << std::hex << static_cast<int>(c) << " ";
-    }
-    std::cout << std::dec << std::endl;
 }
 
 void Request::printMultipartdata()
@@ -396,12 +414,8 @@ void Request::printRequest()
 	std::cout << "---------------" << "\033[0m" << std::endl;
 }
 
-bool Request::isMultiPart() const
-{
-    return _isMultiPart;
-}
 
-std::string Request::getContentType() const
-{
-    return contentType;
-}
+
+
+
+
