@@ -22,13 +22,14 @@ SRC += $(addprefix $(PARSE_DIR), $(PARSE_FILES))
 SRC += $(addprefix $(CGI_DIR), $(CGI_FILES))
 
 OBJ = $(SRC:.cpp=.o)
-COMPILER = c++ -std=c++17
-FLAGS = -Wall -Wextra -Werror
+COMPILER = c++ 
+CFLAGS = -std=c++17 -Wall -Wextra -Werror
+LFLAGS = 
 
 all: $(NAME)
 
 $(NAME): $(OBJ)
-	$(COMPILER) $(FLAGS) -o $@ $^
+	$(COMPILER) $(CFLAGS) -o $@ $^ $(LFLAGS)
 
 %.o: %.cpp
 	$(COMPILER) $(FLAGS) -c $< -o $@
