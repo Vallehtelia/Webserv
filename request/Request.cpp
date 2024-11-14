@@ -154,26 +154,23 @@ void Request::parseRequestLine() {
     }
 }
 
-void Request::parseHeaders() {
-    std::string headerLine;
-    while (std::getline(requestStream, headerLine) && headerLine != "\r") {
-        size_t colonPos = headerLine.find(':');
-        if (colonPos != std::string::npos) {
-            std::string key = headerLine.substr(0, colonPos);
-            std::string value = headerLine.substr(colonPos + 1);
-            value.erase(0, value.find_first_not_of(" \t"));
-            headers[key] = value;
-            if (key == "Content-Length")
-                contentLength = std::stoi(value);
-            if (key == "Transfer-Encoding")
-                if (value == "chunked\r")
-                    chunked = true;
-            if (key == "Content-Type")
-                contentType = value;
-            std::cout << key  << value << std::endl;
+void Request::checkHeaders()
+{
+    if ((method == "POST" || method == "PUT"))
+    {
+        if (headers.find("Content-Length") != headers.end()) {
+            contentLength = std::stoi(headers["Content-Length"]);
+        } else {
+            handleError("Content-Length missing on a POST request");
+            return ;
         }
     }
-    std::cout << "CHUNKED: " << chunked << std::endl;
+    if (headers.find("Transfer-Encoding") != headers.end())
+        if (headers["Transfer-Encoding"] == "chunked")
+            chunked = true;
+    if (headers.find("Content-Type") != headers.end())
+        contentType = headers["Content-Type"];
+
     if (chunked == true)
         currentState = State::UNCHUNK;
     else if (contentLength > 0)
@@ -188,6 +185,45 @@ void Request::parseHeaders() {
     }
     else 
         currentState = State::COMPLETE;
+}
+
+bool Request::isValidHeaderKey(const std::string& key) {
+    return std::regex_match(key, std::regex("^[A-Za-z0-9\\-]+$"));
+}
+
+bool Request::isValidHeaderValue(const std::string& key, const std::string& value) {
+    if (key == "Content-Length") {
+        return std::regex_match(value, std::regex("^\\d+$"));
+    }
+    if (key == "Content-Type") {
+        return std::regex_match(value, std::regex("^[a-zA-Z0-9\\-]+/[a-zA-Z0-9\\-]+(;\\s*[^;]+=[^;]+)*$"));
+    }
+    return true;
+}
+
+void Request::parseHeaders() {
+    std::string headerLine;
+    while (std::getline(requestStream, headerLine) && headerLine != "\r") {
+        removeCarriageReturn(headerLine);
+        size_t colonPos = headerLine.find(':');
+        if (colonPos != std::string::npos) {
+            std::string key = headerLine.substr(0, colonPos);
+            std::string value = headerLine.substr(colonPos + 1);
+            value.erase(0, value.find_first_not_of(" \t"));
+            if (!isValidHeaderKey(key)) {
+                handleError("Invalid header key format: " + key);
+                return;
+            }
+            if (!isValidHeaderValue(key, value)) {
+                handleError("Invalid header value format for " + key + ": " + value);
+                return;
+            }
+            headers[key] = value;
+            std::cout << key  << value << std::endl;
+        }
+    }
+    checkHeaders();
+
 }
 
 

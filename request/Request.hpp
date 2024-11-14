@@ -79,6 +79,7 @@ class Request {
         std::map<std::string, std::string>  headers;
         std::vector<MultipartData>          multipartData;
 
+        void                                checkHeaders();
         void                                parseMultipartData();
         void                                parseHeaders();
         void                                parseBody();
@@ -88,6 +89,8 @@ class Request {
         void                                createMultipartBody(MultipartData &multipartData, std::istringstream &rawMultipartData);
         void                                createMultipartHeaders(MultipartData &multipartData, std::istringstream &rawDataStream);
         void                                parseChunks();
+        bool                                isValidHeaderKey(const std::string& key);
+        bool                                isValidHeaderValue(const std::string& key, const std::string& value);
         MultipartData                       createData(std::string &rawData);
         std::vector<std::string>            splitMultipartData(std::string data, std::string boundary);
 } ;
