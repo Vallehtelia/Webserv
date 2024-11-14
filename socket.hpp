@@ -12,7 +12,7 @@ class	Socket
 		int			_socket_fd;
 		bool		_active;
 	public:
-		Socket(std::string port, std::string host);
+		Socket(int port, std::string host);
 		Socket(Socket const &other);
 		Socket &operator=(Socket const &other);
 		~Socket();

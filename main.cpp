@@ -19,8 +19,7 @@
 #include "./cgi/cgi_request.hpp"
 
 #define MAX_EVENTS 10 // taa varmaa conffii
-#define PORT 8002 // ja taa
-
+// #define PORT 8002 // ja taa
 
 // Function to set a socket to non-blocking mode
 void set_non_blocking(int sockfd)
@@ -66,8 +65,7 @@ int main(int ac, char **av)
 
     // Configure server address and port
     serv_addr.sin_family = AF_INET;
-	serv_addr.sin_port = htons(PORT); // ehka helpompi et se on aina vaan sama
-    //serv_addr.sin_port = htons(std::stoi(it->getListenPort())); // otin tahan vaan ekan serverin portin, taa serv addr pitaa varmaan olla kans joku array tjtn et voidaan kuunnella useempia portteja samanaikasesti
+    serv_addr.sin_port = htons(it->getListenPort()); // otin tahan vaan ekan serverin portin, taa serv addr pitaa varmaan olla kans joku array tjtn et voidaan kuunnella useempia portteja samanaikasesti
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
 
     // Create socket
@@ -119,16 +117,16 @@ int main(int ac, char **av)
     }
 
 	// Event array for epoll_wait
-    struct epoll_event events[MAX_EVENTS];
+    struct epoll_event events[it->getMaxEvents()];
 
     std::cout << CYAN << "Server is listening on port " << it->getListenPort() << "...\n";
-    std::cout << "open 'localhost:" << std::stoi(it->getListenPort()) << "' on browser\n" << DEFAULT;
+    std::cout << "open 'localhost:" << it->getListenPort() << "' on browser\n" << DEFAULT;
 
 	// Main loop
     std::unordered_map<int, Request> requests;
     while (true)
 	{
-		int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+		int num_events = epoll_wait(epoll_fd, events, it->getMaxEvents(), -1);
         if (num_events == -1)
 		{
             perror("epoll_wait");
