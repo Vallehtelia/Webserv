@@ -1,24 +1,29 @@
 #pragma once
 
 #include <string>
-#include <unordered_map>
-#include <set>
-#include <fstream>
+#include <istream>
 
 class ConfigValidator {
 public:
-
-    explicit ConfigValidator(const std::string& filename);
-    bool validate();
+    // Public static method to validate the entire configuration file
+    static bool validateConfigFile(const std::string &filename);
 
 private:
-    std::string configFile;
+    // Private constructor to prevent instantiation
+    ConfigValidator() = delete;
 
-    void trim(std::string& str);
-    bool validateDirective(const std::string& line);
-    bool validateAllowMethods(const std::string& line);
-    bool validateRoot(const std::string& line);
-    bool validateIndex(const std::string& line);
-    bool validateCgiPath(const std::string& line);
-    std::string extractLocationPath(const std::string& line);
+    // Private static methods for validation logic
+    static bool validateServerBlock(std::istream &input);
+    static bool validateLocationBlock(std::istream &input);
+    static void trim(std::string &str);
+    static bool validateDirective(const std::string &line);
+    static bool validateAllowMethods(const std::string &line);
+    static bool validateRoot(const std::string &line);
+    static bool validateIndex(const std::string &line);
+    static bool validateCgiPath(const std::string &line);
+	static bool validateAutoindex(const std::string& line);
+    static std::string extractLocationPath(const std::string &line);
+
+	static std::string removeRootAndSemicolon(const std::string& line);
 };
+
