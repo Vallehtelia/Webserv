@@ -1,8 +1,10 @@
 
 #include <iostream>
 #include <string>
-#include <map>
 #include <vector>
+#include <unordered_map>
+#include <map>
+#include <variant>
 #include "LocationConfig.hpp"
 
 #define RED "\033[1;31m"
@@ -13,40 +15,46 @@
 #ifndef SERVERCONFIG_HPP
 #define SERVERCONFIG_HPP
 
+using ValueType = std::variant<int, double, std::string>;
+
 class ServerConfig
 {
 	private:
-		std::string	_listen_port;
-		std::string	_server_name;
-		std::string	_host;
-		std::string	_root;
-		std::string	_client_max_body_size;
-		std::string	_index;
-		std::map<int, std::string>	_error_pages;
-		std::vector<LocationConfig>	_locations;
+		std::unordered_map<std::string, ValueType> 	_configData;
+		std::map<int, std::string>					_error_pages;
+		std::vector<LocationConfig>					_locations;
+
 	public:
 		ServerConfig();
 		~ServerConfig();
 
+		void 		setConfig(const std::string& key, const ValueType& value);
+		ValueType	getConfig(const std::string& key) const;
+
 		// setters
-		void	setListenPort(std::string port);
-		void	setServerName(std::string server_name);
-		void	setHost(std::string host);
-		void	setRoot(std::string root);
+		void	setListenPort(int port);
+		void	setServerName(const std::string& server_name);
+		void	setHost(const std::string& host);
+		void	setRoot(const std::string& root);
 		void	setClientMaxBodySize(int size);
-		void	setIndex(std::string index);
+		void	setEpollMaxEvents(int events);
+		void	setIndex(const std::string& index);
 		void	addLocation(LocationConfig location);
 		void	addErrorPage(int code, const std::string &path);
 
-		// getters
-		std::string getListenPort() const;
+		template<typename T>
+    	T getConfigValue(const std::string& key) const;
+
+		int			getListenPort() const;
 		std::string getServerName() const;
 		std::string getHost() const;
 		std::string getRoot() const;
-		std::string getBodySize() const;
-		std::string getIndex() const;
-		std::string	getErrorPage(int code) const;
-		std::string getLocation(std::string key) const;
+		int 		getBodySize() const;
+		int 		getMaxEvents() const;
+		std::string	getIndex() const;
+
+		std::string	getLocation(std::string key) const;
+    	std::string getErrorPage(int code) const;
 
 		void	printConfig() const;
 };

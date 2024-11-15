@@ -10,7 +10,7 @@ SRC_DIR = ./
 SRC_FILES = main.cpp socket.cpp utils.cpp
 
 PARSE_DIR = ./parsing/
-PARSE_FILES = ServerConfig.cpp LocationConfig.cpp parseConfFile.cpp
+PARSE_FILES = ServerConfig.cpp LocationConfig.cpp parseConfFile.cpp ConfigValidator.cpp
 
 CGI_DIR = ./cgi/
 CGI_FILES = cgi_request.cpp
@@ -23,15 +23,16 @@ SRC += $(addprefix $(CGI_DIR), $(CGI_FILES))
 
 OBJ = $(SRC:.cpp=.o)
 COMPILER = c++ -std=c++17
-FLAGS = -Wall -Wextra -Werror
+CFLAGS = -Wall -Wextra -Werror
+LFLAGS = 
 
 all: $(NAME)
 
 $(NAME): $(OBJ)
-	$(COMPILER) $(FLAGS) -o $@ $^
+	$(COMPILER) $(CFLAGS) -o $@ $^ $(LFLAGS)
 
 %.o: %.cpp
-	$(COMPILER) $(FLAGS) -c $< -o $@
+	$(COMPILER) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -f $(OBJ)

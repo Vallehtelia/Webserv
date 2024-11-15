@@ -35,8 +35,8 @@ COPY . /app
 #RUN chmod +r /app/main.cpp
 #RUN ls -l /app
 
-# Compile the code
-RUN make
+# Compile the code with -fPIE and -pie flags
+RUN make FLAGS="-std=c++17 -Wall -Wextra -Werror -fPIE -pie"
 
 # Expose the server port
 EXPOSE 8002
