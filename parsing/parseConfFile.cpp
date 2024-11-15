@@ -50,7 +50,7 @@ static bool parseServerData(ServerConfig& server, const std::string& line) {
 		return 0;
 	}
 	else if (key == "server_name" || key == "host" || key == "root" || key == "index") {
-		server.setConfig(key, value);  // server_name is a string
+		server.setConfig(key, value.erase(value.find_last_of(";")));  // server_name is a string
 		return 0;
 	}
 	else if (key == "error_page") {

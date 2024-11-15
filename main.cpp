@@ -54,15 +54,15 @@ int main(int ac, char **av)
 	ConfigValidator validator(av[1]);
 	if (!validator.validate()) {
 		std::cout << "Warning: invalid configuration file" << std::endl;
-		// return 1;
 	} else {
 		std::cout << "Valid configuration file found." << std::endl;
 	}
     parseData(av[1], server);
-
+	server[0].printConfig();
     std::vector<Socket> sockets;
     for (const ServerConfig &config : server)
     {
+		std::cout << "Creating socket on port " << config.getListenPort() << " and host " << config.getHost() << "...\n";
         Socket sock(config.getListenPort(), config.getHost());
 		sockets.push_back(sock);
     }
