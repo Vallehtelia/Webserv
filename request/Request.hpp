@@ -7,11 +7,9 @@
 #include <map>
 #include <sstream>
 #include <vector>
-#include <iomanip> 
-
-
-#define URICHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-.~:/?#[]@!$&'()*+,;="
-#define FIELDCHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-"
+#include <iomanip>
+#include <regex>
+#include "../utils.hpp"
 
 
 void checkline(std::string line);
@@ -27,15 +25,6 @@ enum class State {
     INCOMPLETE
 };
 
-enum class multipartState {
-    SPLIT_DATA,
-    CREATE_DATA,
-    BODY,
-    MULTIPARTDATA,
-    COMPLETE,
-    ERROR
-};
-
 struct MultipartData
 {
 	std::string					name;
@@ -49,58 +38,61 @@ struct MultipartData
 class Request {
     public:
         Request();
-        Request(const std::string &rawRequest);
         ~Request();
-        std::string getMethod() const;
-        std::string getUri() const;
-        std::string getVersion() const;
-        void    reset();
-        std::map<std::string, std::string> getHeaders() const {
-        return headers;
-    }
-        void setPath(std::string newPath);
+        Request(const std::string &rawRequest);
 
-        std::string getBody() const;
-        void parseRequest(std::string &rawReques);
-        void handleRequest(void);
-        void parseMultipartData();
-        const std::vector<MultipartData>& getMultipartData() const { return multipartData; };
-        void printRequest();
-        std::string getState();
-        void setState(State state);
-        std::string stateToString(State state);
-        State StateFromString(const std::string& stateStr);
-        bool isMultiPart() const;
-        std::string getContentType() const;
+        void                                reset();
+        void                                printRequest();
+        void                                parseRequest(std::string &rawReques);
+        void                                setPath(std::string newPath);
+        void                                setState(State state);
+        void                                setReceived(bool state);
+        std::string                         getMethod() const;
+        std::string                         getUri() const;
+        std::string                         getVersion() const;
+        std::string                         getBody() const;
+        std::map<std::string, std::string>  getHeaders() const;
+        const std::vector<MultipartData>    &getMultipartData() const { return multipartData; };
+        State                               getState();
+        std::string                         getContentType() const;
+        bool                                isMultiPart() const;
+
     private:
-        State currentState;
-        bool    chunked;
-        bool    received;
-        std::string rawRequest;
-        std::istringstream requestStream;
-        std::string rawChunkedData;
-        std::string boundary;
-        std::string method;
-        std::string uri;
-        std::string version;
-        size_t contentLength;
-        size_t body_size = 0;
-        bool _isMultiPart;
-        std::map<std::string, std::string> headers;
-        std::string body;
-        std::string contentType;
-        std::vector<MultipartData> multipartData;
-        //std::vector<char> bodyBuffer;
-        void parseHeaders();
-        void parseBody();
-        void handleError(const std::string& errorMsg);
-        void parseRequestLine();
-        void printMultipartdata();
-        MultipartData createData(std::string &rawData);
-        void createMultipartBody(MultipartData &multipartData, std::istringstream &rawMultipartData);
-        void createMultipartHeaders(MultipartData &multipartData, std::istringstream &rawDataStream);
-        void parseChunks();
+        Request(const Request &other);
+        Request &operator=(const Request &rhs);
+        bool                                received;
+        bool                                chunked;
+        bool                                _isMultiPart;
+        State                               currentState;
+        size_t                              contentLength;
+        size_t                              body_size = 0;
+        std::string                         requestBuffer;
+        std::string                         rawRequest;
+        std::string                         body;
+        std::string                         rawChunkedData;
+        std::string                         boundary;
+        std::string                         method;
+        std::string                         uri;
+        std::string                         version;
+        std::string                         contentType;
+        std::istringstream                  requestStream;
+        std::map<std::string, std::string>  headers;
+        std::vector<MultipartData>          multipartData;
 
+        void                                checkHeaders();
+        void                                parseMultipartData();
+        void                                parseHeaders();
+        void                                parseBody();
+        void                                handleError(const std::string& errorMsg);
+        void                                parseRequestLine();
+        void                                printMultipartdata();
+        void                                createMultipartBody(MultipartData &multipartData, std::istringstream &rawMultipartData);
+        void                                createMultipartHeaders(MultipartData &multipartData, std::istringstream &rawDataStream);
+        void                                parseChunks();
+        bool                                isValidHeaderKey(const std::string& key);
+        bool                                isValidHeaderValue(const std::string& key, const std::string& value);
+        MultipartData                       createData(std::string &rawData);
+        std::vector<std::string>            splitMultipartData(std::string data, std::string boundary);
 } ;
 
 # endif

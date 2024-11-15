@@ -17,7 +17,9 @@ void Response::printResponse()
 {
     std::cout << std::endl;
     std::cout << "RESPONSE:" << "\033[32m" << std::endl;
-    std::cout << getResponseString() << std::endl;
+    // std::cout << getResponseString() << std::endl;
+    std::cout << _body.size() << std::endl;
+    std::cout << _contentLength << std::endl;
     std::cout << "\033[0m" << std::endl;
 }
 
@@ -43,6 +45,7 @@ void Response::setUri(std::string &URI)
 
 
 void Response::setResponse(int statusCode, const std::string& contentType, const std::string &body) {
+    std::cout << "hello from setResponse" << std::endl;
     _body = body;
     _statusCode = statusCode;
     setStatusLine();
@@ -66,6 +69,9 @@ void Response::setStatusLine()
         case 201:
             _statusLine = "HTTP/1.1 201 Created\r\n";
             break;
+        case 400:
+            _statusLine = "HTTP/1.1 400 Bad Request";
+            break;
         case 403:
             _statusLine = "HTTP/1.1 403 Forbidden\r\n";
             break;
@@ -88,6 +94,8 @@ void Response::setStatusLine()
 std::string Response::getErrorPage() const
 {
     switch (_statusCode) {
+        case 400:
+            return "./html/error_pages/400.html";
         case 403:
             return ".html/error_pages/403.html";
         case 404:
@@ -118,7 +126,7 @@ std::string Response::readFileContent(std::string& filePath)
     }
     else
     {
-        std::cout << "\033[31m" << "failed to read file" <<"\033[0m" << std::endl;
+        std::cout << "\033[31m" << "failed to read file: " << filePath <<"\033[0m" << std::endl;
         return "";
     }
 }
