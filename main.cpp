@@ -11,11 +11,11 @@
 #include <fstream>
 #include <map>
 #include <unordered_map>
+#include "./parsing/ConfigValidator.hpp"
 #include "./parsing/ServerConfig.hpp"
 #include "request/Request.hpp"
 #include "request/RequestHandler.hpp"
 #include "response/Response.hpp"
-#include "./parsing/ServerConfig.hpp"
 #include "./cgi/cgi_request.hpp"
 #include "utils.hpp"
 
@@ -54,6 +54,13 @@ int main(int ac, char **av)
     if (!checkConfFile(av[1]))
         return 1;
     std::cout << "\033[1;32mParsing file: " << av[1] << "\033[0m" << std::endl;
+	ConfigValidator validator(av[1]);
+	if (!validator.validate()) {
+		std::cout << "Warning: invalid configuration file" << std::endl;
+		// return 1;
+	} else {
+		std::cout << "Valid configuration file found." << std::endl;
+	}
     parseData(av[1], server);
     for (std::vector<ServerConfig>::iterator it = server.begin(); it != server.end(); it++)
 	{

@@ -1,9 +1,9 @@
 
 #include <iostream>
 #include <string>
-#include <map>
 #include <vector>
 #include <unordered_map>
+#include <map>
 #include <variant>
 #include "LocationConfig.hpp"
 
@@ -20,20 +20,10 @@ using ValueType = std::variant<int, double, std::string>;
 class ServerConfig
 {
 	private:
-	/*
-		std::string	_listen_port;
-		std::string	_server_name;
-		std::string	_host;
-		std::string	_root;
-		std::string	_client_max_body_size;
-		std::string _events;
-		std::string	_index;
-	*/
+		std::unordered_map<std::string, ValueType> 	_configData;
+		std::map<int, std::string>					_error_pages;
+		std::vector<LocationConfig>					_locations;
 
-		std::unordered_map<std::string, ValueType> _configData;
-
-		std::map<int, std::string>	_error_pages;
-		std::vector<LocationConfig>	_locations;
 	public:
 		ServerConfig();
 		~ServerConfig();

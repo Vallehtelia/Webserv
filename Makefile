@@ -10,7 +10,7 @@ SRC_DIR = ./
 SRC_FILES = main.cpp socket.cpp utils.cpp
 
 PARSE_DIR = ./parsing/
-PARSE_FILES = ServerConfig.cpp LocationConfig.cpp parseConfFile.cpp
+PARSE_FILES = ServerConfig.cpp LocationConfig.cpp parseConfFile.cpp ConfigValidator.cpp
 
 CGI_DIR = ./cgi/
 CGI_FILES = cgi_request.cpp
