@@ -124,7 +124,7 @@ int main(int ac, char **av)
     std::unordered_map<int, Request> requests;
     while (true)
 	{
-		int num_events = epoll_wait(epoll_fd, events, it->getMaxEvents(), -1);
+		int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
         if (num_events == -1)
 		{
             perror("epoll_wait");
