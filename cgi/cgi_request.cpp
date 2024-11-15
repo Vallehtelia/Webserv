@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <filesystem>
 #include "cgi_request.hpp"
 #include "../socket.hpp"
 
@@ -128,20 +129,35 @@ bool	cgiRequest::isValidCgi()
 
 	if (file)
 	{
-		std::cout << "Great success\n";
+		std::cerr << "Great success\n";
 		return true;
 	}
 	else
 	{
-		std::cout << "Cgi script not opening at: " << script_path << std::endl;
+		std::cerr << "Cgi script not opening at: " << script_path << std::endl;
 		return false;
 	}
+}
+
+static bool	ensureFolderExists(const std::string &folderPath)
+{
+	if (!std::filesystem::exists(folderPath))
+	{
+		if (!std::filesystem::create_directory(folderPath))
+		{
+			std::cerr << "Failed to create directory: " << folderPath << std::endl;
+			return false;
+		}
+	}
+	return true;
 }
 
 int	cgiRequest::execute()
 {
 	if (isValidCgi())
 	{
+		if (!ensureFolderExists("./html/tmp"))
+			return 500;
 		pid_t pid = fork();
 		if (pid == -1)
 		{

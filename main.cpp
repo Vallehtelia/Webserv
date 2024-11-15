@@ -40,9 +40,6 @@ void set_non_blocking(int sockfd)
 int main(int ac, char **av)
 {
     std::vector<ServerConfig>	server; // Taa sisaltaa kaiken tiedon, Server name, port, host, root, client bodysize, index path, error pages in a map, locations in vector.
-    struct sockaddr_in serv_addr, client_addr;
-    socklen_t client_len;
-    int client_fd;
 	int epoll_fd;
     std::unordered_map<int, std::vector<char>> client_data;
 
@@ -62,44 +59,12 @@ int main(int ac, char **av)
 		std::cout << "Valid configuration file found." << std::endl;
 	}
     parseData(av[1], server);
-    for (std::vector<ServerConfig>::iterator it = server.begin(); it != server.end(); it++)
-	{
-		it->printConfig();
-	}
 
-    std::vector<ServerConfig>::iterator it = server.begin();
-    Socket socket1(it->getListenPort(), it->getHost());
-
-    // Configure server address and port
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(it->getListenPort()); // otin tahan vaan ekan serverin portin, taa serv addr pitaa varmaan olla kans joku array tjtn et voidaan kuunnella useempia portteja samanaikasesti
-	serv_addr.sin_addr.s_addr = INADDR_ANY;
-
-    // Create socket
-    socket1.setSocketFd(socket(AF_INET, SOCK_STREAM, 0));
-    if (socket1.getSocketFd() <= 0) {
-        std::cout << "Failed to set socket: " << strerror(errno) << "\n";
-        return 1;
-    }
-
-    // Set socket options to reuse address
-    int opt = 1;
-    if (setsockopt(socket1.getSocketFd(), SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-        std::cout << "setsockopt failed: " << strerror(errno) << "\n";
-        return 1;
-    }
-
-    // Bind socket to address and port
-    if (bind(socket1.getSocketFd(), (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
-        std::cout << "Failed to bind: " << strerror(errno) << "\n";
-        return 1;
-    }
-
-	// Start listening for connections
-    if (listen(socket1.getSocketFd(), 10) < 0) {
-        std::cout << "Failed to listen: " << strerror(errno) << "\n";
-        close(socket1.getSocketFd());
-        return 1;
+    std::vector<Socket> sockets;
+    for (const ServerConfig &config : server)
+    {
+        Socket sock(config.getListenPort(), config.getHost());
+		sockets.push_back(sock);
     }
 
 	// Create epoll instance
@@ -110,24 +75,50 @@ int main(int ac, char **av)
         exit(EXIT_FAILURE);
     }
 
-	// Set the server socket to non-blocking mode
-    set_non_blocking(socket1.getSocketFd());
-
-	// Add the server socket to the epoll instance
-    struct epoll_event event;
-    event.events = EPOLLIN;
-    event.data.fd = socket1.getSocketFd();
-    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket1.getSocketFd(), &event) == -1)
+    // Create socket
+	for (Socket &sock : sockets)
 	{
-        perror("epoll_ctl");
-        exit(EXIT_FAILURE);
-    }
+		sock.setSocketFd(socket(AF_INET, SOCK_STREAM, 0));
+		if (sock.getSocketFd() <= 0)
+		{
+			std::cerr << RED << "Failed to set socket: " << strerror(errno) << DEFAULT << "\n";
+			return 1;
+		}
+		set_non_blocking(sock.getSocketFd());
+
+		struct sockaddr_in addr = {};
+		addr.sin_family = AF_INET;
+		addr.sin_port = htons(sock.getPort());
+		addr.sin_addr.s_addr = inet_addr(sock.getIp().c_str());
+
+		if (bind(sock.getSocketFd(), (struct sockaddr*)&addr, sizeof(addr)) < 0)
+		{
+			std::cerr << RED << "Failed to bind: " << strerror(errno) << DEFAULT << "\n";
+			return 1;
+		}
+
+		if (listen(sock.getSocketFd(), 10) < 0)
+		{
+			std::cerr << RED << "Failed to listen: " << strerror(errno) << DEFAULT << "\n";
+			close(sock.getSocketFd());
+			return 1;
+		}
+
+		struct epoll_event event;
+		event.events = EPOLLIN;
+		event.data.fd = sock.getSocketFd();
+		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sock.getSocketFd(), &event) == -1)
+		{
+			perror("epoll_ctl");
+			exit(EXIT_FAILURE);
+		}
+
+		std::cout << CYAN << "Server is listening on port " << sock.getPort() << "...\n";
+		std::cout << "open " << sock.getIp() << ":" << sock.getPort() << " on browser\n" << DEFAULT;
+	}
 
 	// Event array for epoll_wait
-    struct epoll_event events[it->getMaxEvents()];
-
-    std::cout << CYAN << "Server is listening on port " << it->getListenPort() << "...\n";
-    std::cout << "open 'localhost:" << it->getListenPort() << "' on browser\n" << DEFAULT;
+    struct epoll_event events[MAX_EVENTS];
 
 	// Main loop
     std::unordered_map<int, Request> requests;
@@ -141,29 +132,36 @@ int main(int ac, char **av)
         }
 		for (int i = 0; i < num_events; ++i)
 		{
-            Request &req = requests[events[i].data.fd];
-			if (events[i].data.fd == socket1.getSocketFd())
+			int fd = events[i].data.fd;
+            Request &req = requests[fd];
+
+			auto it = std::find_if(sockets.begin(), sockets.end(),
+				[fd](const Socket &sock) { return sock.getSocketFd() == fd; });
+			if (it != sockets.end())
 			{
 				// Accept incoming connection
-				client_len = sizeof(client_addr);
-				client_fd = accept(socket1.getSocketFd(), (struct sockaddr*)&client_addr, &client_len);
-				if (client_fd < 0) {
-					std::cout << "Failed to create client fd: " << strerror(errno) << "\n";
-					close(socket1.getSocketFd());
-					return 1;
+				struct sockaddr_in client_addr;
+				socklen_t client_len = sizeof(client_addr);
+				int client_fd = accept(fd, (struct sockaddr*)&client_addr, &client_len);
+				if (client_fd < 0)
+				{
+					std::cerr << RED << "Failed to accept connection: " << strerror(errno) << DEFAULT << "\n";
+					continue;
 				}
 
-				// Set the new socket to non-blocking mode and add to epoll instance
-                set_non_blocking(client_fd);
-                event.events = EPOLLIN;
-                event.data.fd = client_fd;
-                if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) == -1) {
-                    perror("epoll_ctl");
-                    exit(EXIT_FAILURE);
-                }
-                client_data[client_fd] = std::vector<char>();
-                std::cout << "ACCEPTED CONNECTION FD: " << client_fd << std::endl;
+				set_non_blocking(client_fd);
+				struct epoll_event event;
+				event.events = EPOLLIN;
+				event.data.fd = client_fd;
+				if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) == -1)
+				{
+					std::cerr << RED << "Failed to add client to epoll: " << strerror(errno) << DEFAULT << "\n";
+					close(client_fd);
+					continue;
+				}
+				std::cout << "ACCEPTED CONNECTION ON PORT " << it->getPort() << " FD: " << client_fd << std::endl;
 			}
+
 			else if (events[i].events & EPOLLIN)
 			{
 				// Read incoming data
@@ -208,7 +206,7 @@ int main(int ac, char **av)
                                 directPath = findPath(req.getUri());
                                 std::cout << "DIRECT PATH: " << directPath << std::endl;
                                 cgiRequest cgireg(directPath, req.getMethod(), queryString, req.getVersion(), req.getBody());
-                                int execute_result = cgireg.execute();
+                                int execute_result = cgireg.execute(); // exit status so we need to give correct error page so current one is broken
                                 if (execute_result == 0)
                                 {
                                     req.setPath("/cgi_output.html");
@@ -266,7 +264,10 @@ int main(int ac, char **av)
 		}
     }
     // Close the other sockets
-    close(socket1.getSocketFd());
+	for (Socket &sock : sockets)
+	{
+		close(sock.getSocketFd());
+	}
 	close(epoll_fd);
     return 0;
 }

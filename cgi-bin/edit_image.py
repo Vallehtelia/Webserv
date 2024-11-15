@@ -16,7 +16,7 @@ def save_image_and_process(temp_path, filename, name):
 
             avg_color = ImageStat.Stat(img).mean[:3]
             text_color = get_contrasting_color(avg_color)
-            img = img.filter(ImageFilter.EMBOSS)
+            img = img.filter(ImageFilter.SHARPEN)
 
             if name:
                 nameLength = len(name)
