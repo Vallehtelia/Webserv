@@ -4,6 +4,8 @@
 #include <sstream>
 #include <regex>
 #include <unordered_set>
+#include <stack>
+#include <unordered_map>
 
 void ConfigValidator::trim(std::string &str) {
     size_t start = str.find_first_not_of(" \t");
@@ -70,6 +72,32 @@ bool ConfigValidator::validateAutoindex(const std::string& line) {
 
     std::regex autoindexRegex(R"(^\s*autoindex\s+(on|off)\s*;\s*$)");
     return std::regex_match(line, autoindexRegex);
+}
+
+bool BalancedParentheses(const std::string& input) {
+    std::stack<char> s; // Stack to store opening parentheses
+    std::unordered_map<char, char> pair = {
+        {')', '('},
+        {']', '['},
+        {'}', '{'}
+    };
+
+    for (char c : input) {
+        if (c == '(' || c == '[' || c == '{') {
+            // Push opening parentheses onto the stack
+            s.push(c);
+        } else if (c == ')' || c == ']' || c == '}') {
+            // Check if the stack is empty or if the top of the stack does not match
+            if (s.empty() || s.top() != pair[c]) {
+                return false;
+            }
+            // Pop the matching opening parenthesis from the stack
+            s.pop();
+        }
+    }
+
+    // If the stack is empty, all parentheses were balanced
+    return s.empty();
 }
 
 // Validates a single location block
@@ -166,32 +194,49 @@ bool ConfigValidator::validateConfigFile(const std::string &filename) {
     std::string line;
     while (std::getline(file, line)) {
         trim(line);
-        if (line.empty() || line[0] == '#') continue;
-
-		if (line == "server") {
-			if (!std::getline(file, line)) {
-				std::cerr << "Unexpected end of file after 'server'" << std::endl;
-				return false;
-			}
-			trim(line);
-			if (line != "{") {
-				std::cerr << "Expected '{' after 'server', but got: " << line << std::endl;
-				return false;
-			}
-			if (!validateServerBlock(file)) {
-				return false;
-			}
-		} else if (line.find("server {") == 0) {
-			std::string trimmedRest = line.substr(7);
-			trim(trimmedRest);
-			if (trimmedRest != "{") {
-				std::cerr << "Unexpected content after 'server {': " << trimmedRest << std::endl;
-				return false;
-			}
-			if (!validateServerBlock(file)) {
-				return false;
-			}
-		} else {
+		if (line.empty() || line[0] == '#') {
+			continue;
+		}
+        if (line == "server") {
+            while (std::getline(file, line)) {
+                trim(line);
+                if (line.empty() || line[0] == '#') {
+                    continue;
+                }
+                if (line == "{") {
+                    break;
+                }
+                std::cerr << "Expected '{' after 'server', but got: " << line << std::endl;
+                return false;
+            }
+            if (!validateServerBlock(file)) {
+                return false;
+            }
+        } else if (line.find("server") == 0) {
+            std::string rest = line.substr(6);
+            trim(rest);
+            if (rest.empty() || rest == "{") {
+                if (rest != "{") {
+                    while (std::getline(file, line)) {
+                        trim(line);
+                        if (line.empty() || line[0] == '#') {
+                            continue;
+                        }
+                        if (line == "{") {
+                            break;
+                        }
+                        std::cerr << "Expected '{' after 'server', but got: " << line << std::endl;
+                        return false;
+                    }
+                }
+                if (!validateServerBlock(file)) {
+                    return false;
+                }
+            } else {
+                std::cerr << "Unexpected content after 'server': " << rest << std::endl;
+                return false;
+            }
+        } else {
 			std::cerr << "Unexpected directive outside server block: " << line << std::endl;
 			return false;
 		}
