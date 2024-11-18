@@ -11,17 +11,16 @@
 #include <fstream>
 #include <map>
 #include <unordered_map>
+#include "./parsing/ConfigValidator.hpp"
 #include "./parsing/ServerConfig.hpp"
 #include "request/Request.hpp"
 #include "request/RequestHandler.hpp"
 #include "response/Response.hpp"
-#include "./parsing/ServerConfig.hpp"
 #include "./cgi/cgi_request.hpp"
 #include "utils.hpp"
 
 #define MAX_EVENTS 10 // taa varmaa conffii
-#define PORT 8002 // ja taa
-
+// #define PORT 8002 // ja taa
 
 // Function to set a socket to non-blocking mode
 void set_non_blocking(int sockfd)
@@ -51,12 +50,19 @@ int main(int ac, char **av)
 	}
     if (!checkConfFile(av[1]))
         return 1;
-    std::cout << "\033[1;32mParsing file: " << av[1] << "\033[0m" << std::endl;
+    std::cout << "\033[1;32mValidating file: " << av[1] << "\033[0m" << std::endl;
+	if (!ConfigValidator::validateConfigFile(av[1])) {
+		std::cout << "Warning: invalid configuration file" << std::endl;
+	} else {
+		std::cout << "Valid configuration file found." << std::endl;
+	}
+	std::cout << "\033[1;32mParsing file: " << av[1] << "\033[0m" << std::endl;
     parseData(av[1], server);
-
+	server[0].printConfig();
     std::vector<Socket> sockets;
     for (const ServerConfig &config : server)
     {
+		std::cout << "Creating socket on port " << config.getListenPort() << " and host " << config.getHost() << "...\n";
         Socket sock(config.getListenPort(), config.getHost());
 		sockets.push_back(sock);
     }
