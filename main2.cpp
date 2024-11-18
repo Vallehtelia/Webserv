@@ -18,19 +18,19 @@
 #define PORT 8002 // ja taa
 
 // Function to set a socket to non-blocking mode
-void set_non_blocking(int sockfd)
-{
-    int flags = fcntl(sockfd, F_GETFL, 0);
-    if (flags == -1) {
-        perror("fcntl 1");
-        exit(EXIT_FAILURE);
-    }
-    if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) == -1)
-	{
-        perror("fcntl 2");
-        exit(EXIT_FAILURE);
-    }
-}
+// void set_non_blocking(int sockfd)
+// {
+//     int flags = fcntl(sockfd, F_GETFL, 0);
+//     if (flags == -1) {
+//         perror("fcntl 1");
+//         exit(EXIT_FAILURE);
+//     }
+//     if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) == -1)
+// 	{
+//         perror("fcntl 2");
+//         exit(EXIT_FAILURE);
+//     }
+// }
 
 int main(int ac, char **av)
 {
