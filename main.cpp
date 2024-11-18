@@ -58,7 +58,15 @@ int main(int ac, char **av)
 	}
 	std::cout << "\033[1;32mParsing file: " << av[1] << "\033[0m" << std::endl;
     parseData(av[1], server);
-	server[0].printConfig();
+	for (auto it = begin(server); it != end(server); it++)
+	{
+		it->printConfig();
+		for (std::map<int, std::string>::const_iterator Er = it->getErrorPages().begin(); Er != it->getErrorPages().end(); Er++)
+		{
+    		std::cout << "Error code: " << Er->first << ", Page: " << Er->second << std::endl;
+		}
+		// std::cout << "error page 404: " << it->getErrorPage(506) << std::endl;
+	}
     std::vector<Socket> sockets;
     for (const ServerConfig &config : server)
     {
@@ -114,7 +122,7 @@ int main(int ac, char **av)
 		}
 
 		std::cout << CYAN << "Server is listening on port " << sock.getPort() << "...\n";
-		std::cout << "open " << sock.getIp() << ":" << sock.getPort() << " on browser\n" << DEFAULT;
+		std::cout << "open " << sock.getIp() << ":" << sock.getPort() << " on browser" << DEFAULT << std::endl;
 	}
 
 	// Event array for epoll_wait
@@ -208,9 +216,11 @@ int main(int ac, char **av)
                                 cgiRequest cgireg(directPath, req.getMethod(), queryString, req.getVersion(), req.getBody());
                                 int execute_result = cgireg.execute(); // exit status so we need to give correct error page so current one is broken
                                 if (execute_result == 0)
-                                {
                                     req.setPath("/cgi_output.html");
-                                }
+								else
+								{
+
+								}
                             }
                         }
                         //req.printRequest();

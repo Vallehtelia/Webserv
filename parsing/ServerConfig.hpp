@@ -52,6 +52,7 @@ class ServerConfig
 		int 		getBodySize() const;
 		int 		getMaxEvents() const;
 		std::string	getIndex() const;
+		const std::map<int, std::string>	&getErrorPages() const;
 
 		std::string	getLocation(std::string key) const;
     	std::string getErrorPage(int code) const;
