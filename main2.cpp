@@ -18,7 +18,7 @@
 #define PORT 8002 // ja taa
 
 // Function to set a socket to non-blocking mode
-void set_non_blocking(int sockfd) 
+void set_non_blocking(int sockfd)
 {
     int flags = fcntl(sockfd, F_GETFL, 0);
     if (flags == -1) {
@@ -91,7 +91,7 @@ int main(int ac, char **av)
 
 	// Create epoll instance
     epoll_fd = epoll_create(1); // was epoll_create1(0), arg size must be > 0 but is ignored
-    if (epoll_fd == -1) 
+    if (epoll_fd == -1)
 	{
         perror("epoll_create");
         exit(EXIT_FAILURE);
@@ -104,7 +104,7 @@ int main(int ac, char **av)
     struct epoll_event event;
     event.events = EPOLLIN;
     event.data.fd = socket1.getSocketFd();
-    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket1.getSocketFd(), &event) == -1) 
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket1.getSocketFd(), &event) == -1)
 	{
         perror("epoll_ctl");
         exit(EXIT_FAILURE);
@@ -117,18 +117,18 @@ int main(int ac, char **av)
     std::cout << "open 'localhost:" << std::stoi(it->getListenPort()) << "' on browser\n" << DEFAULT;
 
 	// Main loop
-    while (true) 
+    while (true)
 	{
 		int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-        if (num_events == -1) 
+        if (num_events == -1)
 		{
             perror("epoll_wait");
             exit(EXIT_FAILURE);
         }
 
-		for (int i = 0; i < num_events; ++i) 
+		for (int i = 0; i < num_events; ++i)
 		{
-			if (events[i].data.fd == socket1.getSocketFd()) 
+			if (events[i].data.fd == socket1.getSocketFd())
 			{
 				// Accept incoming connection
 				client_len = sizeof(client_addr);
@@ -148,7 +148,7 @@ int main(int ac, char **av)
                     exit(EXIT_FAILURE);
                 }
 			}
-			else if (events[i].events & EPOLLIN) 
+			else if (events[i].events & EPOLLIN)
 			{
 				// Read incoming data
 				char buffer[4000] = {0};

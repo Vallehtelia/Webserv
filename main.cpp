@@ -87,7 +87,7 @@ int main(int ac, char **av)
 
 		if (bind(sock.getSocketFd(), (struct sockaddr*)&addr, sizeof(addr)) < 0)
 		{
-			std::cerr << RED << "Failed to bind: " << strerror(errno) << DEFAULT << "\n";
+			std::cerr << RED << "Failed to bind: " << strerror(errno) << " On port: " << sock.getPort() << DEFAULT << "\n";
 			return 1;
 		}
 
