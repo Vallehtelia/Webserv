@@ -27,7 +27,7 @@ RUN make fclean && make
 
 
 # Expose the server port
-EXPOSE 8002
+EXPOSE 8002 8003
 
 # Run the server
 # CMD ["./socket", "configuration/default.conf"]

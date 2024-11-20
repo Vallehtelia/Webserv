@@ -80,7 +80,7 @@ class Request {
         std::vector<MultipartData>          multipartData;
         std::map<std::string, std::string>  queryParams;
 
-        void                                checkHeaders();
+        void                                prepareRequest();
         void                                parseMultipartData();
         void                                parseHeaders();
         void                                parseBody();
@@ -94,7 +94,6 @@ class Request {
         bool                                isValidHeaderKey(const std::string& key);
         bool                                isValidHeaderValue(const std::string& key, const std::string& value);
         MultipartData                       createData(std::string &rawData);
-        std::vector<std::string>            splitMultipartData(std::string data, std::string boundary);
 } ;
 
 # endif

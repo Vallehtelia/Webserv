@@ -138,7 +138,6 @@ void Request::parseQueryString() {
     if (queryPos != std::string::npos) {
         std::string param, key, value;
         std::istringstream queryStream(uri.substr(queryPos + 1, uri.size()));
-
         while (std::getline(queryStream, param, '&'))
         {
             std::istringstream keyval(param);
@@ -154,7 +153,6 @@ void Request::parseRequestLine() {
     std::string requestLine;
     if (std::getline(requestStream, requestLine)) {
         removeCarriageReturn(requestLine);
-        checkline(requestLine);
         if (!isValidRequestLine(requestLine))
         {
             handleError("Invalid characters in request line.");
@@ -173,7 +171,7 @@ void Request::parseRequestLine() {
     }
 }
 
-void Request::checkHeaders()
+void Request::prepareRequest()
 {
     if ((method == "POST" || method == "PUT"))
     {
@@ -189,7 +187,16 @@ void Request::checkHeaders()
             chunked = true;
     if (headers.find("Content-Type") != headers.end())
         contentType = headers["Content-Type"];
-
+            if ((method == "POST" || method == "PUT") && headers["Content-Type"].find("multipart/form-data") != std::string::npos) {
+            size_t boundaryPos = headers["Content-Type"].find("boundary=");
+            if (boundaryPos != std::string::npos)
+            {
+                boundary = headers["Content-Type"].substr(boundaryPos + 9);
+                boundary =  "--" + boundary;
+                boundary.erase(boundary.find_last_not_of("\r") + 1);
+                _isMultiPart = true;
+            }
+        }
     if (chunked == true)
         currentState = State::UNCHUNK;
     else if (contentLength > 0)
@@ -238,11 +245,10 @@ void Request::parseHeaders() {
                 return;
             }
             headers[key] = value;
-            std::cout << key  << value << std::endl;
+            std::cout << key << value << std::endl;
         }
     }
-    checkHeaders();
-
+    prepareRequest();
 }
 
 
@@ -303,16 +309,9 @@ void Request::parseBody()
     }
     else if ((body.size() == contentLength))
     {   
-        // CHECK FOR MULTIPARTDATA
-        if ((method == "POST" || method == "PUT") && headers["Content-Type"].find("multipart/form-data") != std::string::npos) {
-            size_t boundaryPos = headers["Content-Type"].find("boundary=");
-            if (boundaryPos != std::string::npos)
-            {
-                boundary = headers["Content-Type"].substr(boundaryPos + 9);
-                currentState = State::MULTIPARTDATA;
-                _isMultiPart = true;
-                return;
-            }
+        if (_isMultiPart) {
+            currentState = State::MULTIPARTDATA;
+            return;
         }
         else
         {
@@ -325,26 +324,34 @@ void Request::parseBody()
 }
 
 
-std::vector<std::string> Request::splitMultipartData(std::string data, std::string boundary) {
-    std::vector<std::string> parts;
-    std::string part;
+void Request::parseMultipartData() {
     size_t start = 0;
-    while ((start = data.find(boundary, start)) != std::string::npos) {
+    while ((start = body.find(boundary, start)) != std::string::npos) {
         start += boundary.length();
-        size_t end = data.find(boundary, start);
-        part = data.substr(start, end - start);
+        size_t end = body.find(boundary, start);
+        std::string part = body.substr(start, end - start);
         if (part == "--\r\n")
+        {
+            currentState = State::COMPLETE;
             break ;
-        parts.push_back(part);
+        }
+        multipartData.push_back(createData(part));
         start = end;
     }
-    return parts;
+}
+
+MultipartData Request::createData(std::string &rawData) {
+    MultipartData multipartData;
+    rawData.erase(0, rawData.find_first_not_of("\r\n"));
+    std::istringstream rawDataStream(rawData);
+    createMultipartHeaders(multipartData, rawDataStream);
+    createMultipartBody(multipartData, rawDataStream);
+    return multipartData;
 }
 
 
 void    Request::createMultipartHeaders(MultipartData &multipartData, std::istringstream &rawDataStream)
 {
-    // READ THE HEADERS LINE BY LINE
     std::string line;
     while (std::getline(rawDataStream, line))
     {
@@ -366,39 +373,27 @@ void    Request::createMultipartHeaders(MultipartData &multipartData, std::istri
             }
         }
         else if (line.find("Content-Type:") != std::string::npos) {
-        size_t typeStart = line.find("Content-Type:") + 14;
-        multipartData.contentType = line.substr(typeStart);
-    }
+            size_t typeStart = line.find("Content-Type:") + 14;
+            multipartData.contentType = line.substr(typeStart);
+        }
     }
 }
 
 void    Request::createMultipartBody(MultipartData &multipartData, std::istringstream &rawMultipartData)
 {
-    std::vector<char> buffer(std::istreambuf_iterator<char>(rawMultipartData), {});
-    multipartData.data.insert(multipartData.data.end(), buffer.begin(), buffer.end());
+    constexpr size_t CHUNK_SIZE = 4096;
+    char buffer[CHUNK_SIZE];
+
+    while (rawMultipartData) {
+        rawMultipartData.read(buffer, CHUNK_SIZE);
+        std::streamsize bytesRead = rawMultipartData.gcount();
+        if (bytesRead > 0) {
+            multipartData.data.insert(multipartData.data.end(), buffer, buffer + bytesRead);
+        }
+    }
 }
 
-MultipartData Request::createData(std::string &rawData) {
-    MultipartData multipartData;
-    
-    rawData.erase(0, rawData.find_first_not_of("\r\n"));
-    std::istringstream rawDataStream(rawData);
-    createMultipartHeaders(multipartData, rawDataStream);
-    createMultipartBody(multipartData, rawDataStream);
-    return multipartData;
-}
 
-void Request::parseMultipartData() {
-    std::string delimiter =  "--" + boundary;
-    std::string data(body.begin(), body.end());
-    delimiter.erase(delimiter.find_last_not_of("\r") + 1);
-    
-    std::vector<std::string> parts = splitMultipartData(data, delimiter);
-    for (std::string &part : parts)
-        multipartData.push_back(createData(part));
-    printMultipartdata();
-    currentState = State::COMPLETE;
-}
 
 void Request::printMultipartdata()
 {
