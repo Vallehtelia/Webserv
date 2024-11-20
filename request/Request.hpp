@@ -78,6 +78,7 @@ class Request {
         std::istringstream                  requestStream;
         std::map<std::string, std::string>  headers;
         std::vector<MultipartData>          multipartData;
+        std::map<std::string, std::string>  queryParams;
 
         void                                checkHeaders();
         void                                parseMultipartData();
@@ -85,6 +86,7 @@ class Request {
         void                                parseBody();
         void                                handleError(const std::string& errorMsg);
         void                                parseRequestLine();
+        void                                parseQueryString();
         void                                printMultipartdata();
         void                                createMultipartBody(MultipartData &multipartData, std::istringstream &rawMultipartData);
         void                                createMultipartHeaders(MultipartData &multipartData, std::istringstream &rawDataStream);

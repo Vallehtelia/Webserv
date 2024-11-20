@@ -82,6 +82,7 @@ void Request::reset()
     headers.clear();
     body.clear();
     multipartData.clear();
+    queryParams.clear();
 }
 
 
@@ -131,6 +132,23 @@ static bool isValidRequestLine(const std::string& requestLine) {
     return std::regex_match(requestLine, requestLinePattern);
 }
 
+void Request::parseQueryString() {
+    size_t queryPos = uri.find('?');
+
+    if (queryPos != std::string::npos) {
+        std::string param, key, value;
+        std::istringstream queryStream(uri.substr(queryPos + 1, uri.size()));
+
+        while (std::getline(queryStream, param, '&'))
+        {
+            std::istringstream keyval(param);
+            if (std::getline(keyval, key, '=') && std::getline(keyval, value))
+                queryParams[key] = value;
+        }
+        uri.erase(queryPos, uri.size());
+    }
+}
+
 
 void Request::parseRequestLine() {
     std::string requestLine;
@@ -145,6 +163,7 @@ void Request::parseRequestLine() {
         std::istringstream lineStream(requestLine);
         lineStream >> method >> uri >> version;
         if (!method.empty() && !uri.empty() && !version.empty()) {
+            parseQueryString();
             currentState = State::HEADERS;
         } else {
             handleError("Invalid request line format.");

@@ -30,7 +30,7 @@ RUN make fclean && make
 EXPOSE 8002
 
 # Run the server
-CMD ["./socket", "configuration/default.conf"]
+# CMD ["./socket", "configuration/default.conf"]
 
 # Stop all containers
 # docker stop $(docker ps -a -q)
