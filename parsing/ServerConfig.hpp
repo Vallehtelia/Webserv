@@ -60,6 +60,6 @@ class ServerConfig
 		void	printConfig() const;
 };
 
-bool	checkConfFile(char *filename);
-void	parseData(char *filename, std::vector<ServerConfig> &server);
+bool	checkConfFile(const std::string &filename);
+void	parseData(const std::string &filename, std::vector<ServerConfig> &server);
 #endif

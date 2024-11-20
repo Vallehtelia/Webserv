@@ -6,7 +6,7 @@
 #include <thread>
 #include <chrono>
 
-bool	checkConfFile(char *filename)
+bool	checkConfFile(const std::string &filename)
 {
 	std::ifstream	file(filename);
 
@@ -236,7 +236,7 @@ static int	parseServerBlock(std::ifstream &file, ServerConfig &server)
 }
 
 
-void	parseData(char *filename, std::vector<ServerConfig> &server)
+void	parseData(const std::string &filename, std::vector<ServerConfig> &server)
 {
 	std::ifstream	file(filename);
 	std::string		line;

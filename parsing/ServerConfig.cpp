@@ -142,6 +142,8 @@ void	ServerConfig::printConfig() const {
 		std::cout << "Key: " << pair.first << ", Value: ";
 		std::visit([](auto&& arg) { std::cout << arg << std::endl; }, pair.second);
 	}
+	for (std::map<int, std::string>::const_iterator Er = _error_pages.begin(); Er != _error_pages.end(); Er++)
+		std::cout << "Error code: " << Er->first << ", Page: " << Er->second << std::endl;
 }
 
 /*
