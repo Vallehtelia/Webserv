@@ -1,3 +1,10 @@
+{/* <button id="custom-file-button">Choose a File</button>
+
+document.getElementById('custom-file-button').addEventListener('click', function() {
+    document.getElementById('image').click();
+});
+ */}
+
 document.querySelectorAll("#file-upload-form input[type='file']").forEach(function(input) {
     input.addEventListener("change", function() {
         // Find the sibling span element (file name display)
