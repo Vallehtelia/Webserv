@@ -50,7 +50,6 @@ std::string RequestHandler::getContentType(const std::string& path) const {
         {".json", "application/json"},
         {".mp3", "audio/mpeg"},
         {".mp4", "video/mp4"}
-
     };
 
     size_t dot_pos = path.find_last_of(".");
@@ -164,11 +163,11 @@ bool RequestHandler::validFile(const std::string& filePath) {
 				_statusCode = 403;
                 return false;
             }
-            if (_method == "POST" && std::filesystem::exists(fullPath)) {
-                std::cerr << "Error: File already exists, cannot overwrite in POST request." << std::endl;
-				_statusCode = 409;
-                return false;
-            }
+            // if (_method == "POST" && std::filesystem::exists(fullPath)) {
+            //     std::cerr << "Error: File already exists, cannot overwrite in POST request." << std::endl;
+			// 	_statusCode = 409;
+            //     return false;
+            // }
             const auto freeSpace = std::filesystem::space(dir).available;
             const size_t maxUploadSize = 50 * 1024 * 1024;  // 50 MB limit
             if (freeSpace < maxUploadSize) {
@@ -215,6 +214,8 @@ void RequestHandler::handleGetRequest(Response& res) {
     }
 }
 
+
+
 void RequestHandler::handleDeleteRequest(Response& res)
 {
 
@@ -237,7 +238,7 @@ void RequestHandler::handlePostRequest(const Request& req, Response& res)
     if (req.isMultiPart()) {
         handleMultipartRequest(req, res);
     }
-    else if (req.getContentType() == "application/json\r") {
+    else if (req.getContentType() == "application/json") {
         handleJsonData(req, res);
     }
     // else if (req.getContentType() == "text/plain") {
@@ -256,7 +257,7 @@ void RequestHandler::handlePutRequest(const Request& req, Response& res)
     if (req.isMultiPart()) {
         handleMultipartRequest(req, res);
     }
-    else if (req.getContentType() == "application/json\r") {
+    else if (req.getContentType() == "application/json") {
 		std::cout << "Processing JSON Data for PUT" << std::endl;
         handleJsonData(req, res);
     }
@@ -279,7 +280,10 @@ void RequestHandler::handleJsonData(const Request &req, Response &res)
         }
     }
 	else
+    {
+        std::cout << "ERROR: COULD NOT OPEN FILE: " << _filePath << std::endl;
 		res.setResponse(_statusCode, "text/html", _body);
+    }
 }
 
 
@@ -287,12 +291,14 @@ void RequestHandler::handleJsonData(const Request &req, Response &res)
 void RequestHandler::handleMultipartRequest(const Request &req, Response &res) {
 	std::cout << "HANDLE MULTIPART REQUEST" << std::endl;
     const auto& multipartData = req.getMultipartData();
-    std::unordered_map<std::string, std::string> formData;
+    std::vector<std::string> uploadedFiles;
     bool isCgi = false;
 
+    _body = "{\n\t\"uploadedFiles\": [\n";
     for (const auto& part : multipartData) {
         if (part.filename.empty()) {
-            handleFormField(part, formData);
+            // handleFormField(part, formData);
+            continue ;
         }
         else if (req.getUri().find("cgi") != std::string::npos) {
             // edited file uploaded to tmp folder
@@ -302,6 +308,10 @@ void RequestHandler::handleMultipartRequest(const Request &req, Response &res) {
         }
         else {
             handleFileUpload(part, res);
+            if (_statusCode == 200)
+            {
+                uploadedFiles.push_back("{\"filename\" : \"" + part.filename + "\", \"fileurl\" : \"uploads/" + part.filename + "\"}");
+            }
 			if (_statusCode != 200 && _statusCode != 201)
 			{
 				//res.setResponse(_statusCode, "text/html", "error");
@@ -310,10 +320,25 @@ void RequestHandler::handleMultipartRequest(const Request &req, Response &res) {
         }
     }
     if (!isCgi) {
-        _body = createJsonResponse(formData);
+        _body = createJsonResponse(uploadedFiles);
         res.setResponse(200, "application/json", _body);
     }
 }
+
+// {
+//   "uploadedFiles": [
+//     {
+//       "fileName": "image1.jpg",
+//       "fileUrl": "https://example.com/uploads/image1.jpg",
+//       "fileId": "abc123"
+//     },
+//     {
+//       "fileName": "image2.png",
+//       "fileUrl": "https://example.com/uploads/image2.png",
+//       "fileId": "xyz789"
+//     }
+//   ]
+// }
 
 void RequestHandler::handleFileUpload(const MultipartData& part, Response& res)
 {
@@ -329,8 +354,6 @@ void RequestHandler::handleFileUpload(const MultipartData& part, Response& res)
 			std::cout << "WRITING TO FILE" << uploadPath << std::endl;
         	file.write(part.data.data(), part.data.size());
         	file.close();
-        	std::string responseBody = "{\"status\": \"File uploaded successfully\", \"filename\": \"" + part.filename + "\"}";
-        	res.setResponse(200, "application/json", responseBody);
 			_statusCode = 200;
 		}
     } else {
@@ -339,26 +362,29 @@ void RequestHandler::handleFileUpload(const MultipartData& part, Response& res)
     }
 }
 
-void RequestHandler::handleFormField(const MultipartData& part, std::unordered_map<std::string, std::string>& formData) {
+void RequestHandler::handleFormField(const MultipartData& part) {
     if (part.filename.empty()) {
-        std::string fieldName = part.name;
-        std::string fieldValue(part.data.begin(), part.data.end());
-        formData[fieldName] = fieldValue;
-        std::cout << "Form field received - " << fieldName << ": " << fieldValue << std::endl;
+        // textToBody += part.name;
+        // std::string fieldValue(part.data.begin(), part.data.end());
+        // formData[fieldName] = fieldValue;
+        // std::cout << "Form field received - " << fieldName << ": " << fieldValue << std::endl;
+        return ;
     }
 }
 
-std::string RequestHandler::createJsonResponse(const std::unordered_map<std::string, std::string>& formData) {
-    std::stringstream json;
-    json << "{";
+std::string RequestHandler::createJsonResponse(const std::vector<std::string> uploadedFiles) {
+    std::string json;
+    json += "{\n\t\"uploadedFiles\": [\n";
 
-    for (auto it = formData.begin(); it != formData.end(); ++it) {
-        if (it != formData.begin()) json << ", ";
-        json << "\"" << it->first << "\": \"" << it->second << "\"";
+    for (size_t i = 0; i < uploadedFiles.size(); i++)
+    {
+        json += "\t\t" + uploadedFiles[i];
+        if (i != uploadedFiles.size() - 1) {
+            json += ",\n";
+        }
     }
-
-    json << "}";
-    return json.str();
+    json += "\n\t]\n}";
+    return json;
 }
 
 

@@ -20,19 +20,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const listItem = document.createElement('li');
             listItem.textContent = todo.title;
             listItem.className = todo.completed ? 'completed' : 'not-completed';
-
+            const buttonContainer = document.createElement('div');
             const toggleButton = document.createElement('button');
-            toggleButton.textContent = todo.completed ? 'Mark as Incomplete' : 'Mark as Complete';
+            toggleButton.textContent = " ";
             toggleButton.className = 'toggle';
             toggleButton.addEventListener('click', () => toggleTodo(index));
-
+            
             const removeButton = document.createElement('button');
             removeButton.textContent = 'Remove';
             removeButton.className = 'remove';
             removeButton.addEventListener('click', () => removeTodo(index));
-
-            listItem.appendChild(toggleButton);
-            listItem.appendChild(removeButton);
+            
+            buttonContainer.className = 'button-container';
+            buttonContainer.appendChild(toggleButton);
+            buttonContainer.appendChild(removeButton);
+            listItem.appendChild(buttonContainer);
             todoList.appendChild(listItem);
         });
     };
@@ -84,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(JSON.stringify({ todos }, null, 2));
         try {
             const response = await fetch('todos.json', {
-                method: 'PUT',
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },

@@ -187,16 +187,17 @@ void Request::prepareRequest()
             chunked = true;
     if (headers.find("Content-Type") != headers.end())
         contentType = headers["Content-Type"];
-            if ((method == "POST" || method == "PUT") && headers["Content-Type"].find("multipart/form-data") != std::string::npos) {
-            size_t boundaryPos = headers["Content-Type"].find("boundary=");
-            if (boundaryPos != std::string::npos)
-            {
-                boundary = headers["Content-Type"].substr(boundaryPos + 9);
-                boundary =  "--" + boundary;
-                boundary.erase(boundary.find_last_not_of("\r") + 1);
-                _isMultiPart = true;
-            }
+    if ((method == "POST" || method == "PUT") && headers["Content-Type"].find("multipart/form-data") != std::string::npos)
+    {
+        size_t boundaryPos = headers["Content-Type"].find("boundary=");
+        if (boundaryPos != std::string::npos)
+        {
+            boundary = headers["Content-Type"].substr(boundaryPos + 9);
+            boundary =  "--" + boundary;
+            boundary.erase(boundary.find_last_not_of("\r") + 1);
+            _isMultiPart = true;
         }
+    }
     if (chunked == true)
         currentState = State::UNCHUNK;
     else if (contentLength > 0)
@@ -254,17 +255,18 @@ void Request::parseHeaders() {
 
 void Request::parseChunks()
 {
-    std::vector<char> buffer(std::istreambuf_iterator<char>(requestStream), {});
-    std::string chunkBuffer(buffer.begin(), buffer.end());
-    std::cout << "PARSING CHUNKS" << std::endl;
     static bool inChunk = false;
     static size_t chunkSize = 0;
+
+    std::cout << "PARSING CHUNKS" << std::endl;
+    std::vector<char> buffer(std::istreambuf_iterator<char>(requestStream), {});
+    std::string chunkBuffer(buffer.begin(), buffer.end());
     rawChunkedData.append(std::string(buffer.begin(), buffer.end()));
     checkline(rawChunkedData);
     if (!inChunk) {
         size_t pos = rawChunkedData.find("\r\n");
         if (pos == std::string::npos) {
-            currentState = State::INCOMPLETE; // Wait for more data
+            currentState = State::INCOMPLETE;
             return;
         }
         std::string chunkSizeStr = rawChunkedData.substr(0, pos);
@@ -324,8 +326,10 @@ void Request::parseBody()
 }
 
 
-void Request::parseMultipartData() {
+void Request::parseMultipartData()
+{
     size_t start = 0;
+
     while ((start = body.find(boundary, start)) != std::string::npos) {
         start += boundary.length();
         size_t end = body.find(boundary, start);
@@ -340,10 +344,13 @@ void Request::parseMultipartData() {
     }
 }
 
-MultipartData Request::createData(std::string &rawData) {
+MultipartData Request::createData(std::string &rawData)
+{
     MultipartData multipartData;
+
     rawData.erase(0, rawData.find_first_not_of("\r\n"));
     std::istringstream rawDataStream(rawData);
+
     createMultipartHeaders(multipartData, rawDataStream);
     createMultipartBody(multipartData, rawDataStream);
     return multipartData;

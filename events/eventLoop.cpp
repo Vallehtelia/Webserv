@@ -76,15 +76,16 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
     {
         std::string rawRequest(buffer, bytes_read);
 		req.parseRequest(rawRequest);
-        // req.printRequest();
         if (req.getState() == State::COMPLETE || req.getState() == State::ERROR)
         {
+        	req.printRequest();
             if (req.getState() != State::ERROR)
             {
                 std::string path = req.getUri();
                 bool    cgi_req = (path.find("/cgi-bin/") != std::string::npos || (path.size() > 3 && path.substr(path.size() - 3) == ".py"));
                 if (cgi_req)
                 {
+					std::cout << "THE IMAGE IS CGI" << std::endl;
                     std::string queryString = findQueryStr(req.getUri());
                     std::string directPath;
                     directPath = findPath(req.getUri());
@@ -103,6 +104,7 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 		    Response res;
             RequestHandler requestHandler;
 		    requestHandler.handleRequest(req, res);
+			res.printResponse();
             //res.printResponse();
 		    // Get the full HTTP response string from the Response class
 		    std::string http_response = res.getResponseString();

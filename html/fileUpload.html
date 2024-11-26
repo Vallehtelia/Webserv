@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>file upload</title>
+    <script src="fileUpload.js" defer></script>
+    <link rel="stylesheet" href="fileUpload.css">
+</head>
+<body>
+    <div class="header">
+        <form action="fileUpload.html" method="GET">
+            <button type="submit">Upload a File</button>
+        </form>
+        <form action="other_page.html" method="GET">
+            <button type="submit">cgi scripts</button>
+        </form>
+        <form action="todo.html" method="GET">
+            <button type="submit">form data</button>
+        </form>
+    </div>
+    <div class="flex-container">
+        <div class="form-container">
+            <h1>Upload a file</h1>
+            <form id="file-upload-form" action="/upload" method="POST" enctype="multipart/form-data">
+                <div>
+                    <label for="profilepic">Profile Picture:</label>
+                    <input type="file" id="profilepic" name="profilepic" accept="image/*">
+                    <span id="file-name">No image chosen</span> <!-- Custom text for file name -->
+                </div>
+                <div>
+                    <label for="video">Video:</label>
+                    <input type="file" id="video" name="video" accept="video/*">
+                    <span id="file-name">No video chosen</span>
+                </div>
+                <div>
+                    <label for="audio">Audio (MP3):</label>
+                    <input type="file" id="audio" name="audio" accept=".mp3">
+                    <span id="file-name">No audio chosen</span>
+                </div>
+                <div>
+                    <input type="submit" value="Submit">
+                </div>
+            </form>
+        </div>
+        <div id="getResponse" class="form-container">
+            <h1>Uploaded files<h1>
+            <div></div>
+        </div>
+    </div>
+</body>
+</html>
+
+
+

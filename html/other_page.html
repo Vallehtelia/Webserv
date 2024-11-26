@@ -3,46 +3,40 @@
 <head>
     <title>Dynamic Server</title>
     <script src="script.js" defer></script>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Create Your Profile</h1>
-    <form id="profileForm" action="/submit" method="POST" enctype="multipart/form-data">
-        <label for="nickname">Nickname:</label>
-        <input type="text" id="nickname" name="nickname"><br><br>
-
-        <label for="profilepic">Profile Picture:</label>
-        <input type="file" id="profilepic" name="profilepic" accept="image/*"><br><br>
-        <label for="video">Video:</label>
-        <input type="file" id="video" name="video" accept="video/*"><br><br>
-
-        <label for="audio">Audio (MP3):</label>
-        <input type="file" id="audio" name="audio" accept=".mp3"><br><br>
-
-        <!-- Existing Get CGI button -->
-        <button type="button" id="runScriptButton">Run GET CGI Script</button>
-        <!-- Submit button for form -->
-        <input type="submit" value="Submit">
-        <div id="getResponse"></div> <!-- Div for displaying GET response -->
-
-    </form>
-
-    <h1>Upload and Edit Your Image</h1>
-
-    <!-- POST Request Form for Image Upload -->
-    <form id="imageUploadForm" enctype="multipart/form-data">
-        <label for="name">Your Name:</label>
-        <input type="text" id="name" name="name"><br><br>
-
-        <label for="image">Upload Image:</label>
-        <input type="file" id="image" name="image" accept="image/*"><br><br>
-
-        <button type="button" id="submitPostRequest">Submit Image for Processing</button>
-        <button type="button" id="showImageRequest">show image</button>
-    </form>
-
-    <div id="postResponse"></div>
-
-    <div id="showImageDiv"></div>
+    <div class="header">
+        <form action="fileUpload.html" method="GET">
+            <button type="submit">Upload a File</button>
+        </form>
+        <form action="other_page.html" method="GET">
+            <button type="submit">cgi scripts</button>
+        </form>
+        <form action="todo.html" method="GET">
+            <button type="submit">form data</button>
+        </form>
+    </div>
+    <div class="flex-container">
+        <div class="form-container">
+            <form id="imageUploadForm" enctype="multipart/form-data">
+                <label for="name">Your Name:</label>
+                <input type="text" id="name" name="name"><br><br>
+        
+                <label for="image">Upload Image:</label>
+                <input type="file" id="image" name="image" accept="image/*"><br><br>
+        
+                <button type="button" id="submitPostRequest">Submit Image for Processing</button>
+                <button type="button" id="showImageRequest">show image</button>
+            </form>
+        </div>
+        <div class="cgi-image-container form-container">
+            <h1>processed image</h1>
+            <div id="showImageDiv">
+            </div>
+            <div id="postResponse"></div>
+        </div>
+    </div>
 </body>
 </html>
 

@@ -2,19 +2,30 @@
 <html>
 <head>
     <link rel="stylesheet" href="styles.css">
-    <title>Dynamic Server</title>
+    <title>webserver</title>
     <script src="script.js" defer></script>
 </head>
 <body>
-    <h1>Submit Your Data</h1>
-    <form id="myForm" enctype="multipart/form-data">
-        <input type="text" name="name" placeholder="name" required>
-        <input type="text" name="favoriteFood" placeholder="name" required>
-        <input type="text" name="dunno" placeholder="name" required>
-        <button type="submit">Submit</button>
-    </form>
-    <div id="response"></div>
-    <button onclick="window.location.href='other_page.html';">next</button>
+    <div class="header">
+        <form action="fileUpload.html" method="GET">
+            <button type="submit">Upload a File</button>
+        </form>
+        <form action="other_page.html" method="GET">
+            <button type="submit">cgi scripts</button>
+        </form>
+        <form action="todo.html" method="GET">
+            <button type="submit">form data</button>
+        </form>
+    </div>
+    <div class="flex-container">
+    <div class="form-container">
+        <h1>webserver</h1>
+        <div>
+            <button>cgi scripts</button>
+            <button>form data</button>
+        </div>
+    </div>
+    </div>
 </body>
 </html>
 

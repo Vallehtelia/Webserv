@@ -1,17 +1,16 @@
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    margin: 0;
-    padding: 0;
-}
 
-.container {
-    max-width: 600px; /* Set a max width for the container */
-    margin: 50px auto; /* Center the container */
+.todo-container {
+    width: 800px; /* Set a max width for the container */
+    height: 400px;
     padding: 20px; /* Space inside the container */
     background: #fff;
-    border-radius: 8px;
+    border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    
 }
 
 h1 {
@@ -19,11 +18,14 @@ h1 {
     color: #333;
 }
 
-form {
+.todo-form {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 20px;
+    width:100%;
+    margin-top: 10px;
+    gap:20px;
 }
+
 
 input[type="text"] {
     flex: 1;
@@ -33,9 +35,9 @@ input[type="text"] {
     font-size: 16px;
 }
 
-button {
+.todo-container > button {
     padding: 7px 7px;
-    background-color: #28a745;
+    background-color: black;
     color: white;
     border: none;
     border-radius: 4px;
@@ -43,58 +45,81 @@ button {
     font-size: 16px;
 }
 
-button:hover {
-    background-color: #218838;
-}
 
-ul {
+.todo-form > ul {
     list-style-type: none;
     padding: 0;
 }
 
-li {
+.todo-list {
+    width:100%;
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+}
+
+.todo-list-container {
+    overflow: scroll;
+    max-height: 80%;
+    overflow: scroll;
+    width:100%;
+}
+
+.todo-list > li {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px;
     border-bottom: 1px solid #ddd;
     border-radius: 4px; /* Rounded corners for list items */
     margin-bottom: 10px; /* Space between list items */
+    border: 1px solid black;
+    padding:15px;
+    margin:0px;
+    margin-bottom: 10px;
 }
 
-li.completed {
-    background-color: #d4edda; /* Light green for completed items */
-    /*text-decoration: line-through;*/
-    color: #155724; /* Darker text for contrast */
+.button-container {
+    display:flex;
+    gap: 10px;
 }
 
-li:not(.completed) {
-    background-color: #fff3cd; /* Light yellow for incomplete items */
-    color: #856404; /* Darker text for contrast */
+li.completed > .button-container > button.toggle {
+    background-color: green;
 }
+
+li:not(.completed) > .button-container > button.toggle {
+    background-color: red;
+}
+
+li.completed > .button-container > button.toggle:hover {
+    background-color: red;
+}
+
+li:not(.completed) > .button-container > button.toggle:hover {
+    background-color: green;
+}
+
 
 button.toggle {
-    background-color: #007bff;
     border: none;
     border-radius: 4px;
-    color: white;
     cursor: pointer;
+    border: 1px solid black;
 }
 
-button.toggle:hover {
-    background-color: #0069d9;
-}
 
 button.remove {
-    background-color: #dc3545;
     border: none;
     border-radius: 4px;
-    color: white;
+    color: black;
     cursor: pointer;
+    background-color: white;
+    border: 1px solid black;
 }
 
 button.remove:hover {
     background-color: #c82333;
+    color: white;
 }
 
 /* Add space around the container */
