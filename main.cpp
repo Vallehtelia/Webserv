@@ -42,14 +42,13 @@ int	main(int ac, char **av)
     std::vector<Socket> sockets;
 	if (initSocket(server, sockets) == false)
 		return 1;
-
 	epoll_fd = setup_epoll(sockets);
 	if (epoll_fd == -1)
 	{
 		cleanup(sockets, epoll_fd);
 		return 1;
 	}
-
+	
 	event_loop(sockets, epoll_fd);
 
     // Close the other sockets

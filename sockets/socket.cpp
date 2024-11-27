@@ -1,7 +1,7 @@
 #include "./socket.hpp"
 #include "../epoll/epoll.hpp"
 
-Socket::Socket(int port, std::string host) : _socket_fd(0), _active(false)
+Socket::Socket(int port, std::string host) : _socket_fd(0), _active(false), _server()
 {
 	this->_port = port;
 	this->_ip = host;
@@ -15,6 +15,7 @@ Socket::Socket(Socket const &other)
 	this->_ip = other._ip;
 	this->_socket_fd = other._socket_fd;
 	this->_active = other._active;
+	this->_server = other._server;
 }
 
 Socket &Socket::operator=(Socket const &other)
@@ -23,6 +24,7 @@ Socket &Socket::operator=(Socket const &other)
 	this->_ip = other._ip;
 	this->_socket_fd = other._socket_fd;
 	this->_active = other._active;
+	this->_server = other._server;
 	return (*this);
 }
 
@@ -51,6 +53,11 @@ void	Socket::setActiveMode(bool mode)
 	this->_active = mode;
 }
 
+void	Socket::setServer(ServerConfig server)
+{
+	this->_server = server;
+}
+
 int	Socket::getPort() const
 {
 	return (this->_port);
@@ -69,6 +76,11 @@ return (this->_socket_fd);
 bool	Socket::getActiveMode() const
 {
 return (this->_active);
+}
+
+ServerConfig	Socket::getServer() const
+{
+	return (this->_server);
 }
 
 bool	initSocket(std::vector<ServerConfig> &server, std::vector<Socket> &sockets)
@@ -112,6 +124,7 @@ bool	initSocket(std::vector<ServerConfig> &server, std::vector<Socket> &sockets)
 			cleanup(sockets, -1);
 			return false;
 		}
+		sock.setServer(config);
 		sockets.push_back(sock);
 	}
 	return true;
