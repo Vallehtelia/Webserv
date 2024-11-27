@@ -4,6 +4,7 @@
 # or without name 	docker ps
 # then				docker stop <id from ps> or webserverc
 # Use a lightweight Linux distribution like Ubuntu
+
 FROM ubuntu:20.04
 
 # Add a line to inspect the sources.list
@@ -33,13 +34,17 @@ WORKDIR /app
 # Copy your C++ server code to the container
 COPY . /app
 #RUN chmod +r /app/main.cpp
+
 #RUN ls -l /app
 
 # Compile the code with -fPIE and -pie flags
 RUN make FLAGS="-std=c++17 -Wall -Wextra -Werror -fPIE -pie"
 
+
 # Expose the server port
 EXPOSE 8002
 
 # Run the server
+
 CMD ["./socket", "configuration/default.conf"]
+

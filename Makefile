@@ -22,9 +22,11 @@ SRC += $(addprefix $(PARSE_DIR), $(PARSE_FILES))
 SRC += $(addprefix $(CGI_DIR), $(CGI_FILES))
 
 OBJ = $(SRC:.cpp=.o)
+
 COMPILER = c++ -std=c++17
 CFLAGS = -Wall -Wextra -Werror
 LFLAGS = 
+
 
 all: $(NAME)
 

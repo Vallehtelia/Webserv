@@ -6,13 +6,24 @@
 # or without name 	docker ps
 # then				docker stop <id from ps> or webserverc
 # Use a lightweight Linux distribution like Ubuntu
-FROM ubuntu
+FROM ubuntu:20.04
 
+# Add a line to inspect the sources.list
+RUN cat /etc/apt/sources.list
+
+# Add necessary repositories
+RUN echo "deb http://archive.ubuntu.com/ubuntu focal main restricted universe multiverse" > /etc/apt/sources.list && \
+    echo "deb http://archive.ubuntu.com/ubuntu focal-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://security.ubuntu.com/ubuntu focal-security main restricted universe multiverse" >> /etc/apt/sources.list
+	
 # Update package list and install necessary tools
 RUN apt-get update && \
-    apt-get install -y build-essential && \
-    apt-get install -y g++ && \
-    apt-get install -y cmake && \
+    apt-get dist-upgrade -y && \
+    #  apt-mark unhold $(dpkg --get-selections | grep hold | awk '{print $1}') && \
+    apt-get install -y --fix-missing g++ && \
+    apt-get install -y --fix-missing make && \
+    apt-get install -y --fix-missing build-essential && \
+    apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
@@ -21,10 +32,10 @@ WORKDIR /app
 # Copy your C++ server code to the container
 COPY . /app
 #RUN chmod +r /app/main.cpp
-RUN echo HELLO
-RUN ls -l /app
-RUN make fclean && make
+#RUN ls -l /app
 
+# Compile the code
+RUN make
 
 # Expose the server port
 EXPOSE 8002
@@ -32,7 +43,9 @@ EXPOSE 8002
 # Run the server
 CMD ["./socket", "configuration/default.conf"]
 
+
 # Stop all containers
 # docker stop $(docker ps -a -q)
 # Remove all containers
 # docker rm $(docker ps -a -q)
+
