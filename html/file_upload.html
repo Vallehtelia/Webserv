@@ -17,14 +17,17 @@
                 <button type="submit">cgi scripts</button>
             </form>
             <form action="todo.html" method="GET">
-                <button type="submit">form data</button>
+                <button type="submit">JSON data</button>
+            </form>
+            <form action="todo.html" method="GET">
+                <button type="submit">routes</button>
             </form>
         </div>
     </div>
     <div class="flex-container">
         <div class="form-container">
             <h1>Upload a file</h1>
-            <form id="file-upload-form" action="/upload" method="POST" enctype="multipart/form-data">
+            <form class="file-upload-form" id="file-upload-form" action="/upload" method="POST" enctype="multipart/form-data">
                 <div>
                     <label for="profilepic">IMAGE</label>
                     <input type="file" id="profilepic" name="profilepic" accept="image/*">
@@ -41,7 +44,7 @@
                     <span id="file-name">No audio chosen</span>
                 </div>
                 <div>
-                    <input type="submit" value="Submit">
+                    <button type="submit" value="Submit" class="submit-button">upload</button>
                 </div>
             </form>
         </div>

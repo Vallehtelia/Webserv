@@ -20,7 +20,10 @@
                 <button type="submit">cgi scripts</button>
             </form>
             <form action="todo.html" method="GET">
-                <button type="submit">form data</button>
+                <button type="submit">JSON data</button>
+            </form>
+            <form action="todo.html" method="GET">
+                <button type="submit">routes</button>
             </form>
         </div>
     </div>
@@ -29,9 +32,9 @@
 				<div class="todo-list-container">
 					<ul id="todo-list" class="todo-list"></ul>
 				</div>
-				<form id="todo-form" class="todo-form">
+				<form id="todo-form" class="todo-form add-todo">
 					<input type="text" id="todo-title" placeholder="New to-do item" required>
-					<button type="submit">ADD TO TO</button>
+					<button type="submit" class="submit-button">Add to-do</button>
 				</form>
 		</div>
 	</div>

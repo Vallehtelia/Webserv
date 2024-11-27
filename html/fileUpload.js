@@ -9,9 +9,11 @@ document.querySelectorAll("#file-upload-form input[type='file']").forEach(functi
     input.addEventListener("change", function() {
         // Find the sibling span element (file name display)
         var fileNameDisplay = this.nextElementSibling;
+        console.log(fileNameDisplay);
 
         // Update the text with the name of the file or "No file chosen"
-        var fileName = this.files[0] ? this.files[0].name : "No file chosen";
+        var fileName = this.files[0] ? this.files[0].name : "No file !!chosen";
+        fileNameDisplay.classList.add("file-name-display");
         fileNameDisplay.textContent = fileName;
     });
 });
@@ -45,7 +47,6 @@ const form = document.querySelector('#file-upload-form');
         const profilePic = document.getElementById('profilepic').files[0];
         const video = document.getElementById('video').files[0];
         const audio = document.getElementById('audio').files[0];
-        
         if (!profilePic && !audio && !video) {
             return;
         }
