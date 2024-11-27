@@ -18,20 +18,25 @@ document.addEventListener('DOMContentLoaded', () => {
         todoList.innerHTML = ''; 
         todos.forEach((todo, index) => {
             const listItem = document.createElement('li');
-            listItem.textContent = todo.title;
+            listItem.textContent = todo.title.toUpperCase();
             listItem.className = todo.completed ? 'completed' : 'not-completed';
             const buttonContainer = document.createElement('div');
             const toggleButton = document.createElement('button');
+            const completedText = document.createElement('p');
+            completedText.className = "completed-text";
+            completedText.textContent = "COMPLETED: ";
             toggleButton.textContent = " ";
             toggleButton.className = 'toggle';
             toggleButton.addEventListener('click', () => toggleTodo(index));
             
             const removeButton = document.createElement('button');
-            removeButton.textContent = 'Remove';
+            removeButton.textContent = 'REMOVE';
             removeButton.className = 'remove';
             removeButton.addEventListener('click', () => removeTodo(index));
             
             buttonContainer.className = 'button-container';
+            
+            buttonContainer.appendChild(completedText);
             buttonContainer.appendChild(toggleButton);
             buttonContainer.appendChild(removeButton);
             listItem.appendChild(buttonContainer);

@@ -60,7 +60,22 @@ body {
 	justify-content: center;
 	align-items: center;
 	min-width: 400px;
+    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2);
+
 }
+
+button:hover {
+    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
+    transform: scale(1.005);
+    transition: box-shadow 0.3s, transform 0.3s;
+}
+
+.header  button:hover {
+    transform: scale(1.05);
+    transition: transform 0.3s;
+}
+
+
 
 #file-upload-form {
     display: flex;
@@ -98,6 +113,13 @@ body {
     padding-bottom: 5px;
 }
 
+#file-upload-form label:hover {
+
+    transform: scale(1.002);
+    transition: transform 0.2s;
+}
+
+
 .form-container * button {
     border-radius: 5px;
     border: 1px solid black;
@@ -109,7 +131,10 @@ body {
     padding-bottom: 5px;
 }
 
-
+.text-wrapper {
+    width: 100%;
+    text-align: center;
+}
 
 #file-name {
     display: inline-block;

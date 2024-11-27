@@ -4,31 +4,46 @@
     <link rel="stylesheet" href="styles.css">
     <title>webserver</title>
     <script src="script.js" defer></script>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="orbit.css">
 </head>
 <body>
     <div class="header">
         <img src="masters_logo_text.png"/>
-        <div class="header-button-container">
-            <form action="file_upload.html" method="GET">
-                <button type="submit">Upload a File</button>
-            </form>
-            <form action="scripts.html" method="GET">
-                <button type="submit">cgi scripts</button>
-            </form>
-            <form action="todo.html" method="GET">
-                <button type="submit">form data</button>
-            </form>
-        </div>
     </div>
     <div class="flex-container">
-    <div class="form-container">
-        <h1>webserver</h1>
-        <div>
-            <button>cgi scripts</button>
-            <button>form data</button>
+        <div class="form-container">
+            <div class="text-wrapper">
+                <h1>WEBSERVER</h1>
+                <h4>WELCOME TO OUR WEBSERVER</h4>
+                <p>CHOOSE WHAT YOU WANT TO TEST:</p>
+
+            </div>
+            <div class="flex-container">
+                <form action="file_upload.html" method="GET">
+                    <button type="submit">Upload a File</button>
+                </form>
+                <form action="scripts.html" method="GET">
+                    <button type="submit">cgi scripts</button>
+                </form>
+                <form action="todo.html" method="GET">
+                    <button type="submit">form data</button>
+                </form>
+            </div>
         </div>
     </div>
-    </div>
+    <div class="credits-wrapper">
+        <div class="atom">
+            <div class="nucleus"></div>
+            <div class="orbit-path"></div>
+            <div class="orbit-path-3"></div>
+            <div class="orbit-path-2"></div>
+            <div class="electron">vvaalant</div>
+            <div class="electron">mburakow</div>
+            <div class="electron">okarejok</div>
+        </div>
+        <p>42 WEBSERV HIVE HELSINKI 2024</p>
+    </div >
 </body>
 </html>
 

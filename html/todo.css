@@ -5,7 +5,7 @@
     padding: 20px; /* Space inside the container */
     background: #fff;
     border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -73,9 +73,13 @@ input[type="text"] {
     border-radius: 4px; /* Rounded corners for list items */
     margin-bottom: 10px; /* Space between list items */
     border: 1px solid black;
-    padding:15px;
+    padding:5px;
     margin:0px;
     margin-bottom: 10px;
+}
+
+.todo-container > *  {
+    font-size: 12px;
 }
 
 .button-container {
@@ -89,14 +93,6 @@ li.completed > .button-container > button.toggle {
 
 li:not(.completed) > .button-container > button.toggle {
     background-color: red;
-}
-
-li.completed > .button-container > button.toggle:hover {
-    background-color: red;
-}
-
-li:not(.completed) > .button-container > button.toggle:hover {
-    background-color: green;
 }
 
 
@@ -115,6 +111,7 @@ button.remove {
     cursor: pointer;
     background-color: white;
     border: 1px solid black;
+    font-size: 12px;
 }
 
 button.remove:hover {

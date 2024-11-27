@@ -4,6 +4,7 @@
     <title>file upload</title>
     <script src="fileUpload.js" defer></script>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="orbit.css">
 </head>
 <body>
     <div class="header">
@@ -25,17 +26,17 @@
             <h1>Upload a file</h1>
             <form id="file-upload-form" action="/upload" method="POST" enctype="multipart/form-data">
                 <div>
-                    <label for="profilepic">Profile Picture:</label>
+                    <label for="profilepic">IMAGE</label>
                     <input type="file" id="profilepic" name="profilepic" accept="image/*">
                     <span id="file-name">No image chosen</span> <!-- Custom text for file name -->
                 </div>
                 <div>
-                    <label for="video">Video:</label>
+                    <label for="video">VIDEO (MP4)</label>
                     <input type="file" id="video" name="video" accept="video/*">
                     <span id="file-name">No video chosen</span>
                 </div>
                 <div>
-                    <label for="audio">Audio (MP3):</label>
+                    <label for="audio">AUDIO (MP3)</label>
                     <input type="file" id="audio" name="audio" accept=".mp3">
                     <span id="file-name">No audio chosen</span>
                 </div>
@@ -49,6 +50,18 @@
             <div></div>
         </div>
     </div>
+    <div class="credits-wrapper">
+        <div class="atom">
+            <div class="nucleus"></div>
+            <div class="orbit-path"></div>
+            <div class="orbit-path-3"></div>
+            <div class="orbit-path-2"></div>
+            <div class="electron">vvaalant</div>
+            <div class="electron">mburakow</div>
+            <div class="electron">okarejok</div>
+        </div>
+        <p>42 WEBSERV HIVE HELSINKI 2024</p>
+    </div >
 </body>
 </html>
 
