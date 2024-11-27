@@ -17,7 +17,7 @@ void Response::printResponse()
 {
     std::cout << std::endl;
     std::cout << "RESPONSE:" << "\033[32m" << std::endl;
-    // std::cout << getResponseString() << std::endl;
+    std::cout << getResponseString() << std::endl;
     std::cout << _body.size() << std::endl;
     std::cout << _contentLength << std::endl;
     std::cout << "\033[0m" << std::endl;
@@ -56,7 +56,7 @@ void Response::setResponse(int statusCode, const std::string& contentType, const
         setError();
         _contentLength = _body.size();
     }
-    _headers = "Content-Type4: " + _contentType + "\r\n" +
+    _headers = "Content-Type: " + _contentType + "\r\n" +
               "Content-Length: " + std::to_string(_contentLength) + "\r\n";
 }
 
