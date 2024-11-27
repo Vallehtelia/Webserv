@@ -169,7 +169,7 @@ int main(int ac, char **av)
                 std::cout << "RECEIVING DATA FROM FD: " << fd << std::endl;
 				char buffer[4000] = {0};
 				int bytes_read = recv(fd, buffer, sizeof(buffer) - 1, 0);
-				if (bytes_read < 0) {
+				if (bytes_read < 0) { // This should also check -1 for errors (eval sheet)
                     if (errno == EAGAIN || errno == EWOULDBLOCK)
                     {
                         std::cerr << "errno EAGAIN or EWOULDBLOCK\n";
@@ -230,7 +230,7 @@ int main(int ac, char **av)
                         while (total_sent < message_length)
                         {
                             ssize_t bytes_sent = send(events[i].data.fd, message_ptr + total_sent, message_length - total_sent, 0);
-                            if (bytes_sent < 0)
+                            if (bytes_sent < 0) // Also here we should check for -1 (eval sheet)
                             {
                                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
                                     // Socket is not ready, could add a delay or handle as needed
