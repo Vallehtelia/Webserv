@@ -44,6 +44,7 @@ static bool parseServerData(ServerConfig& server, const std::string& line) {
 	std::string key = trimmedLine.substr(0, spacePos);
 	std::string value = trim(trimmedLine.substr(spacePos + 1));  // Remove extra spaces from the value
 
+	std::cout << "Key: " << key << ", Value: " << value << std::endl;
 	// Process the key and assign the value
 	if (key == "listen" || key == "client_max_body_size" || key == "max_events") {
 		server.setConfig(key, std::stoi(value));  // Assume listen is an integer (port)

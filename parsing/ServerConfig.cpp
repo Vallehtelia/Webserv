@@ -85,7 +85,7 @@ int ServerConfig::getBodySize() const {
     return getConfigValue<int>("client_max_body_size"); 
 }
 
-int ServerConfig::getMaxEvents() const {
+int ServerConfig::getEpollMaxEvents() const {
     try {
         return getConfigValue<int>("max_events");
     } catch (const std::runtime_error&) {

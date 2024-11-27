@@ -50,7 +50,7 @@ class ServerConfig
 		std::string getHost() const;
 		std::string getRoot() const;
 		int 		getBodySize() const;
-		int 		getMaxEvents() const;
+		int 		getEpollMaxEvents() const;
 		std::string	getIndex() const;
 
 		std::string	getLocation(std::string key) const;

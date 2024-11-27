@@ -19,7 +19,7 @@
 #include "./cgi/cgi_request.hpp"
 #include "utils.hpp"
 
-#define MAX_EVENTS 10 // taa varmaa conffii
+// #define MAX_EVENTS 10 // taa varmaa conffii
 // #define PORT 8002 // ja taa
 
 // Function to set a socket to non-blocking mode
@@ -118,13 +118,13 @@ int main(int ac, char **av)
 	}
 
 	// Event array for epoll_wait
-    struct epoll_event events[MAX_EVENTS];
+    struct epoll_event events[server[0].getEpollMaxEvents()];
 
 	// Main loop
     std::unordered_map<int, Request> requests;
     while (true)
 	{
-		int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+		int num_events = epoll_wait(epoll_fd, events, server[0].getEpollMaxEvents(), -1);
         if (num_events == -1)
 		{
             perror("epoll_wait");
