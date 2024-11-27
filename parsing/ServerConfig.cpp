@@ -1,6 +1,7 @@
 #include "ServerConfig.hpp"
+#include <stdexcept>
 
-ServerConfig::ServerConfig(): _listen_port("8080"), _server_name("default_server"), _host("localhost"), _root("/var/www/html"), _client_max_body_size("1m"), _index("index.html")
+ServerConfig::ServerConfig()
 {
 }
 
@@ -8,34 +9,34 @@ ServerConfig::~ServerConfig()
 {
 }
 
-void	ServerConfig::setListenPort(std::string port)
-{
-	_listen_port = port;
+// Setters that store values directly in _configData
+
+void ServerConfig::setListenPort(int port) {
+    _configData["listen"] = port;
 }
 
-void	ServerConfig::setServerName(std::string server_name)
-{
-	_server_name = server_name;
+void ServerConfig::setServerName(const std::string& server_name) {
+    _configData["server_name"] = server_name;
 }
 
-void	ServerConfig::setHost(std::string host)
-{
-	_host = host;
+void ServerConfig::setHost(const std::string& host) {
+    _configData["host"] = host;
 }
 
-void	ServerConfig::setRoot(std::string root)
-{
-	_root = root;
+void ServerConfig::setRoot(const std::string& root) {
+    _configData["root"] = root;
 }
 
-void	ServerConfig::setClientMaxBodySize(int size)
-{
-	_client_max_body_size = std::to_string(size) + "m";
+void ServerConfig::setClientMaxBodySize(int size) {
+    _configData["client_max_body_size"] = size; // Store as integer
 }
 
-void	ServerConfig::setIndex(std::string index)
-{
-	_index = index;
+void ServerConfig::setEpollMaxEvents(int events) {
+    _configData["max_events"] = events;
+}
+
+void ServerConfig::setIndex(const std::string& index) {
+    _configData["index"] = index;
 }
 
 void	ServerConfig::addErrorPage(int code, const std::string &path)
@@ -48,42 +49,61 @@ void	ServerConfig::addLocation(LocationConfig location)
 	_locations.push_back(location);
 }
 
-std::string	ServerConfig::getListenPort() const
-{
-	return _listen_port;
+// Template function for retrieving values with type checking
+template<typename T>
+T ServerConfig::getConfigValue(const std::string& key) const {
+    auto it = _configData.find(key);
+    if (it != _configData.end()) {
+        if (std::holds_alternative<T>(it->second)) {
+            return std::get<T>(it->second);
+        } else {
+            throw std::runtime_error("Type mismatch for key: " + key);
+        }
+    } else {
+        throw std::runtime_error("Key not found: " + key);
+    }
 }
 
-std::string	ServerConfig::getServerName() const
-{
-	return _server_name;
+// Specialized getters
+int ServerConfig::getListenPort() const { 
+    return getConfigValue<int>("listen"); 
 }
 
-std::string	ServerConfig::getHost() const
-{
-	return _host;
+std::string ServerConfig::getServerName() const { 
+    return getConfigValue<std::string>("server_name"); 
 }
 
-std::string	ServerConfig::getRoot() const
-{
-	return _root;
+std::string ServerConfig::getHost() const { 
+    return getConfigValue<std::string>("host"); 
 }
 
-std::string	ServerConfig::getBodySize() const
-{
-	return _client_max_body_size;
+std::string ServerConfig::getRoot() const { 
+    return getConfigValue<std::string>("root"); 
 }
 
-std::string	ServerConfig::getIndex() const
-{
-	return _index;
+int ServerConfig::getBodySize() const { 
+    return getConfigValue<int>("client_max_body_size"); 
 }
 
-std::string	ServerConfig::getErrorPage(int code) const
-{
-	std::map<int, std::string>::const_iterator it = _error_pages.find(code);
-	if (it != _error_pages.end())
-		return it->second;
-	return "";
+int ServerConfig::getMaxEvents() const {
+    try {
+        return getConfigValue<int>("max_events");
+    } catch (const std::runtime_error&) {
+        std::cerr << "Warning: 'max_events' not set, using default value." << std::endl;
+        return 10; // or another sensible default
+    }
+}
+
+std::string ServerConfig::getIndex() const { 
+    return getConfigValue<std::string>("index"); 
+}
+
+std::string ServerConfig::getErrorPage(int code) const {
+    auto it = _error_pages.find(code);
+    if (it != _error_pages.end()) {
+        return it->second;
+    }
+    return "";  // Return an empty string if the error page code is not found
 }
 
 std::string	ServerConfig::getLocation(std::string key) const
@@ -96,6 +116,30 @@ std::string	ServerConfig::getLocation(std::string key) const
 	return "";
 }
 
+// NEW:
+// Generic setter to insert any value type
+void ServerConfig::setConfig(const std::string& key, const ValueType& value) {
+	_configData[key] = value;
+}
+
+// Accessor to get the value by key
+ValueType	ServerConfig::getConfig(const std::string& key) const {
+	if (_configData.find(key) != _configData.end()) {
+		return _configData.at(key);
+	} else {
+		throw std::out_of_range("Key not found!");
+	}
+}
+
+// Print configurations for debugging
+void	ServerConfig::printConfig() const {
+	for (const auto& pair : _configData) {
+		std::cout << "Key: " << pair.first << ", Value: ";
+		std::visit([](auto&& arg) { std::cout << arg << std::endl; }, pair.second);
+	}
+}
+
+/*
 void	ServerConfig::printConfig() const
 {
 	std::cout << std::endl << "\033[1;32mServer config:\033[0m" << std::endl;
@@ -131,3 +175,4 @@ void	ServerConfig::printConfig() const
 		std::cout << "Cgi path: " << it->getCgiPath() << std::endl;
 	}
 }
+*/

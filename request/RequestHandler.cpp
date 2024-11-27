@@ -8,7 +8,7 @@ RequestHandler::~RequestHandler() {}
 
 void RequestHandler::handleRequest(Request& req, Response& res)
 {
-    if (req.getState() == "ERROR")
+    if (req.getState() == State::ERROR)
     {
         std::cout << "it gets here!" << std::endl;
         res.setResponse(400, "text/html", "");
@@ -67,7 +67,6 @@ std::string RequestHandler::getContentType(const std::string& path) const {
 
 void RequestHandler::prepareHandler(const Request &req)
 {
-
     std::string _headers;
 	_uri = req.getUri();
 	_method = req.getMethod();
@@ -97,7 +96,6 @@ std::string RequestHandler::getFilepath(std::string filepath)
 	if (filepath.front() == '/' && filepath.length() > 1) {
             filepath.erase(0, 1);
     }
-    std::cout << "valle filepath: " << filepath << std::endl;
     std::filesystem::path baseDir = std::filesystem::current_path() / "html";
     std::filesystem::path path;
     if (filepath.find("cgi") != std::string::npos)
