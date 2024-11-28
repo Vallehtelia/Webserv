@@ -1,0 +1,97 @@
+.credits-wrapper {
+	margin-top: 20px;
+	display: flex;
+	justify-content: center;
+	width: screen;
+	align-items: center;
+	flex-direction: column;
+}
+
+.credits-wrapper > p {
+	color: white;
+	font-size: 10px;
+	text-align: center;
+	width: 100%;
+}
+    .atom {
+      position: relative;
+      width: 300px;
+      height: 300px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    /* Nucleus (the center of the atom) */
+    .nucleus {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      background-color: white; /* Orange color for nucleus */
+      border-radius: 50%;
+      z-index: 10;
+	  border: 1px  white solid;
+
+    }
+
+    /* Orbit path (the circular path the electrons follow) */
+    .orbit-path {
+      position: absolute;
+      width: 240px;
+      height: 240px;
+      border: 2px dashed white; /* Dashed line for the orbit */
+      border-radius: 50%;
+      /*z-index: 5;*/
+    }
+
+
+	.orbit-path-2 {
+		position: absolute;
+		width: 180px;
+		height: 180px;
+		border: 2px dashed white; /* Slightly lighter dashed line */
+		border-radius: 50%;
+		z-index: 4;
+		opacity: 30%;
+	  }
+  
+	  .orbit-path-3 {
+		position: absolute;
+		width: 120px;
+		height: 120px;
+		border: 2px dashed white; /* Even lighter dashed line */
+		border-radius: 50%;
+		z-index: 3;
+		opacity: 60%;
+	  }
+    /* Orbiting elements (electrons) */
+    .electron {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      animation: orbit 12s infinite linear;
+	  color:white;
+    }
+
+    /* Orbit positions with different start angles */
+    .electron:nth-child(5) {
+     /* animation-duration: 8s;*/
+      animation-delay: -4s; /* Starts at a different position */
+    }
+
+    .electron:nth-child(6) {
+      /*animation-duration: 12s;*/
+      animation-delay: -8s; /* Starts at a different position */
+    }
+
+    /* Animating orbiting effect */
+    @keyframes orbit {
+      0% {
+        transform: rotate(0deg) translateX(120px) rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg) translateX(120px) rotate(-360deg);
+      }
+    }

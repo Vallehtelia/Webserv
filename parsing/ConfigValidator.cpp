@@ -52,7 +52,7 @@ bool ConfigValidator::validateDirective(const std::string& line) {
 
 bool ConfigValidator::validateRoot(const std::string& line) {
 	std::regex rootRegex(R"(^\s*root\s+(.*?);\s*$)");
-	return std::regex_match(line, rootRegex);	
+	return std::regex_match(line, rootRegex);
 }
 
 bool ConfigValidator::validateIndex(const std::string& line) {
@@ -133,13 +133,13 @@ bool ConfigValidator::validateServerBlock(std::istream &input) {
             if (!validateLocationBlock(input)) {
                 return false;
             }
-        } else if (line.find("listen") == 0 || 
+        } else if (line.find("listen") == 0 ||
 					line.find("server_name") == 0 ||
                    	line.find("host") == 0 ||
 					line.find("root") == 0 ||
 					line.find("client_max_body_size") == 0 ||
                    	line.find("max_events") == 0 ||
-					line.find("index") == 0 || 
+					line.find("index") == 0 ||
 					line.find("error_page") == 0) {
             if (!validateDirective(line)) {
                 std::cerr << "Invalid directive: " << line << std::endl;
@@ -166,7 +166,8 @@ bool ConfigValidator::validateConfigFile(const std::string &filename) {
     std::string line;
     while (std::getline(file, line)) {
         trim(line);
-        if (line.empty() || line[0] == '#') continue; // taa odottaa et kommentti alkaa ensimmaisest indexitsta (spacejen jalkee)
+        if (line.empty() || line[0] == '#') continue; // taa odottaa et kommentti alkaa ensimmaisest indexitsta
+
 		if (line == "server") {
 			if (!std::getline(file, line)) {
 				std::cerr << "Unexpected end of file after 'server'" << std::endl;

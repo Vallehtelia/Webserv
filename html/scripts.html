@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dynamic Server</title>
+    <script src="script.js" defer></script>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="orbit.css">
+</head>
+<body>
+    <div class="header">
+        <img src="masters_logo_text.png"/>
+        <div class="header-button-container">
+            <form action="file_upload.html" method="GET">
+                <button type="submit">Upload a File</button>
+            </form>
+            <form action="scripts.html" method="GET">
+                <button type="submit">cgi scripts</button>
+            </form>
+            <form action="todo.html" method="GET">
+                <button type="submit">JSON data</button>
+            </form>
+            <form action="todo.html" method="GET">
+                <button type="submit">routes</button>
+            </form>
+        </div>
+    </div>
+
+
+
+    <div class="flex-container">
+        <div class="form-container">
+            <form id="imageUploadForm" class="file-upload-form cgi-upload-form" enctype="multipart/form-data">
+                <div class="cgi-form-data">
+                    <div>
+                        <h4>upload an image</h4>
+                        <label for="image">Choose image</label>
+                        <input type="file" id="image" name="image" accept="image/*">
+                        <span id="file-name">No image chosen</span>
+                    </div>
+                    <div>
+                        <h4>add image to text</h4>
+                        <input type="text" id="name" name="name" placeholder="add text to image"><br>
+                        <small>You can add text that will be planted on the processed image.</small>
+                    </div>
+                </div>
+                <div>
+                    <button type="button" id="submitPostRequest">Submit Image for Processing</button>
+                    <button type="button" id="showImageRequest">show image</button>
+
+                </div>
+            </form>
+        </div>
+        <div class="cgi-image-container form-container">
+            <h1>processed image</h1>
+            <div id="showImageDiv">
+            </div>
+            <div id="postResponse"></div>
+        </div>
+    </div>
+    <div class="credits-wrapper">
+        <div class="atom">
+            <div class="nucleus"></div>
+            <div class="orbit-path"></div>
+            <div class="orbit-path-3"></div>
+            <div class="orbit-path-2"></div>
+            <div class="electron">vvaalant</div>
+            <div class="electron">mburakow</div>
+            <div class="electron">okarejok</div>
+        </div>
+        <p>42 WEBSERV HIVE HELSINKI 2024</p>
+    </div >
+</body>
+</html>
+
+
+

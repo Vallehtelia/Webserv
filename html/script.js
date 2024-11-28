@@ -13,39 +13,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle POST request for image upload and processing
     submitPostRequestButton.addEventListener('click', async () => {
-        const formData = new FormData(imageUploadForm); // Create FormData from the form
-
+        const formData = new FormData(imageUploadForm);
+        // Log form data entries
+        formData.forEach((value, key) => {
+            console.log(key, value);
+        });
+    
         try {
             const response = await fetch('/cgi-bin/edit_image.py', {
                 method: 'POST',
                 body: formData
             });
-
+    
             if (response.ok) {
                 const resultHtml = await response.text();
-                postResponseDiv.innerHTML = resultHtml; // Display HTML response in postResponseDiv
+                postResponseDiv.innerHTML = resultHtml;
             } else {
                 postResponseDiv.innerHTML = '<p style="color:red;">Failed to upload image</p>';
             }
         } catch (error) {
             console.error('Error:', error);
             postResponseDiv.innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
-        }
-    });
-
-    // Handle existing GET request button
-    runScriptButton.addEventListener('click', async () => {
-        try {
-            const response = await fetch('/cgi-bin/hello.py'); // Executes the CGI script
-            if (response.ok) {
-                const fileText = await response.text();
-                getResponseDiv.innerHTML = fileText; // Display HTML response in getResponseDiv
-            } else {
-                getResponseDiv.innerHTML = '<p style="color:red;">Failed to load CGI GET output.</p>';
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            getResponseDiv.innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
         }
     });
 
@@ -56,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 const imageBlob = await response.blob();
                 const imageUrl = URL.createObjectURL(imageBlob);
-                imageDiv.innerHTML = `<img src="${imageUrl}" alt="Processed image">`;
+                imageDiv.innerHTML = `<img class="cgi-output-image" src="${imageUrl}" alt="Processed image">`;
             } else {
                 imageDiv.innerHTML = '<p style="color:red;">Failed to load image.</p>';
             }
@@ -65,5 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
 
 

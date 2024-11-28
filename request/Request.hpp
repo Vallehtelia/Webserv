@@ -78,13 +78,15 @@ class Request {
         std::istringstream                  requestStream;
         std::map<std::string, std::string>  headers;
         std::vector<MultipartData>          multipartData;
+        std::map<std::string, std::string>  queryParams;
 
-        void                                checkHeaders();
+        void                                prepareRequest();
         void                                parseMultipartData();
         void                                parseHeaders();
         void                                parseBody();
         void                                handleError(const std::string& errorMsg);
         void                                parseRequestLine();
+        void                                parseQueryString();
         void                                printMultipartdata();
         void                                createMultipartBody(MultipartData &multipartData, std::istringstream &rawMultipartData);
         void                                createMultipartHeaders(MultipartData &multipartData, std::istringstream &rawDataStream);
@@ -92,7 +94,6 @@ class Request {
         bool                                isValidHeaderKey(const std::string& key);
         bool                                isValidHeaderValue(const std::string& key, const std::string& value);
         MultipartData                       createData(std::string &rawData);
-        std::vector<std::string>            splitMultipartData(std::string data, std::string boundary);
 } ;
 
 # endif

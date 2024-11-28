@@ -65,24 +65,24 @@ T ServerConfig::getConfigValue(const std::string& key) const {
 }
 
 // Specialized getters
-int ServerConfig::getListenPort() const { 
-    return getConfigValue<int>("listen"); 
+int ServerConfig::getListenPort() const {
+    return getConfigValue<int>("listen");
 }
 
-std::string ServerConfig::getServerName() const { 
-    return getConfigValue<std::string>("server_name"); 
+std::string ServerConfig::getServerName() const {
+    return getConfigValue<std::string>("server_name");
 }
 
-std::string ServerConfig::getHost() const { 
-    return getConfigValue<std::string>("host"); 
+std::string ServerConfig::getHost() const {
+    return getConfigValue<std::string>("host");
 }
 
-std::string ServerConfig::getRoot() const { 
-    return getConfigValue<std::string>("root"); 
+std::string ServerConfig::getRoot() const {
+    return getConfigValue<std::string>("root");
 }
 
-int ServerConfig::getBodySize() const { 
-    return getConfigValue<int>("client_max_body_size"); 
+int ServerConfig::getBodySize() const {
+    return getConfigValue<int>("client_max_body_size");
 }
 
 int ServerConfig::getMaxEvents() const {
@@ -94,8 +94,8 @@ int ServerConfig::getMaxEvents() const {
     }
 }
 
-std::string ServerConfig::getIndex() const { 
-    return getConfigValue<std::string>("index"); 
+std::string ServerConfig::getIndex() const {
+    return getConfigValue<std::string>("index");
 }
 
 std::string ServerConfig::getErrorPage(int code) const {
@@ -104,6 +104,11 @@ std::string ServerConfig::getErrorPage(int code) const {
         return it->second;
     }
     return "";  // Return an empty string if the error page code is not found
+}
+
+const std::map<int, std::string>	&ServerConfig::getErrorPages() const
+{
+	return _error_pages;
 }
 
 std::string	ServerConfig::getLocation(std::string key) const
@@ -137,6 +142,8 @@ void	ServerConfig::printConfig() const {
 		std::cout << "Key: " << pair.first << ", Value: ";
 		std::visit([](auto&& arg) { std::cout << arg << std::endl; }, pair.second);
 	}
+	for (std::map<int, std::string>::const_iterator Er = _error_pages.begin(); Er != _error_pages.end(); Er++)
+		std::cout << "Error code: " << Er->first << ", Page: " << Er->second << std::endl;
 }
 
 /*

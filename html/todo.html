@@ -4,18 +4,51 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>To-Do List</title>
-    <link rel="stylesheet" href="todo.css">
+	<link rel="stylesheet" href="todo.css">
+    <link rel="stylesheet" href="styles.css">
+	<link rel="stylesheet" href="orbit.css">
 	<script src="todo.js"></script>
 </head>
 <body>
-    <h1>To-Do List</h1>
-	<div class="container">
-    	<ul id="todo-list"></ul>
-    	<form id="todo-form">
-        	<input type="text" id="todo-title" placeholder="New to-do item" required>
-        	<button type="submit">Add To-Do</button>
-    	</form>
+    <div class="header">
+        <img src="masters_logo_text.png"/>
+        <div class="header-button-container">
+            <form action="file_upload.html" method="GET">
+                <button type="submit">Upload a File</button>
+            </form>
+            <form action="scripts.html" method="GET">
+                <button type="submit">cgi scripts</button>
+            </form>
+            <form action="todo.html" method="GET">
+                <button type="submit">JSON data</button>
+            </form>
+            <form action="todo.html" method="GET">
+                <button type="submit">routes</button>
+            </form>
+        </div>
+    </div>
+	<div class="flex-container">
+		<div class="todo-container">
+				<div class="todo-list-container">
+					<ul id="todo-list" class="todo-list"></ul>
+				</div>
+				<form id="todo-form" class="todo-form add-todo">
+					<input type="text" id="todo-title" placeholder="New to-do item" required>
+					<button type="submit" class="submit-button">Add to-do</button>
+				</form>
+		</div>
 	</div>
-
+	<div class="credits-wrapper">
+        <div class="atom">
+            <div class="nucleus"></div>
+            <div class="orbit-path"></div>
+            <div class="orbit-path-3"></div>
+            <div class="orbit-path-2"></div>
+            <div class="electron">vvaalant</div>
+            <div class="electron">mburakow</div>
+            <div class="electron">okarejok</div>
+        </div>
+        <p>42 WEBSERV HIVE HELSINKI 2024</p>
+    </div >
 </body>
 </html>

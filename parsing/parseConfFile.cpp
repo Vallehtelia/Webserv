@@ -6,7 +6,7 @@
 #include <thread>
 #include <chrono>
 
-bool	checkConfFile(char *filename)
+bool	checkConfFile(const std::string &filename)
 {
 	std::ifstream	file(filename);
 
@@ -56,15 +56,25 @@ static bool parseServerData(ServerConfig& server, const std::string& line) {
 	else if (key == "error_page") {
 		// Assuming error_page contains the error code and file path
 		size_t spacePos = value.find(' ');
-		if (spacePos != std::string::npos) {
-			int code = std::stoi(value.substr(0, spacePos));
-			std::string page = value.substr(spacePos + 1);
-			server.setConfig("error_page_" + std::to_string(code), page);  // Store as error_page_<code>
+		if (spacePos != std::string::npos)
+		{
+			try
+			{
+				int code = std::stoi(value.substr(0, spacePos));
+				std::string page = value.substr(spacePos + 1);
+				page.erase(page.find_last_of(";"));
+				server.addErrorPage(code, page);
+			}
+			catch (const std::exception &e)
+			{
+				std::cerr << RED << "Invalid error_page format: " << value << " (" << e.what() << ")" << DEFAULT << std::endl;
+				return 1;
+			}
 		}
 		return 0;
 	}
 	else {
-		std::cout << "Unknown configuration key: " << key << std::endl;
+		std::cerr << "Unknown configuration key: " << key << std::endl;
 		return 1;
 	}
 }
@@ -226,7 +236,7 @@ static int	parseServerBlock(std::ifstream &file, ServerConfig &server)
 }
 
 
-void	parseData(char *filename, std::vector<ServerConfig> &server)
+void	parseData(const std::string &filename, std::vector<ServerConfig> &server)
 {
 	std::ifstream	file(filename);
 	std::string		line;

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>file upload</title>
+    <script src="fileUpload.js" defer></script>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="orbit.css">
+</head>
+<body>
+    <div class="header">
+        <img src="masters_logo_text.png"/>
+        <div class="header-button-container">
+            <form action="file_upload.html" method="GET">
+                <button type="submit">Upload a File</button>
+            </form>
+            <form action="scripts.html" method="GET">
+                <button type="submit">cgi scripts</button>
+            </form>
+            <form action="todo.html" method="GET">
+                <button type="submit">JSON data</button>
+            </form>
+            <form action="todo.html" method="GET">
+                <button type="submit">routes</button>
+            </form>
+        </div>
+    </div>
+    <div class="flex-container">
+        <div class="form-container">
+            <h1>Upload a file</h1>
+            <form class="file-upload-form" id="file-upload-form" action="/upload" method="POST" enctype="multipart/form-data">
+                <div>
+                    <label for="profilepic">IMAGE</label>
+                    <input type="file" id="profilepic" name="profilepic" accept="image/*">
+                    <span id="file-name">No image chosen</span> <!-- Custom text for file name -->
+                </div>
+                <div>
+                    <label for="video">VIDEO (MP4)</label>
+                    <input type="file" id="video" name="video" accept="video/*">
+                    <span id="file-name">No video chosen</span>
+                </div>
+                <div>
+                    <label for="audio">AUDIO (MP3)</label>
+                    <input type="file" id="audio" name="audio" accept=".mp3">
+                    <span id="file-name">No audio chosen</span>
+                </div>
+                <div>
+                    <button type="submit" value="Submit" class="submit-button">upload</button>
+                </div>
+            </form>
+        </div>
+        <div id="getResponse" class="form-container">
+            <h1>Uploaded files<h1>
+            <div></div>
+        </div>
+    </div>
+    <div class="credits-wrapper">
+        <div class="atom">
+            <div class="nucleus"></div>
+            <div class="orbit-path"></div>
+            <div class="orbit-path-3"></div>
+            <div class="orbit-path-2"></div>
+            <div class="electron">vvaalant</div>
+            <div class="electron">mburakow</div>
+            <div class="electron">okarejok</div>
+        </div>
+        <p>42 WEBSERV HIVE HELSINKI 2024</p>
+    </div >
+</body>
+</html>
+
+
+

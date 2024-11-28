@@ -3,6 +3,12 @@
 #define SOCKET_HPP
 
 #include <iostream>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <cstring>
+#include <unistd.h>
+#include <vector>
+#include "../parsing/ServerConfig.hpp"
 
 class	Socket
 {
@@ -28,6 +34,7 @@ class	Socket
 		bool			getActiveMode() const;
 };
 
-void set_non_blocking(int sockfd);
+bool set_non_blocking(int sockfd);
+bool	initSocket(std::vector<ServerConfig> &server, std::vector<Socket> &sockets);
 
 #endif
