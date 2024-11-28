@@ -29,6 +29,7 @@ public:
     std::string getIndex() const;
     std::string getRedirect() const;
     std::string getCgiPath() const;
+    void    printLocation() const ;
 };
 
 #endif

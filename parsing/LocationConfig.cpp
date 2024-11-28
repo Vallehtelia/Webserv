@@ -84,3 +84,20 @@ std::string	LocationConfig::getCgiPath() const
 {
 	return cgi_path;
 }
+
+
+void LocationConfig::printLocation() const {
+	std::cout << "-----------------------" << std::endl;
+	std::cout << "LOCATION DATA" << std::endl;
+	std::cout << "path:" << path << std::endl;
+	std::cout << "root:" << root << std::endl;
+	std::cout << "redirect:" << redirect << std::endl;
+	std::cout << "cgi_path:" << cgi_path << std::endl;
+	std::cout << "allowed methods:" << std::endl;
+	for (std::vector<std::string>::const_iterator it = allow_methods.begin(); it != allow_methods.end(); it++)
+	{
+				std::cout << "ALLOWED METHOD: " << *it << std::endl;
+	}
+	std::cout << "---------------------" << std::endl;
+	
+}

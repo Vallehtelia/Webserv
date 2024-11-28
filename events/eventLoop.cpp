@@ -89,24 +89,21 @@ void cleanupTempFiles()
 	}
 }
 
-LocationConfig findLocation(const std::string uri, const Socket &socket)
-{
-	LocationConfig location;
-	if (uri == "")
-		return location;
-	std::vector<LocationConfig> locations;
+LocationConfig findLocation(const std::string &uri, const Socket &socket) {
+    LocationConfig bestMatch; // Default location config to return if no match
+    size_t bestMatchLength = 0; // Track the length of the best match
+    std::vector<LocationConfig> locations = socket.getServer().getLocations();
 
-	ServerConfig server = socket.getServer();
-	locations = server.getLocations();
-	for (std::vector<LocationConfig>::iterator it = locations.begin(); it != locations.end(); it++)
-	{
-		if (it->getLocation() == uri)
-		{
-			location = *it;
-			break;
-		}
-	}
-	return location;
+    for (std::vector<LocationConfig>::iterator it = locations.begin(); it != locations.end(); ++it) {
+        const std::string &locationPath = it->getLocation();
+        if (uri.find(locationPath) == 0 && locationPath.length() > bestMatchLength) {
+            // Check if locationPath is a prefix of uri and is more specific
+            bestMatch = *it;
+            bestMatchLength = locationPath.length();
+        }
+    }
+
+    return bestMatch;
 }
 
 int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unordered_map<int, std::vector<char>> &client_data, const Socket &socket)
@@ -166,9 +163,9 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 		    Response res;
             RequestHandler requestHandler;
 		    requestHandler.handleRequest(req, res);
-			std::cout << "URI: " << req.getUri() << std::endl;
+			std::cout << "URI FROM EVENT LOOP: " << req.getUri() << std::endl;
 			LocationConfig location = findLocation(req.getUri(), socket);
-			//print allowe methods
+            location.printLocation();
 			std::vector<std::string> allow_methods = location.getAllowMethods();
 			for (std::vector<std::string>::const_iterator it = allow_methods.begin(); it != allow_methods.end(); it++)
 			{

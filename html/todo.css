@@ -81,7 +81,7 @@ input[type="text"] {
     border-bottom: 1px solid #ddd;
     border-radius: 4px; /* Rounded corners for list items */
     margin-bottom: 10px; /* Space between list items */
-    border: 1px solid black;
+    border: 2px solid black;
     padding:5px;
     margin:0px;
     margin-bottom: 10px;
@@ -120,7 +120,7 @@ button.remove {
     color: black;
     cursor: pointer;
     background-color: white;
-    border: 1px solid black;
+    border: 2px solid black;
     font-size: 12px;
 }
 
@@ -131,7 +131,7 @@ button.remove:hover {
 
 .todo-container input[type="text"] {
     all: unset;
-    border: 1px solid black;
+    border: 2px solid black;
     padding: 2px;
     box-shadow: var(--buttonShadowDimensions);
     min-width: 400px;
@@ -140,7 +140,7 @@ button.remove:hover {
 
 .todo-container .submit-button {
     border-radius: var(--buttonBorderRadius);
-    border: 1px solid black;
+    border: 2px solid black;
     padding-left: 20px;
     padding-right: 20px;
     padding-top: 5px;
