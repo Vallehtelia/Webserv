@@ -166,8 +166,7 @@ bool ConfigValidator::validateConfigFile(const std::string &filename) {
     std::string line;
     while (std::getline(file, line)) {
         trim(line);
-        if (line.empty() || line[0] == '#') continue;
-
+        if (line.empty() || line[0] == '#') continue; // taa odottaa et kommentti alkaa ensimmaisest indexitsta (spacejen jalkee)
 		if (line == "server") {
 			if (!std::getline(file, line)) {
 				std::cerr << "Unexpected end of file after 'server'" << std::endl;
@@ -181,9 +180,12 @@ bool ConfigValidator::validateConfigFile(const std::string &filename) {
 			if (!validateServerBlock(file)) {
 				return false;
 			}
-		} else if (line.find("server {") == 0) {
-			std::string trimmedRest = line.substr(7);
+		} else if (line.find("server") == 0) {
+			std::cout << "Found server in beginning." << std::endl;
+			std::string trimmedRest = line.substr(6);
+			std::cout << "@" << trimmedRest << "@" << std::endl;
 			trim(trimmedRest);
+			std::cout << "@" << trimmedRest << "@" << std::endl;
 			if (trimmedRest != "{") {
 				std::cerr << "Unexpected content after 'server {': " << trimmedRest << std::endl;
 				return false;
