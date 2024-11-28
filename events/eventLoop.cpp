@@ -135,6 +135,7 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
     {
         std::string rawRequest(buffer, bytes_read);
 		req.parseRequest(rawRequest);
+        std::cout << "CONTINUING THE LOOP.." << std::endl;
         if (req.getState() == State::COMPLETE || req.getState() == State::ERROR)
         {
         	req.printRequest();
@@ -161,21 +162,11 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
             }
             //req.printRequest();
 		    Response res;
-            RequestHandler requestHandler;
-		    requestHandler.handleRequest(req, res);
 			std::cout << "URI FROM EVENT LOOP: " << req.getUri() << std::endl;
 			LocationConfig location = findLocation(req.getUri(), socket);
             location.printLocation();
-			std::vector<std::string> allow_methods = location.getAllowMethods();
-			for (std::vector<std::string>::const_iterator it = allow_methods.begin(); it != allow_methods.end(); it++)
-			{
-				std::cout << "ALLOWED METHOD: " << *it << std::endl;
-			}
-			if (location.getLocation() != "")
-			{
-				std::cout << "FOUND LOCATION: " << location.getLocation() << std::endl;
-				std::cout << "ROOT: " << location.getRoot() << std::endl;
-			}
+            RequestHandler requestHandler;
+		    requestHandler.handleRequest(req, res, location);
             //res.printResponse();
 		    // Get the full HTTP response string from the Response class
 		    std::string http_response = res.getResponseString();
@@ -255,6 +246,7 @@ void event_loop(const std::vector<Socket> &sockets, int epoll_fd)
 
 					// Lisää uusi fd requests- ja client_data-karttoihin
 					requests[new_fd] = Request();
+                    std::cout << " CREATED A NEW REQUEST OBJECT" << std::endl;
 					client_data[new_fd] = std::vector<char>();
 				}
                 continue;

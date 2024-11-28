@@ -6,8 +6,10 @@ RequestHandler::RequestHandler() {}
 RequestHandler::~RequestHandler() {}
 
 
-void RequestHandler::handleRequest(Request& req, Response& res)
+void RequestHandler::handleRequest(Request& req, Response& res, LocationConfig &location)
 {
+    _location = location;
+
     if (req.getState() == State::ERROR)
     {
         std::cout << "it gets here!" << std::endl;
@@ -89,33 +91,27 @@ static std::string urlDecode(const std::string& src) {
     return decoded;
 }
 
+
+void removePrefix(std::string& str, const std::string& prefix) {
+    if (str.rfind(prefix, 0) == 0) { // Check if the string starts with the prefix
+        str.erase(0, prefix.length()); // Remove the prefix
+    }
+}
+
 std::string RequestHandler::getFilepath(std::string filepath)
 {
 	filepath = urlDecode(filepath);
+    removePrefix(filepath, _location.getLocation());
 	if (filepath.front() == '/' && filepath.length() > 1) {
             filepath.erase(0, 1);
     }
-    std::filesystem::path baseDir = std::filesystem::current_path() / "html";
+    std::filesystem::path baseDir = std::filesystem::current_path() / _location.getRoot();
     std::filesystem::path path;
     if (filepath.find("cgi") != std::string::npos)
         path = baseDir / "tmp" / filepath;
-    else if (_method == "GET") {
-        if (filepath == "/") {
-            path = baseDir / "index.html";
-        }
-        else if (_contentType == "text/html" || _contentType == "text/css" || _contentType == "application/javascript") {
-            path = baseDir / filepath;
-        }
-        else {
-            path = baseDir / "uploads" / filepath;
-        }
-    }
-    else if (_method == "POST" || _method == "PUT" || _method == "DELETE") {
-        path = baseDir / "uploads" / filepath;
-    }
     else {
-		std::cout << "somethings off!" << std::endl;
-        path = std::filesystem::path(filepath);
+            path = baseDir / filepath;
+            //std::cout << "URI: " << _uri << "\nFILEPATH: " << filepath << "PATH: " << path << std::endl;
     }
 	std::cout << "FILEPATH CREATED: " << path.string() << std::endl;
     return path.string();
@@ -125,12 +121,13 @@ std::string RequestHandler::getFilepath(std::string filepath)
 bool RequestHandler::validFile(const std::string& filePath) {
     try {
         std::filesystem::path fullPath = std::filesystem::path(filePath);
-        const std::filesystem::path baseDir = std::filesystem::current_path() / "html";
+        const std::filesystem::path baseDir = std::filesystem::current_path();
+        std::cout << "Full Path: " << fullPath << std::endl;
+        std::cout << "Base Directory: " << baseDir << std::endl;
+        
         std::filesystem::path dirPath = std::filesystem::canonical(baseDir);
 
-        std::cout << "Base Directory: " << baseDir << std::endl;
         std::cout << "Canonical Directory Path: " << dirPath << std::endl;
-        std::cout << "Full Path: " << fullPath << std::endl;
 
         if (std::filesystem::relative(fullPath, dirPath).string().find("..") == 0) {
             std::cerr << "Error: Access outside base directory is prohibited." << std::endl;

@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const loadTodos = async () => {
         try {
-            const response = await fetch('todos.json'); 
+            const response = await fetch('/todo/todos.json'); 
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
             renderTodos(data.todos);
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const addTodo = async (newTodo) => {
         try {
-            const response = await fetch('todos.json');
+            const response = await fetch('/todo/todos.json');
             const data = await response.json();
             data.todos.push(newTodo);
             await saveTodos(data.todos);
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const removeTodo = async (index) => {
         try {
-            const response = await fetch('todos.json');
+            const response = await fetch('/todo/todos.json');
             const data = await response.json();
             data.todos.splice(index, 1);
             await saveTodos(data.todos);
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const toggleTodo = async (index) => {
         try {
-            const response = await fetch('todos.json');
+            const response = await fetch('/todo/todos.json');
             const data = await response.json();
             data.todos[index].completed = !data.todos[index].completed; // Toggle completed status
             await saveTodos(data.todos);
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveTodos = async (todos) => {
         console.log(JSON.stringify({ todos }, null, 2));
         try {
-            const response = await fetch('todos.json', {
+            const response = await fetch('/todo/todos.json', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

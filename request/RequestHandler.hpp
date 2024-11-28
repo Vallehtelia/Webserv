@@ -11,12 +11,14 @@
 #include <unordered_map>
 #include <filesystem>
 
+#include "../parsing/LocationConfig.hpp"
+
 
 class RequestHandler {
 public:
 	RequestHandler();
 	~RequestHandler();
-    void handleRequest(Request& req, Response& res);
+    void handleRequest(Request& req, Response& res, LocationConfig &location);
     std::string readFileContent(std::string& filePath);
 private:
 	void prepareHandler(const Request &req);
@@ -40,6 +42,7 @@ private:
 	std::string				_method;
 	std::string				_contentType;
 	int						_statusCode;
+	LocationConfig 			_location;
 };
 
 #endif

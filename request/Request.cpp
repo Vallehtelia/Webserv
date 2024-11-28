@@ -233,6 +233,10 @@ void Request::prepareRequest()
     }
     else 
         currentState = State::COMPLETE;
+    std::cout << "\n\n HEADERS PRINTED FROM PREPARE_REQUEST()\n\n";
+    for (const auto& pair : headers) {
+        std::cout << pair.first << ": " << pair.second << std::endl;
+    }
 }
 
 bool Request::isValidHeaderKey(const std::string& key) {
@@ -323,6 +327,9 @@ void Request::parseChunks()
 void Request::parseBody()
 {
     std::vector<char> buffer(std::istreambuf_iterator<char>(requestStream), {});
+    // std::cout << "\n\n\n\n BUFFER: \n";
+    // std::cout << std::string(buffer.begin(), buffer.end());
+    // std::cout << "\n\n BODY SIZE: " << body.size() << " CONTENT-LENGTH: " << contentLength << "\n\n\n";
     body.append(std::string(buffer.begin(), buffer.end()));
     if (body.size() > contentLength)
     {
