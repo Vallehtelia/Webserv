@@ -137,8 +137,9 @@ static void	parseLocationBlock(LocationConfig &location, std::ifstream &file, st
 	std::string		data[6] = {"root", "allow_methods", "autoindex", "index", "redirect", "cgi_path"};
 	std::string		value;
 
-	value = line;
-	location.path = value.substr(8, value.find_first_of("{") - 8);
+	value = line.substr(line.find_first_not_of(" \t"), line.find_last_not_of(" \t") - line.find_first_not_of(" \t") + 1);
+	location.path = value.substr(value.find_first_of(" \t"), value.find_first_of("{") - value.find_first_of(" \t"));
+	location.path = location.path.substr(location.path.find_first_not_of(" \t"), location.path.find_last_not_of(" \t") - location.path.find_first_not_of(" \t") + 1);
 	while (std::getline(file, line))
 	{
 		line = line.substr(line.find_first_not_of(" \t"), line.find_last_not_of(" \t") - line.find_first_not_of(" \t") + 1);

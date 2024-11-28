@@ -56,10 +56,10 @@ class Request {
         State                               getState();
         std::string                         getContentType() const;
         bool                                isMultiPart() const;
+        Request &operator=(const Request &rhs);
 
     private:
         Request(const Request &other);
-        Request &operator=(const Request &rhs);
         bool                                received;
         bool                                chunked;
         bool                                _isMultiPart;

@@ -18,7 +18,7 @@ class Socket;
 
 int	acceptConnection(int fd, int epoll_fd);
 void cleanupTempFiles();
-int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unordered_map<int, std::vector<char>> &client_data);
+int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unordered_map<int, std::vector<char>> &client_data, const Socket &socket);
 void	event_loop(const std::vector<Socket> &sockets, int epoll_fd);
 
 #endif

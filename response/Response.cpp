@@ -18,8 +18,8 @@ void Response::printResponse()
     std::cout << std::endl;
     std::cout << "RESPONSE:" << "\033[32m" << std::endl;
     std::cout << getResponseString() << std::endl;
-    // std::cout << _body.size() << std::endl;
-    // std::cout << _contentLength << std::endl;
+    std::cout << _body.size() << std::endl;
+    std::cout << _contentLength << std::endl;
     std::cout << "\033[0m" << std::endl;
 }
 

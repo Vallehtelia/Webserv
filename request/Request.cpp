@@ -10,6 +10,27 @@ Request::Request() : currentState(State::REQUEST_LINE), contentLength(0), body("
 Request::Request(const std::string& rawRequest) : currentState(State::REQUEST_LINE), contentLength(0), requestStream(rawRequest)  {
 }
 
+Request &Request::operator=(const Request &rhs) {
+    if (this != &rhs) {
+        currentState = rhs.currentState;
+        contentLength = rhs.contentLength;
+        body = rhs.body;
+        rawRequest = rhs.rawRequest;
+        body_size = rhs.body_size;
+        headers = rhs.headers;
+        method = rhs.method;
+        uri = rhs.uri;
+        version = rhs.version;
+        chunked = rhs.chunked;
+        received = rhs.received;
+        _isMultiPart = rhs._isMultiPart;
+        rawChunkedData = rhs.rawChunkedData;
+        boundary = rhs.boundary;
+        multipartData = rhs.multipartData;
+    }
+    return *this;
+}
+
 
 Request::~Request() {}
 
