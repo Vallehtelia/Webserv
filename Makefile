@@ -36,14 +36,12 @@ SRC += $(addprefix $(CGI_DIR), $(CGI_FILES))
 OBJ = $(SRC:.cpp=.o)
 
 COMPILER = c++ -std=c++17
-CFLAGS = -Wall -Wextra -Werror
-LFLAGS =
-
+CFLAGS = -Wall -Wextra -Werror -g
 
 all: $(NAME)
 
 $(NAME): $(OBJ)
-	$(COMPILER) $(CFLAGS) -o $@ $^ $(LFLAGS)
+	$(COMPILER) $(CFLAGS) -o $@ $^
 
 %.o: %.cpp
 	$(COMPILER) $(CFLAGS) -c $< -o $@

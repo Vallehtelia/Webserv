@@ -36,6 +36,7 @@ int	main(int ac, char **av)
 		return 1;
 	}
 
+	std::cout << "Starting webserver. Please hold..." << std::endl;
 	if (!initConfig(av[1], server))
 		return 1;
 

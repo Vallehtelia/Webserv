@@ -141,7 +141,7 @@ static void	parseLocationBlock(LocationConfig &location, std::ifstream &file, st
 	location.path = value.substr(8, value.find_first_of("{") - 8);
 	while (std::getline(file, line))
 	{
-		line = line.substr(line.find_first_not_of(" \t"), line.find_last_not_of(" \t") - line.find_first_not_of(" \t") + 1);
+		line = trim(line);
 		if (line.empty())
 			continue ;
 		if (line.compare(0, 1, "}") == 0)
@@ -156,54 +156,6 @@ static void	parseLocationBlock(LocationConfig &location, std::ifstream &file, st
 		}
 	}
 }
-
-/* suggestion:
-static int parseServerBlock(std::ifstream &file, ServerConfig &server)
-{
-    std::string line;
-    int braceCount = 1;  // Start with 1 because we've already encountered the `{` after "server"
-
-    while (std::getline(file, line))
-    {
-        // Trim leading and trailing whitespace
-        line = line.substr(line.find_first_not_of(" \t"), line.find_last_not_of(" \t") - line.find_first_not_of(" \t") + 1);
-
-        if (line.empty()) continue;
-
-        // Check for opening and closing braces to manage nested blocks
-        if (line.find("{") != std::string::npos) {
-            braceCount++;
-        }
-        if (line.find("}") != std::string::npos) {
-            braceCount--;
-            // If braceCount reaches 0, the server block is complete
-            if (braceCount == 0) return 0;
-        }
-
-        // Handle "location" blocks separately
-        if (line.compare(0, 8, "location") == 0)
-        {
-            LocationConfig location;
-            parseLocationBlock(location, file, line);
-            server.addLocation(std::move(location));
-            continue;
-        }
-
-        // Parse each line dynamically
-        if (parseServerData(server, line) != 0) {
-            std::cerr << "Failed to parse line: " << line << std::endl;
-            return 1;  // Return an error if parsing fails
-        }
-    }
-
-    // If we exit the loop and braceCount is not zero, there’s an imbalance
-    if (braceCount != 0) {
-        throw std::runtime_error("Invalid configuration file: unmatched braces in server block.");
-    }
-
-    return 0;
-}
-*/
 
 static int	parseServerBlock(std::ifstream &file, ServerConfig &server)
 {
@@ -243,12 +195,22 @@ void	parseData(const std::string &filename, std::vector<ServerConfig> &server)
 	int				new_serv = 0;
 
 	(void)server;
+
+    if (!file.is_open())
+    {
+        std::cerr << "Error: Unable to open file " << filename << std::endl;
+        return;
+    }
+
 	while (std::getline(file, line))
 	{
+		line = trim(line);
+		
 		if (line.empty())
 			continue ;
-		line = line.substr(line.find_first_not_of(" \t"), line.find_last_not_of(" \t") - line.find_first_not_of(" \t") + 1);
-		if ((line.find("server") != std::string::npos && line.length() == 6) || new_serv == 1)
+		
+		if ((line.find("server") == 0 && line.find("{", line.find("server") + 6) != std::string::npos) || 
+            new_serv == 1)
 		{
 			std::cout << CYAN << "Server block found!" << std::endl << "Parsing." << DEFAULT << std::endl;
 			int i = 0;

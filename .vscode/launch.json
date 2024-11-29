@@ -1,0 +1,22 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+	  {
+		"name": "Debug Test Program",
+		"type": "cppdbg",
+		"request": "launch",
+		"program": "/home/mburakow/Hive_home/webserv/test",
+		"args": [],
+		"cwd": "/home/mburakow/Hive_home/webserv",
+		"stopAtEntry": false,
+		"externalConsole": false,
+		"MIMode": "gdb",
+		"miDebuggerPath": "/usr/bin/gdb",
+		"logging": {
+		  "engineLogging": true,
+		  "trace": true,
+		  "traceResponse": true
+		}
+	  }
+	]
+  }
