@@ -173,7 +173,7 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 		    // Send the response back to the client
 
             // std::cout << http_response.length() << "lenght here!!!\n";
-            res.printResponse();
+            // res.printResponse();
             size_t total_sent = 0;
             size_t message_length = http_response.length();
             const char *message_ptr = http_response.c_str();
