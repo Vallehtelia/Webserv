@@ -7,11 +7,12 @@
 	flex-direction: column;
 }
 
-.credits-wrapper > p {
+.credits-wrapper  p {
 	color: white;
 	font-size: 10px;
 	text-align: center;
 	width: 100%;
+  text-transform: uppercase;
 }
     .atom {
       position: relative;

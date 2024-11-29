@@ -4,10 +4,17 @@
     <link rel="stylesheet" href="styles.css">
     <title>webserver</title>
     <script src="./scripts/script.js" defer></script>
+    <script src="./scripts/terms.js" defer></script>
     <link rel="stylesheet" href="./styles/styles.css">
     <link rel="stylesheet" href="./styles/orbit.css">
 </head>
 <body>
+    <div id="popup" class="popup" style="display: none;">
+        <p>Do you agree to the terms and conditions?</p>
+        <button id="agree">Yes</button>
+        <button id="disagree">No</button>
+    </div>
+    <div id="overlay" class="overlay" style="display: none;"></div>
     <div class="header">
         <img src="/assets/images/masters_logo_text.png"/>
     </div>
