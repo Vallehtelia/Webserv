@@ -5,14 +5,20 @@
     --submitButtonColor: #2fff2f;
     --buttonColor: violet;
     --navBorderRadius: 10px;
+    --containerBorderRadius: 10px;
 }
 
+
+* {
+    box-sizing: border-box;
+}
 
 body {
     background-color: grey; /* Set a light gray background */
     margin: 0; /* Remove default margin */
     font-family: Arial, sans-serif; /* Set a font */
     color: #333; /* Set text color */
+    box-sizing: border-box;
 }
 
 .header {
@@ -27,7 +33,7 @@ body {
     padding-bottom: 20px;
 }
 
-.header-button-container {
+.header-button-container  {
     display:flex;
     flex-direction: row;
     margin-bottom: 0;
@@ -55,7 +61,7 @@ body {
     min-height: 100%;
     min-width: 100%;
 }
-
+ 
 
 .header img {
     height: 180px;
@@ -154,7 +160,8 @@ label[for]:has(+ input[type="file"]) {
     font-size: 13px;
     border-radius: var(--buttonBorderRadius);
     border: 1px solid black;
-    background-color: rgb(175, 175, 175);
+    /* background-color: rgb(175, 175, 175); */
+    background-color: var(--buttonColor);
     padding-left: 20px;
     padding-right: 20px;
     padding-top: 5px;
@@ -174,6 +181,46 @@ label[for]:has(+ input[type="file"]) {
     background-color: var(--submitButtonColor);
 }
 
+
+#getResponse {
+    box-sizing: border-box;
+    padding: 30px;
+}
+
+#computer-screen {
+    width: 100%;
+    height: 100%;
+    background-color: aqua;
+    overflow: scroll;
+    border: 2px, solid, black;
+    border-radius: var(--containerBorderRadius);
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.3); 
+
+}
+
+.directory-list {
+    box-sizing: border-box;
+    padding: 20px;
+    display: flex;
+    flex-wrap: wrap; /* Enable wrapping */
+    flex-direction: row; /* Align in columns like a desktop */ /* Set to the height of your container */
+    gap: 10px; /* Add spacing between icons */
+    filter: grayscale(20%);
+    width: 100%;
+}
+
+.directory-item {
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.file-icon {
+    /* filter: grayscale(100%); */
+}
 
 .form-container * button {
     border-radius: var(--buttonBorderRadius);
@@ -289,4 +336,29 @@ label[for]:has(+ input[type="file"]) {
 
 .index-menu button {
     background-color: violet;
+}
+
+
+.popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border: 2px solid black;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+.popup button {
+    margin: 5px;
 }

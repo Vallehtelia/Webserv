@@ -111,7 +111,6 @@ std::string RequestHandler::getFilepath(std::string filepath)
         path = baseDir / "tmp" / filepath;
     else {
             path = baseDir / filepath;
-            //std::cout << "URI: " << _uri << "\nFILEPATH: " << filepath << "PATH: " << path << std::endl;
     }
 	std::cout << "FILEPATH CREATED: " << path.string() << std::endl;
     return path.string();
@@ -124,7 +123,7 @@ bool RequestHandler::validFile(const std::string& filePath) {
         const std::filesystem::path baseDir = std::filesystem::current_path();
         std::cout << "Full Path: " << fullPath << std::endl;
         std::cout << "Base Directory: " << baseDir << std::endl;
-        
+
         std::filesystem::path dirPath = std::filesystem::canonical(baseDir);
 
         std::cout << "Canonical Directory Path: " << dirPath << std::endl;
@@ -198,10 +197,57 @@ std::string RequestHandler::readFileContent(std::string& filePath)
     }
 }
 
+std::string generateDirectoryListing(const std::string& directoryPath) {
+    std::ostringstream jsonStream;
+    jsonStream << "{\n\t\"files\": [\n";
+
+    try {
+        for (const auto& entry : std::filesystem::directory_iterator(directoryPath)) {
+            jsonStream << "\t\t{\n";
+            jsonStream << "\t\t\t\"name\": \"" << entry.path().filename().string() << "\",\n";
+            jsonStream << "\t\t\t\"type\": \"" 
+                       << (entry.is_directory() ? "directory" : "file") << "\",\n";
+
+            if (!entry.is_directory()) {
+                jsonStream << "\t\t\t\"size\": " << entry.file_size() << "\n";
+            } else {
+                jsonStream << "\t\t\t\"size\": null\n";
+            }
+
+            jsonStream << "\t\t},\n";
+        }
+
+        std::string result = jsonStream.str();
+        // Remove the trailing comma and newline for valid JSON
+        if (result.size() > 2) {
+            result.erase(result.size() - 2, 2);
+        }
+        result += "\n\t]\n}";
+
+        return result;
+    } catch (const std::filesystem::filesystem_error& e) {
+        std::cerr << "Error accessing directory: " << e.what() << std::endl;
+        return "{\"error\": \"Unable to access directory.\"}";
+    }
+}
+
 void RequestHandler::handleGetRequest(Response& res) {
 
     std::cout << "HANDLE GET" << std::endl;
-    if (validFile(_filePath)) {
+    std::cout << "----------" << std::endl;
+    std::cout << "Path: " << _filePath << std::endl;
+    std::cout << "Is directory: " << std::filesystem::is_directory(_filePath) << std::endl; 
+    std::cout << "----------" << std::endl;
+    if (std::filesystem::is_directory(_filePath)){
+        std::cout << "it is a directory" << std::endl ;
+        if (_location.isAutoindex()) { // Assuming there's a method to check if auto-index is enabled
+            std::string directoryListing = generateDirectoryListing(_filePath);
+            res.setResponse(200, "text/html", directoryListing);
+        } else {
+            res.setResponse(403, "text/html", "Auto-indexing is disabled for this directory.");
+        }
+    }
+    else if (validFile(_filePath)) {
         std::cout << "FILE IS LEGIT" << std::endl;
        	_body = readFileContent(_filePath);
         res.setResponse(200, getContentType(_filePath), _body);

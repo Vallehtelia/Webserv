@@ -28,7 +28,7 @@
         <div class="form-container">
             <h1>Upload a file</h1>
             <form class="file-upload-form" id="file-upload-form" action="/upload" method="POST" enctype="multipart/form-data">
-                <div>
+                <div id="file-upload-form-header">
                     <label for="profilepic">IMAGE</label>
                     <input type="file" id="profilepic" name="profilepic" accept="image/*">
                     <span id="file-name">No image chosen</span> <!-- Custom text for file name -->
@@ -49,11 +49,11 @@
             </form>
         </div>
         <div id="getResponse" class="form-container">
-            <h1>Uploaded files<h1>
-            <div></div>
+            <div id="computer-screen" class="computer-screen-class"></div>
         </div>
     </div>
     <div class="credits-wrapper">
+        <p>server by: </p>
         <div class="atom">
             <div class="nucleus"></div>
             <div class="orbit-path"></div>
@@ -63,7 +63,10 @@
             <div class="electron">mburakow</div>
             <div class="electron">okarejok</div>
         </div>
-        <p>42 WEBSERV HIVE HELSINKI 2024</p>
+        <div>
+            <p>front end by: okarejok</p>
+            <p>42 WEBSERV HIVE HELSINKI 2024</p>
+        </div>
     </div >
 </body>
 </html>
