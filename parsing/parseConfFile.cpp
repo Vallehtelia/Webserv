@@ -2,6 +2,7 @@
 #include "ServerConfig.hpp"
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <cctype>
 #include <thread>
 #include <chrono>
@@ -79,57 +80,48 @@ static bool parseServerData(ServerConfig& server, const std::string& line) {
 	}
 }
 
-static void	parseLocationData(LocationConfig &location, std::string line, int *data)
-{
-	std::string		value;
-	int				i = 0;
-	int 			j = 0;
 
-	value = line;
-	switch (*data)
-	{
-		case 0:
-			value = value.substr(4, value.find_first_of(";") - 4);
-			location.root = value.substr(value.find_first_not_of(" \t"), value.find_last_not_of(" \t") - value.find_first_not_of(" \t") + 1);
-			break ;
-		case 1:
-			i = 13;
-			while (value[i] != ';' && value[i] != '\0')
-			{
-				while (std::isspace(value[i]))
-					i++;
-				if (value[i] == ';')
-					break ;
-				j = i;
-				while (value[j] != ' ' && value[j] != ';' && value[j] != '\0')
-					j++;
-				location.allow_methods.push_back(value.substr(i, j - i));
-				i = j;
-			}
-			break;
-		case 2:
-			value = value.substr(10, value.find_first_of(";") - 10);
-			value = value.substr(value.find_first_not_of(" \t"), value.find_last_not_of(" \t") - value.find_first_not_of(" \t") + 1);
-			if (value.compare("on") == 0)
-				location.autoindex = true;
-			else
-				location.autoindex = false;
-			break ;
-		case 3:
-			value = value.substr(6, value.find_first_of(";") - 6);
-			location.index = value.substr(value.find_first_not_of(" \t"), value.find_last_not_of(" \t") - value.find_first_not_of(" \t") + 1);
-			break ;
-		case 4:
-			value = value.substr(9, value.find_first_of(";") - 9);
-			location.redirect = value.substr(value.find_first_not_of(" \t"), value.find_last_not_of(" \t") - value.find_first_not_of(" \t") + 1);
-			break ;
-		case 5:
-			value = value.substr(9, value.find_first_of(";") - 9);
-			location.cgi_path = value.substr(value.find_first_not_of(" \t"), value.find_last_not_of(" \t") - value.find_first_not_of(" \t") + 1);
-			break ;
-		default:
-			break ;
+static void parseLocationData(LocationConfig &location, const std::string &key, const std::string &line) {
+    std::string value;
+
+    // Extract value based on key's length
+    size_t value_start = key.length();
+    if (value_start >= line.size()) {
+        std::cerr << "Malformed configuration line: " << line << std::endl;
+        return;
+    }
+
+    // Trim value and remove trailing semicolon
+    value = trim(line.substr(value_start));
+    size_t semicolon_pos = value.find(';');
+    if (semicolon_pos != std::string::npos) {
+        value = value.substr(0, semicolon_pos);
+    } else {
+	    std::cerr << "Malformed configuration line: " << line << std::endl;
+        return;	
 	}
+
+    // Handle key-specific logic
+    if (key == "root") {
+        location.root = value;
+    } else if (key == "allow_methods") {
+        // Split space-separated methods
+        std::istringstream iss(value);
+        std::string method;
+        while (iss >> method) {
+            location.allow_methods.push_back(method);
+        }
+    } else if (key == "autoindex") {
+        location.autoindex = (value == "on");
+    } else if (key == "index") {
+        location.index = value;
+    } else if (key == "redirect") {
+        location.redirect = value;
+    } else if (key == "cgi_path") {
+        location.cgi_path = value;
+    } else {
+        std::cerr << "Unknown configuration key: " << key << std::endl;
+    }
 }
 
 static void	parseLocationBlock(LocationConfig &location, std::ifstream &file, std::string line)
@@ -142,15 +134,13 @@ static void	parseLocationBlock(LocationConfig &location, std::ifstream &file, st
 	while (std::getline(file, line))
 	{
 		line = trim(line);
-		if (line.empty())
-			continue ;
 		if (line.compare(0, 1, "}") == 0)
 			break ;
 		for (int j = 0; j < 6; j++)
 		{
 			if (line.compare(0, data[j].length(), data[j]) == 0)
 			{
-				parseLocationData(location, line, &j);
+				parseLocationData(location, data[j], line);
 				break ;
 			}
 		}
@@ -164,9 +154,8 @@ static int	parseServerBlock(std::ifstream &file, ServerConfig &server)
 
 	while (std::getline(file, line))
 	{
-		if (line.empty())
-			continue ;
-		line = line.substr(line.find_first_not_of(" \t"), line.find_last_not_of(" \t") - line.find_first_not_of(" \t") + 1);
+		trim(line);
+		if (line.empty() || line[0] == '#' || line == "{") continue;
 		if (line.compare(0, 6, "server") == 0 && line.length() == 6)
 			return 1;
 		for (int j = 0; j < 8; j++)
@@ -206,12 +195,12 @@ void	parseData(const std::string &filename, std::vector<ServerConfig> &server)
 	{
 		line = trim(line);
 		
-		if (line.empty())
-			continue ;
-		
-		if ((line.find("server") == 0 && line.find("{", line.find("server") + 6) != std::string::npos) || 
+		if (line.empty() || line[0] == '#') continue;
+	
+        size_t server_pos = line.find("server");
+        if (server_pos == 0 ||
             new_serv == 1)
-		{
+        {
 			std::cout << CYAN << "Server block found!" << std::endl << "Parsing." << DEFAULT << std::endl;
 			int i = 0;
 			while (i < 20)
@@ -226,6 +215,11 @@ void	parseData(const std::string &filename, std::vector<ServerConfig> &server)
 			ServerConfig new_server;
 			new_serv = parseServerBlock(file, new_server);
 			server.push_back(new_server);
+		}
+		else
+		{
+			std::cerr << "Error: Invalid server block" << std::endl;
+			return;
 		}
 	}
 }

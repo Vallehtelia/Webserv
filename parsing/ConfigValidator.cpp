@@ -166,28 +166,29 @@ bool ConfigValidator::validateConfigFile(const std::string &filename) {
     std::string line;
     while (std::getline(file, line)) {
         trim(line);
-        if (line.empty() || line[0] == '#') continue; // taa odottaa et kommentti alkaa ensimmaisest indexitsta
-
-		// Combine this to one function accepting any number of " /t/n" after server before {
+        if (line.empty() || line[0] == '#') continue; // taa odottaa et kommentti alkaa ensimmaisest indexista trimmin jalkeen
 		if (line == "server") {
-			if (!std::getline(file, line)) {
-				std::cerr << "Unexpected end of file after 'server'" << std::endl;
-				return false;
-			}
-			trim(line);
-			if (line != "{") {
-				std::cerr << "Expected '{' after 'server', but got: " << line << std::endl;
-				return false;
-			}
-			if (!validateServerBlock(file)) {
-				return false;
+			while (std::getline(file, line)) {
+				trim(line);
+				if (line.empty() || line[0] == '#') continue;
+				if (line == "{") {
+					if (!validateServerBlock(file)) {
+						return false;
+					}
+					std::cout << "Found valid server block!" << std::endl;
+					break;
+				} else {
+					std::cerr << "Expected '{' after 'server', but got: " << line << std::endl;
+					return false;
+				}
+				if (file.eof()) {
+					std::cerr << "Unexpected end of file after 'server'" << std::endl;
+					return false;
+				}
 			}
 		} else if (line.find("server") == 0) {
-			// std::cout << "Found server in beginning." << std::endl;
 			std::string trimmedRest = line.substr(6);
-			// std::cout << "@" << trimmedRest << "@" << std::endl;
 			trim(trimmedRest);
-			// std::cout << "@" << trimmedRest << "@" << std::endl;
 			if (trimmedRest != "{") {
 				std::cerr << "Unexpected content after 'server {': " << trimmedRest << std::endl;
 				return false;
