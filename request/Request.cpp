@@ -143,9 +143,12 @@ void Request::parseRequest(std::string &rawRequest) {
             case State::ERROR:
                 std::cerr << "Error in parsing request\n";
                 break;
+            default:
+                break;
         }
     }
 }
+
 
 
 static bool isValidRequestLine(const std::string& requestLine) {

@@ -42,10 +42,11 @@ document.getElementById('custom-file-button').addEventListener('click', function
     }
 
     const directoryListing = async () => {
-        const response = await fetch('/html/');
+        const response = await fetch('/uploads/');
         const jsonResponse = await response.json();
         console.log(jsonResponse);
 
+        document.getElementById("computer-screen").innerHTML = "";
         const newDiv = document.createElement("div");
         newDiv.classList.add('directory-list');
         jsonResponse.files.forEach(file => {
@@ -82,7 +83,7 @@ const form = document.querySelector('#file-upload-form');
         if (!profilePic && !audio && !video) {
             return;
         }
-        showLoadingSpinner();
+        //showLoadingSpinner();
         try {
             const formData = new FormData();
             formData.append('profilepic', profilePic);
@@ -104,7 +105,7 @@ const form = document.querySelector('#file-upload-form');
                     // Parse the JSON body of the response
                     const jsonResponse = await response.json();
                     console.log(jsonResponse);
-                    listUploadedFiles(jsonResponse);
+                    directoryListing();
                 } catch (error) {
                     console.error('Error parsing JSON:', error);
                 }
