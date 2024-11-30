@@ -32,14 +32,13 @@ def save_image_and_process(temp_path, filename, name):
             text_position = (img.width // 2 - text_width // 2, img.height - text_height - 10)
 
             draw.text(text_position, name, fill=text_color, font=font)
-            print("<p>Image processed with text overlay.</p>")
 
             edited_directory = "./html/edited"
             os.makedirs(edited_directory, exist_ok=True)
             edited_filename = f"edited_{filename}"
             output_path = os.path.join(edited_directory, edited_filename)
             img.save(output_path)
-            print(f"<p>Image saved to {output_path}</p>")
+            #print(f"<p>Image saved to {output_path}</p>")
             return edited_filename
     except Exception as e:
         print(f"<p>Error: Could not process the image. {str(e)}</p>")
@@ -52,7 +51,10 @@ def main():
 
     parts = data.split(f"--{boundary}".encode())
 
-    # Initialize variables
+	#infinite loop test
+    # while True:
+    #     pass
+
     filename = None
     name = None
 

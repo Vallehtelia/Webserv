@@ -124,8 +124,13 @@ std::map<std::string, std::string>	cgiRequest::getEnv()
 	return (env);
 }
 
-bool	cgiRequest::isValidCgi()
+int	cgiRequest::isValidCgi()
 {
+	if (!std::filesystem::exists(script_path))
+	{
+		std::cerr << "Cgi script not found at: " << script_path << std::endl;
+		return 1;
+	}
 	std::ifstream file;
 
 	file.open(script_path);
@@ -133,12 +138,12 @@ bool	cgiRequest::isValidCgi()
 	if (file)
 	{
 		std::cerr << "Great success\n";
-		return true;
+		return 0;
 	}
 	else
 	{
 		std::cerr << "Cgi script not opening at: " << script_path << std::endl;
-		return false;
+		return 2;
 	}
 }
 
@@ -157,7 +162,8 @@ static bool	ensureFolderExists(const std::string &folderPath)
 
 int	cgiRequest::execute()
 {
-	if (isValidCgi())
+	int status = 0;
+	if ((status = isValidCgi()) == 0)
 	{
 		if (!ensureFolderExists("./html/tmp"))
 			return 500;
@@ -210,11 +216,32 @@ int	cgiRequest::execute()
 		}
 		else
 		{
-			waitpid(pid, nullptr, 0);
-			// std::cout << output << std::endl;
+			const int	timeout = 5;
+			int			status = 0;
+
+			pid_t		result = waitpid(pid, &status, WNOHANG);
+			for (int i = 0; i < timeout && result == 0; i++)
+			{
+				sleep(1);
+				result = waitpid(pid, &status, WNOHANG);
+			}
+			if (result == 0)
+			{
+				std::cerr << RED << "Timeout occurred. Killing CGI script process: " << pid << DEFAULT << std::endl;
+				kill(pid, SIGKILL);
+				waitpid(pid, &status, 0);
+				return 504;
+			}
+			if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+				return 0;
+			else
+				return 500;
 		}
-		return 0;
 	}
+	else if (status == 1)
+		return 404;
+	else
+		return 503;
 	return 1;
 }
 

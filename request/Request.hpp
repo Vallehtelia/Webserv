@@ -22,7 +22,11 @@ enum class State {
     MULTIPARTDATA,
     COMPLETE,
     ERROR,
-    INCOMPLETE
+    INCOMPLETE,
+	CGI_ERROR,
+	TIMEOUT,
+	CGI_NOT_FOUND,
+	CGI_NOT_PERMITTED
 };
 
 struct MultipartData

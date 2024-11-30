@@ -46,7 +46,6 @@ int	main(int ac, char **av)
 {
 	signal(SIGINT, sig_handler);
     std::vector<ServerConfig>	server; // Taa sisaltaa kaiken tiedon, Server name, port, host, root, client bodysize, index path, error pages in a map, locations in vector.
-	// int epoll_fd;
 
     if (ac != 2)
 	{
@@ -57,7 +56,6 @@ int	main(int ac, char **av)
 	if (!initConfig(av[1], server))
 		return 1;
 
-    // std::vector<Socket> sockets;
 	if (initSocket(server, sockets) == false)
 		return 1;
 	epoll_fd = setup_epoll(sockets);
@@ -68,11 +66,8 @@ int	main(int ac, char **av)
 	}
 
 	while (running)
-	{
 		event_loop(sockets, epoll_fd);
-	}
 
-    // Close the other sockets
 	cleanup(sockets, epoll_fd);
     return 0;
 }

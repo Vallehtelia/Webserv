@@ -43,7 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const resultHtml = await response.text();
                 postResponseDiv.innerHTML = resultHtml; // Display server response
             } else {
-                postResponseDiv.innerHTML = '<p style="color:red;">Failed to upload image</p>';
+                // postResponseDiv.innerHTML = '<p style="color:red;">Failed to upload image</p>';
+				const resultHtml = await response.text();
+				postResponseDiv.innerHTML = resultHtml;
                 console.error('Server responded with status:', response.status);
             }
         } catch (error) {

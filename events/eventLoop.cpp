@@ -165,10 +165,18 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 						int execute_result = cgireg.execute(); // exit status so we need to give correct error page so current one is broken
 						if (execute_result == 0)
 							req.setPath("/cgi_output.html");
-						// else
-						// {
-
-						// }
+						else
+						{
+							req.setPath(socket.getServer().getErrorPage(execute_result));
+							if (execute_result == 500)
+								req.setState(State::CGI_ERROR);
+							else if (execute_result == 404)
+								req.setState(State::CGI_NOT_FOUND);
+							else if (execute_result == 504)
+								req.setState(State::TIMEOUT);
+							else
+								req.setState(State::CGI_NOT_PERMITTED);
+						}
 					}
 				}
 				//req.printRequest();

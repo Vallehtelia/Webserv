@@ -12,6 +12,26 @@ void RequestHandler::handleRequest(Request& req, Response& res, LocationConfig &
 
 	if (req.getUri() == "/")
 		req.setPath("/index.html");
+	if (req.getState() == State::CGI_ERROR) // Naa johonki siistimmin
+	{
+		res.setResponse(500, "text/html", "");
+		return ;
+	}
+	if (req.getState() == State::TIMEOUT)
+	{
+		res.setResponse(504, "text/html", "");
+		return ;
+	}
+	if (req.getState() == State::CGI_NOT_FOUND)
+	{
+		res.setResponse(404, "text/html", "");
+		return ;
+	}
+	if (req.getState() == State::CGI_NOT_PERMITTED)
+	{
+		res.setResponse(403, "text/html", "");
+		return ;
+	}
     if (req.getState() == State::ERROR)
     {
         std::cout << "it gets here!" << std::endl;

@@ -24,7 +24,7 @@ class cgiRequest
 		void		setEnvironmentVariables(const std::string &contentType);
 		char		**buildEnv();
 		int			execute();
-		bool		isValidCgi();
+		int			isValidCgi();
 		void		printEnv(char **envp); // debugging purpose only
 		void		printCgiRequestData(); // debugging purpose only
 
