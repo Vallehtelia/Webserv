@@ -31,10 +31,9 @@ class	Socket
 		int			getPort() const;
 		std::string	getIp() const;
 		int			getSocketFd() const;
-		bool			getActiveMode() const;
+		bool		getActiveMode() const;
 };
 
-bool set_non_blocking(int sockfd);
 bool	initSocket(std::vector<ServerConfig> &server, std::vector<Socket> &sockets);
 
 #endif

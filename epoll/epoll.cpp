@@ -1,20 +1,18 @@
 
 #include "./epoll.hpp"
-#include "../sockets/socket.hpp"
+#include "../sockets/Socket.hpp"
 
-bool set_non_blocking(int sockfd)
+int set_non_blocking(int sockfd)
 {
     int flags = fcntl(sockfd, F_GETFL, 0);
     if (flags == -1) {
-        perror("fcntl 1");
-        return false;
+        return 1;
     }
     if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) == -1)
 	{
-        perror("fcntl 2");
-        return false;
+        return 2;
     }
-	return true;
+	return 0;
 }
 
 void cleanup(std::vector<Socket> &sockets, int epoll_fd)

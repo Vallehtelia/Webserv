@@ -2,7 +2,7 @@
 #include <iostream>
 #include <filesystem>
 #include "cgi_request.hpp"
-#include "../sockets/socket.hpp"
+#include "../sockets/Socket.hpp"
 
 cgiRequest::cgiRequest(const std::string &path, const std::string &method, const std::string &queryString, const std::string &protocol, const std::string &bodyData) : script_path(path), request_method(method), httpProtocol(protocol), body_data(bodyData)
 {

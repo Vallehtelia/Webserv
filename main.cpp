@@ -1,4 +1,4 @@
-#include "./sockets/socket.hpp"
+#include "./sockets/Socket.hpp"
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <netinet/in.h>

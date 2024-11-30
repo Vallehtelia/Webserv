@@ -10,7 +10,7 @@ SRC_DIR = ./
 SRC_FILES = main.cpp utils.cpp
 
 SOCKET_DIR = ./sockets/
-SOCKET_FILES = socket.cpp
+SOCKET_FILES = Socket.cpp
 
 EPOLL_DIR = ./epoll/
 EPOLL_FILES = epoll.cpp

@@ -1,4 +1,6 @@
-#include "./socket.hpp"
+#include <sys/resource.h>
+
+#include "./Socket.hpp"
 #include "../epoll/epoll.hpp"
 
 Socket::Socket(int port, std::string host) : _socket_fd(0), _active(false)
@@ -71,6 +73,27 @@ bool	Socket::getActiveMode() const
 return (this->_active);
 }
 
+
+void increaseFileDescriptorLimit(int new_limit) {
+    struct rlimit limit;
+
+    // Get current limits
+    if (getrlimit(RLIMIT_NOFILE, &limit) == 0) {
+        std::cout << "Current limits: soft=" << limit.rlim_cur << ", hard=" << limit.rlim_max << "\n";
+
+        // Update the soft limit to the desired value, within the hard limit
+        limit.rlim_cur = std::min(static_cast<rlim_t>(new_limit), limit.rlim_max);
+
+        if (setrlimit(RLIMIT_NOFILE, &limit) == 0) {
+            std::cout << "New limits: soft=" << limit.rlim_cur << ", hard=" << limit.rlim_max << "\n";
+        } else {
+            std::cerr << "Error: Failed to set new file descriptor limit" << std::endl;
+        }
+    } else {
+        std::cerr << "Error: Failed to get file descriptor limit" << std::endl;
+    }
+}
+
 bool	initSocket(std::vector<ServerConfig> &server, std::vector<Socket> &sockets)
 {
 	for (const auto &config : server)
@@ -85,8 +108,10 @@ bool	initSocket(std::vector<ServerConfig> &server, std::vector<Socket> &sockets)
 			cleanup(sockets, -1);
 			return false;
 		}
-		if (set_non_blocking(sock.getSocketFd()) == false)
+		int snb = set_non_blocking(sock.getSocketFd());
+		if (snb > 0)
 		{
+			std::cerr << RED << "Failed to set non-blocking: (" << snb << ") " << strerror(errno) << DEFAULT << "\n";
 			close(sock.getSocketFd());
 			cleanup(sockets, -1);
 			return false;
@@ -104,8 +129,9 @@ bool	initSocket(std::vector<ServerConfig> &server, std::vector<Socket> &sockets)
 			cleanup(sockets, -1);
 			return false;
 		}
-
-		if (listen(sock.getSocketFd(), 10) < 0)
+		std::cout << "System max listen backlog (somaxconn) is : " << SOMAXCONN << std::endl;
+		increaseFileDescriptorLimit(SOMAXCONN);
+		if (listen(sock.getSocketFd(), SOMAXCONN) < 0)
 		{
 			std::cerr << RED << "Failed to listen: " << strerror(errno) << DEFAULT << "\n";
 			close(sock.getSocketFd());

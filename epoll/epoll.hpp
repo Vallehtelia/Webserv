@@ -10,7 +10,7 @@
 
 class Socket;
 
-bool set_non_blocking(int sockfd);
+int set_non_blocking(int sockfd);
 void cleanup(std::vector<Socket> &sockets, int epoll_fd);
 int	setup_epoll(std::vector<Socket> &sockets);
 

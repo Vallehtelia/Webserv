@@ -4,7 +4,7 @@
 #include "../request/RequestHandler.hpp"
 #include "../cgi/cgi_request.hpp"
 #include "../response/Response.hpp"
-#include "../sockets/socket.hpp"
+#include "../sockets/Socket.hpp"
 
 int	acceptConnection(int fd, int epoll_fd)
 {
