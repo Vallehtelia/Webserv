@@ -95,17 +95,17 @@ std::string Response::getErrorPage() const
 {
     switch (_statusCode) {
         case 400:
-            return "./html/error_pages/400.html";
+            return "./website/html/error_pages/400.html";
         case 403:
-            return ".html/error_pages/403.html";
+            return "./website/html/error_pages/403.html";
         case 404:
-            return "./html/error_pages/404.html";
+            return "./website/html/error_pages/404.html";
         case 405:
-            return "./html/error_pages/405.html";
+            return "./website/html/error_pages/405.html";
         case 409:
-            return "./html/error_pages/409.html";
+            return "./website/html/error_pages/409.html";
         default:
-            return "./html/error_pages/500.html";
+            return "./website/html/error_pages/500.html";
     }
 }
 

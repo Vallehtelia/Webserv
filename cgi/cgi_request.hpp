@@ -18,10 +18,10 @@ class cgiRequest
 		std::map<std::string, std::string> env;
 		std::string	body_data;
 	public:
-		cgiRequest(const std::string &path, const std::string &method, const std::string &queryString, const std::string &protocol, const std::string &bodyData);
+		cgiRequest(const std::string &path, const std::string &method, const std::string &queryString, const std::string &protocol, const std::string &bodyData, const std::string &contentType);
 		~cgiRequest();
 
-		void		setEnvironmentVariables();
+		void		setEnvironmentVariables(const std::string &contentType);
 		char		**buildEnv();
 		int			execute();
 		bool		isValidCgi();

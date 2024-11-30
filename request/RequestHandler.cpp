@@ -10,6 +10,8 @@ void RequestHandler::handleRequest(Request& req, Response& res, LocationConfig &
 {
     _location = location;
 
+	if (req.getUri() == "/")
+		req.setPath("/index.html");
     if (req.getState() == State::ERROR)
     {
         std::cout << "it gets here!" << std::endl;
@@ -101,11 +103,16 @@ void removePrefix(std::string& str, const std::string& prefix) {
 std::string RequestHandler::getFilepath(std::string filepath)
 {
 	filepath = urlDecode(filepath);
-    removePrefix(filepath, _location.getLocation());
+    removePrefix(filepath, _location.getRoot());
 	if (filepath.front() == '/' && filepath.length() > 1) {
             filepath.erase(0, 1);
     }
-    std::filesystem::path baseDir = std::filesystem::current_path() / _location.getRoot();
+	std::string tmp = _location.getLocation();
+	removePrefix(tmp, _location.getRoot());
+	_location.path = tmp;
+	tmp = _location.getRoot();
+	removePrefix(tmp, "/");
+    std::filesystem::path baseDir = std::filesystem::current_path() / tmp;
     std::filesystem::path path;
     if (filepath.find("cgi") != std::string::npos)
         path = baseDir / "tmp" / filepath;
@@ -205,7 +212,7 @@ std::string generateDirectoryListing(const std::string& directoryPath) {
         for (const auto& entry : std::filesystem::directory_iterator(directoryPath)) {
             jsonStream << "\t\t{\n";
             jsonStream << "\t\t\t\"name\": \"" << entry.path().filename().string() << "\",\n";
-            jsonStream << "\t\t\t\"type\": \"" 
+            jsonStream << "\t\t\t\"type\": \""
                        << (entry.is_directory() ? "directory" : "file") << "\",\n";
 
             if (!entry.is_directory()) {
@@ -236,7 +243,7 @@ void RequestHandler::handleGetRequest(Response& res) {
     std::cout << "HANDLE GET" << std::endl;
     std::cout << "----------" << std::endl;
     std::cout << "Path: " << _filePath << std::endl;
-    std::cout << "Is directory: " << std::filesystem::is_directory(_filePath) << std::endl; 
+    std::cout << "Is directory: " << std::filesystem::is_directory(_filePath) << std::endl;
     std::cout << "----------" << std::endl;
     if (std::filesystem::is_directory(_filePath)){
         std::cout << "it is a directory" << std::endl ;
@@ -389,7 +396,7 @@ void RequestHandler::handleFileUpload(const MultipartData& part, Response& res)
         res.setResponse(400, "application/json", R"({"error": "File name is missing."})");
         return;
     }
-    std::string uploadPath = getFilepath(part.filename);
+    std::string uploadPath = getFilepath("/uploads/" + part.filename);
     if (validFile(uploadPath)) {
     	std::ofstream file(uploadPath, std::ios::binary);
 		if (file)

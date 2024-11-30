@@ -4,7 +4,7 @@
 #include "cgi_request.hpp"
 #include "../sockets/socket.hpp"
 
-cgiRequest::cgiRequest(const std::string &path, const std::string &method, const std::string &queryString, const std::string &protocol, const std::string &bodyData) : script_path(path), request_method(method), httpProtocol(protocol), body_data(bodyData)
+cgiRequest::cgiRequest(const std::string &path, const std::string &method, const std::string &queryString, const std::string &protocol, const std::string &bodyData, const std::string &contentType) : script_path(path), request_method(method), httpProtocol(protocol), body_data(bodyData)
 {
 	std::cout << "cgi request constructor" << std::endl;
 	if (!queryString.empty())
@@ -13,7 +13,7 @@ cgiRequest::cgiRequest(const std::string &path, const std::string &method, const
 	}
 	else
 		query_str = "";
-	setEnvironmentVariables();
+	setEnvironmentVariables(contentType);
 }
 
 cgiRequest::~cgiRequest()
@@ -21,7 +21,7 @@ cgiRequest::~cgiRequest()
 	std::cout << "cgi request deconstructor" << std::endl;
 }
 
-void	cgiRequest::setEnvironmentVariables()
+void	cgiRequest::setEnvironmentVariables(const std::string &contentType)
 {
 	env["REQUEST_METHOD"] = request_method;
 	env["SCRIPT_PATH"] = script_path;
@@ -30,8 +30,11 @@ void	cgiRequest::setEnvironmentVariables()
 
 	if (request_method == "POST")
 	{
+		if (!contentType.empty())
+			env["CONTENT_TYPE"] = contentType; // Use the actual content type from the request
+		else
+			env["CONTENT_TYPE"] = "application/x-www-form-urlencoded"; // Default fallback
 		env["CONTENT_LENGTH"] = std::to_string(body_data.size());
-		env["CONTENT_TYPE"] = "application/x-www-form-urlencoded";
 	}
 }
 

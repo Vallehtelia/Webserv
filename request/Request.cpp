@@ -119,7 +119,7 @@ void Request::parseRequest(std::string &rawRequest) {
     if (chunked)
         currentState = State::UNCHUNK;
     while (currentState != State::COMPLETE && currentState != State::ERROR && currentState != State::INCOMPLETE) {
-        std::cout << "REQUEST PARSING: " << stateToString(currentState) << std::endl;
+        // std::cout << "REQUEST PARSING: " << stateToString(currentState) << std::endl;
         switch (currentState) {
             case State::REQUEST_LINE:
                 parseRequestLine();
@@ -231,7 +231,7 @@ void Request::prepareRequest()
         else
             currentState = State::BODY;
     }
-    else 
+    else
         currentState = State::COMPLETE;
     std::cout << "\n\n HEADERS PRINTED FROM PREPARE_REQUEST()\n\n";
     for (const auto& pair : headers) {
@@ -338,7 +338,7 @@ void Request::parseBody()
         return ;
     }
     else if ((body.size() == contentLength))
-    {   
+    {
         if (_isMultiPart) {
             currentState = State::MULTIPARTDATA;
             return;
@@ -444,7 +444,7 @@ void Request::printMultipartdata()
         printVectorAsHex(part.data);
         std::cout << "\033[0m" << std::endl;
         i++;
-    }   
+    }
 }
 
 void Request::printRequest()
