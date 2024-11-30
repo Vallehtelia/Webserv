@@ -22,13 +22,30 @@
 #include "./cgi/cgi_request.hpp"
 #include "utils.hpp"
 #include "./events/eventLoop.hpp"
+#include <csignal>
 
 // #define PORT 8002 // ja taa
 
+std::vector<Socket> sockets;
+int epoll_fd = -1;
+bool running = true;
+
+void	sig_handler(int signum)
+{
+	std::cerr << RED << "Caught signal " << signum << DEFAULT << std::endl;
+
+	if (epoll_fd != -1)
+	{
+		cleanup(sockets, epoll_fd);
+		std::cerr << RED << "Cleaned up sockets and epoll" << DEFAULT << std::endl;
+	}
+	running = false;
+}
+
 int	main(int ac, char **av)
 {
+	signal(SIGINT, sig_handler);
     std::vector<ServerConfig>	server; // Taa sisaltaa kaiken tiedon, Server name, port, host, root, client bodysize, index path, error pages in a map, locations in vector.
-	int epoll_fd;
 
     if (ac != 2)
 	{
@@ -39,7 +56,6 @@ int	main(int ac, char **av)
 	if (!initConfig(av[1], server))
 		return 1;
 
-    std::vector<Socket> sockets;
 	if (initSocket(server, sockets) == false)
 		return 1;
 	epoll_fd = setup_epoll(sockets);
@@ -48,10 +64,10 @@ int	main(int ac, char **av)
 		cleanup(sockets, epoll_fd);
 		return 1;
 	}
-	
-	event_loop(sockets, epoll_fd);
 
-    // Close the other sockets
+	while (running)
+		event_loop(sockets, epoll_fd);
+
 	cleanup(sockets, epoll_fd);
     return 0;
 }

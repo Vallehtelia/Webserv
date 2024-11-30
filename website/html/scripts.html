@@ -8,55 +8,56 @@
 </head>
 <body>
     <div class="header">
-        <img src="/assets/images/masters_logo_text.png"/>
+        <img src="/assets/images/masters_logo_text.png" alt="Masters Logo"/>
         <div class="header-button-container">
             <form action="file_upload.html" method="GET">
                 <button type="submit">Upload a File</button>
             </form>
             <form action="scripts.html" method="GET">
-                <button type="submit">cgi scripts</button>
+                <button type="submit">CGI Scripts</button>
             </form>
             <form action="todo.html" method="GET">
-                <button type="submit">JSON data</button>
+                <button type="submit">JSON Data</button>
             </form>
             <form action="todo.html" method="GET">
-                <button type="submit">routes</button>
+                <button type="submit">Routes</button>
             </form>
         </div>
     </div>
 
-
-
     <div class="flex-container">
+        <!-- Updated form with POST and action -->
         <div class="form-container">
-            <form id="imageUploadForm" class="file-upload-form cgi-upload-form" enctype="multipart/form-data">
+            <form id="imageUploadForm" class="file-upload-form cgi-upload-form" enctype="multipart/form-data" method="POST" action="/cgi-bin/edit_image.py">
                 <div class="cgi-form-data">
                     <div>
-                        <h4>upload an image</h4>
-                        <label for="image">Choose image</label>
+                        <h4>Upload an Image</h4>
+                        <label for="image">Choose Image:</label>
                         <input type="file" id="image" name="image" accept="image/*">
                         <span id="file-name">No image chosen</span>
                     </div>
                     <div>
-                        <h4>add image to text</h4>
-                        <input type="text" id="name" name="name" placeholder="add text to image"><br>
-                        <small>You can add text that will be planted on the processed image.</small>
+                        <h4>Add Text to Image</h4>
+                        <label for="name">Text:</label>
+                        <input type="text" id="name" name="name" placeholder="Add text to image">
+                        <small>You can add text that will be embedded on the processed image.</small>
                     </div>
                 </div>
                 <div>
                     <button type="button" id="submitPostRequest">Submit Image for Processing</button>
-                    <button type="button" id="showImageRequest">show image</button>
-
+                    <button type="button" id="showImageRequest">Show Image</button>
                 </div>
             </form>
         </div>
+
+        <!-- Processed Image Display -->
         <div class="cgi-image-container form-container">
-            <h1>processed image</h1>
-            <div id="showImageDiv">
-            </div>
+            <h1>Processed Image</h1>
+            <div id="showImageDiv"></div>
             <div id="postResponse"></div>
         </div>
     </div>
+
     <div class="credits-wrapper">
         <div class="atom">
             <div class="nucleus"></div>
@@ -68,7 +69,7 @@
             <div class="electron">okarejok</div>
         </div>
         <p>42 WEBSERV HIVE HELSINKI 2024</p>
-    </div >
+    </div>
 </body>
 </html>
 

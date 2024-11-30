@@ -4,7 +4,7 @@
 #include "cgi_request.hpp"
 #include "../sockets/socket.hpp"
 
-cgiRequest::cgiRequest(const std::string &path, const std::string &method, const std::string &queryString, const std::string &protocol, const std::string &bodyData) : script_path(path), request_method(method), httpProtocol(protocol), body_data(bodyData)
+cgiRequest::cgiRequest(const std::string &path, const std::string &method, const std::string &queryString, const std::string &protocol, const std::string &bodyData, const std::string &contentType) : script_path(path), request_method(method), httpProtocol(protocol), body_data(bodyData)
 {
 	std::cout << "cgi request constructor" << std::endl;
 	if (!queryString.empty())
@@ -13,7 +13,7 @@ cgiRequest::cgiRequest(const std::string &path, const std::string &method, const
 	}
 	else
 		query_str = "";
-	setEnvironmentVariables();
+	setEnvironmentVariables(contentType);
 }
 
 cgiRequest::~cgiRequest()
@@ -21,7 +21,7 @@ cgiRequest::~cgiRequest()
 	std::cout << "cgi request deconstructor" << std::endl;
 }
 
-void	cgiRequest::setEnvironmentVariables()
+void	cgiRequest::setEnvironmentVariables(const std::string &contentType)
 {
 	env["REQUEST_METHOD"] = request_method;
 	env["SCRIPT_PATH"] = script_path;
@@ -30,8 +30,11 @@ void	cgiRequest::setEnvironmentVariables()
 
 	if (request_method == "POST")
 	{
+		if (!contentType.empty())
+			env["CONTENT_TYPE"] = contentType; // Use the actual content type from the request
+		else
+			env["CONTENT_TYPE"] = "application/x-www-form-urlencoded"; // Default fallback
 		env["CONTENT_LENGTH"] = std::to_string(body_data.size());
-		env["CONTENT_TYPE"] = "application/x-www-form-urlencoded";
 	}
 }
 
@@ -121,8 +124,13 @@ std::map<std::string, std::string>	cgiRequest::getEnv()
 	return (env);
 }
 
-bool	cgiRequest::isValidCgi()
+int	cgiRequest::isValidCgi()
 {
+	if (!std::filesystem::exists(script_path))
+	{
+		std::cerr << "Cgi script not found at: " << script_path << std::endl;
+		return 1;
+	}
 	std::ifstream file;
 
 	file.open(script_path);
@@ -130,12 +138,12 @@ bool	cgiRequest::isValidCgi()
 	if (file)
 	{
 		std::cerr << "Great success\n";
-		return true;
+		return 0;
 	}
 	else
 	{
 		std::cerr << "Cgi script not opening at: " << script_path << std::endl;
-		return false;
+		return 2;
 	}
 }
 
@@ -154,7 +162,8 @@ static bool	ensureFolderExists(const std::string &folderPath)
 
 int	cgiRequest::execute()
 {
-	if (isValidCgi())
+	int status = 0;
+	if ((status = isValidCgi()) == 0)
 	{
 		if (!ensureFolderExists("./html/tmp"))
 			return 500;
@@ -207,11 +216,32 @@ int	cgiRequest::execute()
 		}
 		else
 		{
-			waitpid(pid, nullptr, 0);
-			// std::cout << output << std::endl;
+			const int	timeout = 5;
+			int			status = 0;
+
+			pid_t		result = waitpid(pid, &status, WNOHANG);
+			for (int i = 0; i < timeout && result == 0; i++)
+			{
+				sleep(1);
+				result = waitpid(pid, &status, WNOHANG);
+			}
+			if (result == 0)
+			{
+				std::cerr << RED << "Timeout occurred. Killing CGI script process: " << pid << DEFAULT << std::endl;
+				kill(pid, SIGKILL);
+				waitpid(pid, &status, 0);
+				return 504;
+			}
+			if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+				return 0;
+			else
+				return 500;
 		}
-		return 0;
 	}
+	else if (status == 1)
+		return 404;
+	else
+		return 503;
 	return 1;
 }
 

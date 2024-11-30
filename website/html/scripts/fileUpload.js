@@ -5,20 +5,20 @@ document.getElementById('custom-file-button').addEventListener('click', function
 });
  */}
 
- 
+
  document.querySelectorAll("#file-upload-form input[type='file']").forEach(function(input) {
      input.addEventListener("change", function() {
          // Find the sibling span element (file name display)
          var fileNameDisplay = this.nextElementSibling;
          console.log(fileNameDisplay);
-         
+
          // Update the text with the name of the file or "No file chosen"
          var fileName = this.files[0] ? this.files[0].name : "No file !!chosen";
          fileNameDisplay.classList.add("file-name-display");
          fileNameDisplay.textContent = fileName;
         });
     });
-    
+
     const listUploadedFiles = (response) => {
         // Create a new div to hold the response
         const newDiv = document.createElement("div");
@@ -30,17 +30,17 @@ document.getElementById('custom-file-button').addEventListener('click', function
             listItem.innerHTML = "file: " + file.filename + "<br>url: " + file.fileurl;
             fileList.appendChild(listItem);
         });
-        
+
         // Append the file list to the new div
         newDiv.appendChild(fileList);
         document.getElementById("getResponse").innerHTML = "<h1>uploaded files succesfully:</h1>";
         document.getElementById("getResponse").appendChild(newDiv);
     };
-    
+
     const showLoadingSpinner = () => {
         document.getElementById("getResponse").innerHTML = '<h1>uploading files<h1><div id="loading-icon" class="spinner"></div>'
     }
-    
+
     const directoryListing = async () => {
         const response = await fetch('/html/');
         const jsonResponse = await response.json();
@@ -69,9 +69,9 @@ document.getElementById('custom-file-button').addEventListener('click', function
     document.addEventListener("DOMContentLoaded", function() {
        directoryListing();
 
-    
+
    });
-    
+
 const form = document.querySelector('#file-upload-form');
 
     form.addEventListener('submit', async (event) => {
@@ -92,7 +92,7 @@ const form = document.querySelector('#file-upload-form');
             if (audio) {
                 formData.append('audio', audio);
             }
-            const response = await fetch('/submit', {
+            const response = await fetch('/uploads', {
                 method: 'POST',
                 body: formData,
             });

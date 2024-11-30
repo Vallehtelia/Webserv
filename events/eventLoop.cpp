@@ -95,7 +95,9 @@ LocationConfig findLocation(const std::string &uri, const Socket &socket) {
     std::vector<LocationConfig> locations = socket.getServer().getLocations();
 
     for (std::vector<LocationConfig>::iterator it = locations.begin(); it != locations.end(); ++it) {
-        const std::string &locationPath = it->getLocation();
+        std::string locationPath = it->getLocation();
+		if (locationPath != "/" && locationPath.end()[-1] == '/')
+			locationPath = locationPath.substr(0, locationPath.length() - 1);
         if (uri.find(locationPath) == 0 && locationPath.length() > bestMatchLength) {
             // Check if locationPath is a prefix of uri and is more specific
             bestMatch = *it;
@@ -108,96 +110,115 @@ LocationConfig findLocation(const std::string &uri, const Socket &socket) {
 
 int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unordered_map<int, std::vector<char>> &client_data, const Socket &socket)
 {
-    std::cout << "RECEIVING DATA FROM FD: " << fd << std::endl;
-	char buffer[4000] = {0};
-	int bytes_read = recv(fd, buffer, sizeof(buffer) - 1, 0);
-	if (bytes_read < 0)
+    std::cout << "RECEIVING DATA FROM FD: " << fd << std::endl; // debug
+	while (true)
 	{
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-        {
-            std::cerr << "errno EAGAIN or EWOULDBLOCK\n";
-            return 1;
-        }
-        else
-        {
-            perror("recv");
-            // Close connection if read fails or end of data
-            close(fd);
-            client_data.erase(fd);
-        }
-	}
-    else if (bytes_read == 0)
-    {
-        close(fd);
-        client_data.erase(fd);
-    }
-    else
-    {
-        std::string rawRequest(buffer, bytes_read);
-		req.parseRequest(rawRequest);
-        std::cout << "CONTINUING THE LOOP.." << std::endl;
-        if (req.getState() == State::COMPLETE || req.getState() == State::ERROR)
-        {
-        	req.printRequest();
-            if (req.getState() != State::ERROR)
-            {
-                std::string path = req.getUri();
-                bool    cgi_req = (path.find("/cgi-bin/") != std::string::npos || (path.size() > 3 && path.substr(path.size() - 3) == ".py"));
-                if (cgi_req)
-                {
-					std::cout << "THE IMAGE IS CGI" << std::endl;
-                    std::string queryString = findQueryStr(req.getUri());
-                    std::string directPath;
-                    directPath = findPath(req.getUri());
-                    std::cout << "DIRECT PATH: " << directPath << std::endl;
-                    cgiRequest cgireg(directPath, req.getMethod(), queryString, req.getVersion(), req.getBody());
-                    int execute_result = cgireg.execute(); // exit status so we need to give correct error page so current one is broken
-                    if (execute_result == 0)
-                        req.setPath("/cgi_output.html");
-					// else
-					// {
+		char buffer[4000] = {0};
+		int bytes_read = recv(fd, buffer, sizeof(buffer) - 1, 0);
+		if (bytes_read < 0)
+		{
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+			{
+				std::cerr << "errno EAGAIN or EWOULDBLOCK\n";
+				break;
+			}
+			else
+			{
+				perror("recv");
+				// Close connection if read fails or end of data
+				close(fd);
+				client_data.erase(fd);
+				return -1;
+			}
+		}
+		else if (bytes_read == 0)
+		{
+			close(fd);
+			client_data.erase(fd);
+			return -1;
+		}
+		else
+		{
+			std::string rawRequest(buffer, bytes_read);
+			req.parseRequest(rawRequest);
+			if (req.getState() == State::INCOMPLETE)
+			{
+				continue;
+			}
+			std::cout << "CONTINUING THE LOOP.." << std::endl;
+			if (req.getState() == State::COMPLETE || req.getState() == State::ERROR)
+			{
+				req.printRequest();
+				if (req.getState() != State::ERROR)
+				{
+					std::string path = req.getUri();
+					bool    cgi_req = (path.find("/cgi-bin/") != std::string::npos || (path.size() > 3 && path.substr(path.size() - 3) == ".py"));
+					if (cgi_req)
+					{
+						std::cout << "content type: " << req.getContentType() << std::endl;
+						std::cout << "THE IMAGE IS CGI" << std::endl;
+						std::string queryString = findQueryStr(req.getUri());
+						std::string directPath;
+						directPath = findPath(req.getUri());
+						std::cout << "DIRECT PATH: " << directPath << std::endl;
+						cgiRequest cgireg(directPath, req.getMethod(), queryString, req.getVersion(), req.getBody(), req.getContentType());
+						int execute_result = cgireg.execute(); // exit status so we need to give correct error page so current one is broken
+						if (execute_result == 0)
+							req.setPath("/cgi_output.html");
+						else
+						{
+							req.setPath(socket.getServer().getErrorPage(execute_result));
+							if (execute_result == 500)
+								req.setState(State::CGI_ERROR);
+							else if (execute_result == 404)
+								req.setState(State::CGI_NOT_FOUND);
+							else if (execute_result == 504)
+								req.setState(State::TIMEOUT);
+							else
+								req.setState(State::CGI_NOT_PERMITTED);
+						}
+					}
+				}
+				//req.printRequest();
+				Response res;
+				std::cout << "URI FROM EVENT LOOP: " << req.getUri() << std::endl;
+				LocationConfig location = findLocation(req.getUri(), socket);
+				location.printLocation();
+				RequestHandler requestHandler;
+				requestHandler.handleRequest(req, res, location);
+				//res.printResponse();
+				// Get the full HTTP response string from the Response class
+				std::string http_response = res.getResponseString();
+				// Send the response back to the client
 
-					// }
-                }
-            }
-            //req.printRequest();
-		    Response res;
-			std::cout << "URI FROM EVENT LOOP: " << req.getUri() << std::endl;
-			LocationConfig location = findLocation(req.getUri(), socket);
-            location.printLocation();
-            RequestHandler requestHandler;
-		    requestHandler.handleRequest(req, res, location);
-            //res.printResponse();
-		    // Get the full HTTP response string from the Response class
-		    std::string http_response = res.getResponseString();
-		    // Send the response back to the client
-
-            // std::cout << http_response.length() << "lenght here!!!\n";
-            res.printResponse();
-            size_t total_sent = 0;
-            size_t message_length = http_response.length();
-            const char *message_ptr = http_response.c_str();
-            while (total_sent < message_length)
-            {
-                ssize_t bytes_sent = send(event.data.fd, message_ptr + total_sent, message_length - total_sent, 0);
-                if (bytes_sent < 0)
-                {
-                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                        // Socket is not ready, could add a delay or handle as needed
-                        continue;
-                    } else {
-                        perror("send");
-                        close(event.data.fd);
-                        break;
-                    }
-                }
-                total_sent += bytes_sent;
-            }
-            std::cout << "RESPONSE SENT" << std::endl;
-            req.reset();
-		    close(event.data.fd);
-        }
-		cleanupTempFiles();
+				// std::cout << http_response.length() << "lenght here!!!\n";
+				// res.printResponse();
+				size_t total_sent = 0;
+				size_t message_length = http_response.length();
+				const char *message_ptr = http_response.c_str();
+				while (total_sent < message_length)
+				{
+					ssize_t bytes_sent = send(event.data.fd, message_ptr + total_sent, message_length - total_sent, 0);
+					if (bytes_sent < 0)
+					{
+						if (errno == EAGAIN || errno == EWOULDBLOCK) {
+							// Socket is not ready, could add a delay or handle as needed
+							continue;
+						} else {
+							perror("send");
+							close(event.data.fd);
+							break;
+						}
+					}
+					total_sent += bytes_sent;
+				}
+				std::cout << "RESPONSE SENT" << std::endl;
+				req.reset();
+				close(event.data.fd);
+				break;
+			}
+			cleanupTempFiles();
+		}
 	}
 	return 0;
 }
@@ -220,6 +241,7 @@ void event_loop(const std::vector<Socket> &sockets, int epoll_fd)
 
         for (int i = 0; i < num_events; ++i)
         {
+			std::cout << "i = " << i << std::endl;
             int fd = events[i].data.fd;
 
             // 1. Tarkista, onko fd server-socket

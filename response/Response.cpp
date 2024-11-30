@@ -84,8 +84,11 @@ void Response::setStatusLine()
         case 409:
             _statusLine = "HTTP/1.1 409 Conflict\r\n";
             break;
+		case 500:
+			_statusLine = "HTTP/1.1 500 Internal Server Error\r\n";
+			break;
         default:
-            _statusLine = "HTTP/1.1 500 Internal Server Error\r\n";
+            _statusLine = "HTTP/1.1 504 Gateway Timeout\r\n";
             break;
     }
 }
@@ -95,17 +98,19 @@ std::string Response::getErrorPage() const
 {
     switch (_statusCode) {
         case 400:
-            return "./html/error_pages/400.html";
+            return "./website/html/error_pages/400.html";
         case 403:
-            return ".html/error_pages/403.html";
+            return "./website/html/error_pages/403.html";
         case 404:
-            return "./html/error_pages/404.html";
+            return "./website/html/error_pages/404.html";
         case 405:
-            return "./html/error_pages/405.html";
+            return "./website/html/error_pages/405.html";
         case 409:
-            return "./html/error_pages/409.html";
+            return "./website/html/error_pages/409.html";
+		case 500:
+			return "./website/html/error_pages/500.html";
         default:
-            return "./html/error_pages/500.html";
+            return "./website/html/error_pages/504.html";
     }
 }
 
