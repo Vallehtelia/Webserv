@@ -151,7 +151,7 @@ void	event_loop(const std::vector<Socket> &sockets, int epoll_fd)
 		int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
         if (num_events == -1)
 		{
-            std::cerr << RED << "epoll_wait failed" << DEFAULT << std::endl;
+            std::cerr << RED << "Error: Epoll wait failed" << DEFAULT << std::endl;
             break;
         }
 		for (int i = 0; i < num_events; ++i)
@@ -160,8 +160,8 @@ void	event_loop(const std::vector<Socket> &sockets, int epoll_fd)
 			Request &req = requests[fd];
 
 			auto it = std::find_if(sockets.begin(), sockets.end(),
-						[fd](const Socket &sock) { return sock.getSocketFd() == fd; });
-			if (it != sockets.end())
+						[fd](const Socket &sock) { return sock.getSocketFd() == fd; }); // lambda
+			if (it != sockets.end()) // server socker => new incoming connection
 			{
 				if (acceptConnection(fd, epoll_fd) == 0)
 					std::cout << "ACCEPTED CONNECTION ON PORT " << it->getPort() << std::endl;
