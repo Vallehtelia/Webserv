@@ -41,6 +41,34 @@ document.getElementById('custom-file-button').addEventListener('click', function
         document.getElementById("getResponse").innerHTML = '<h1>uploading files<h1><div id="loading-icon" class="spinner"></div>'
     }
 
+    
+    const getFileType = (file) => {
+        if (!file || !file.name) return null; // Handle cases where file or file.name is undefined
+        const dotIndex = file.name.lastIndexOf('.');
+        if (dotIndex > -1)
+        {
+            const extension = file.name.slice(dotIndex + 1).toLowerCase()
+            console.log(extension)
+            if (extension === "mp3")
+                return "/assets/audio_icon.png"
+            else if (extension === "jpg" || extension === "jpeg" || extension === "png")
+                return "/assets/image_icon.png"
+            else if (extension === "mp4")
+                return "/assets/video_icon.png"
+        }
+        return "/assets/random_icon.png"
+    }
+
+    const selectIcon = (file) => {
+        console.log(file.type)
+        if (file.type === "file")
+        {
+            return getFileType(file)
+        }
+        else
+            return "/assets/folder-icon.png"
+    }
+
     const directoryListing = async () => {
         const response = await fetch('/uploads/');
         const jsonResponse = await response.json();
@@ -52,7 +80,7 @@ document.getElementById('custom-file-button').addEventListener('click', function
         jsonResponse.files.forEach(file => {
             const listItem = document.createElement("div");
             const fileIcon = document.createElement("img");
-            fileIcon.src = file.type == "file" ? "/assets/file-icon.png" : "/assets/folder-icon.png"; // Set the image path
+            fileIcon.src = selectIcon(file) // Set the image path
             fileIcon.alt = "file icon"; // Optionally set alternative text
             fileIcon.classList.add('file-icon');
             listItem.classList.add('directory-item');

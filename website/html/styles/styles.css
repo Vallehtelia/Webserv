@@ -216,10 +216,13 @@ label[for]:has(+ input[type="file"]) {
     align-items: center;
     justify-content: center;
     text-align: center;
+    max-width: 30%;
 }
 
-.file-icon {
-    /* filter: grayscale(100%); */
+.directory-item p {
+    max-width: 100%; /* Restrict width to the parent container */
+    overflow: hidden; /* Hide overflowing text *//* Prevent text from wrapping to a new line */
+    text-overflow:ellipsis;
 }
 
 .form-container * button {
