@@ -37,12 +37,12 @@ void cleanupTempFiles()
 	if (std::ifstream(tempInFilePath))
 	{
 		if (std::remove(tempInFilePath.c_str()) != 0)
-			std::cerr << "Failed to delete temp file: " << strerror(errno) << "\n";
+			std::cerr << "Failed to delete temp file: " << strerror(errno) << std::endl;
 	}
 	if (std::ifstream(tempOutFilePath))
 	{
 		if (std::remove(tempOutFilePath.c_str()) != 0)
-			std::cerr << "Failed to delete temp file: " << strerror(errno) << "\n";
+			std::cerr << "Failed to delete temp file: " << strerror(errno) << std::endl;
 	}
 }
 
@@ -56,15 +56,16 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 	{
         if (errno == EAGAIN || errno == EWOULDBLOCK)
         {
-            std::cerr << "errno EAGAIN or EWOULDBLOCK\n";
+            std::cerr << ((errno == EAGAIN) ? "Error: EAGAIN in handling client data." : 
+			"Error: EWOULDBLOCK in handling client data.") << std::endl;
             return 1;
         }
         else
         {
-            perror("recv");
-            // Close connection if read fails or end of data
+            std::cerr << "Error: RECV in handling client data." << std::endl;
             close(fd);
             client_data.erase(fd);
+			return 1; // return from here too
         }
 	}
     else if (bytes_read == 0)
