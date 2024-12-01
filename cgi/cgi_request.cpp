@@ -165,6 +165,8 @@ int	cgiRequest::execute()
 	int status = 0;
 	if ((status = isValidCgi()) == 0)
 	{
+		if (!ensureFolderExists("./html"))
+			return 500;
 		if (!ensureFolderExists("./html/tmp"))
 			return 500;
 		pid_t pid = fork();
