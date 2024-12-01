@@ -216,7 +216,7 @@ label[for]:has(+ input[type="file"]) {
     align-items: center;
     justify-content: center;
     text-align: center;
-    max-width: 30%;
+    max-width: 33%;
 }
 
 .directory-item p {
@@ -365,3 +365,5 @@ label[for]:has(+ input[type="file"]) {
 .popup button {
     margin: 5px;
 }
+
+
