@@ -19,8 +19,8 @@
             <form action="todo.html" method="GET">
                 <button type="submit">JSON Data</button>
             </form>
-            <form action="todo.html" method="GET">
-                <button type="submit">Routes</button>
+            <form action="terminal.html" method="GET">
+                <button type="submit">Terminal</button>
             </form>
         </div>
     </div>
@@ -52,13 +52,25 @@
 
         <!-- Processed Image Display -->
         <div class="cgi-image-container form-container">
-            <h1>Processed Image</h1>
-            <div id="showImageDiv"></div>
-            <div id="postResponse"></div>
+            <div id="computer-screen" class="computer-screen-class cgi-computer-screen">
+                <div id="cgi-image-window" class="cgi-image-window" style="visibility: hidden;">
+                    <div class="cgi-output-window-header">
+                        <div class="cgi-header-button-container">
+                            <button class="cgi-header button">X</button>
+                        </div>
+                    </div>
+                    <div id="showImageDiv" class="cgi-output-container">
+                    </div>
+                    <div id="postResponse">
+                    </div>
+                </div>
+            </div>
+        </div>
         </div>
     </div>
 
     <div class="credits-wrapper">
+        <p>server by: </p>
         <div class="atom">
             <div class="nucleus"></div>
             <div class="orbit-path"></div>
@@ -68,8 +80,11 @@
             <div class="electron">mburakow</div>
             <div class="electron">okarejok</div>
         </div>
-        <p>42 WEBSERV HIVE HELSINKI 2024</p>
-    </div>
+        <div>
+            <p>front end by: okarejok</p>
+            <p>42 WEBSERV HIVE HELSINKI 2024</p>
+        </div>
+    </div >
 </body>
 </html>
 

@@ -80,7 +80,7 @@ body {
 	height:400px;
     width: 400px;
 	background-color: white;
-	padding: 10px;
+	padding: 20px;
 	border-radius: 10px;
 	display:flex;
 	flex-direction: column;
@@ -89,7 +89,6 @@ body {
 	min-width: 400px;
     box-shadow: var(--containerShadowDimensions);
     border: 2px solid black;
-
 }
 
 button:hover:not(.header-button-container button) {
@@ -182,10 +181,6 @@ label[for]:has(+ input[type="file"]) {
 }
 
 
-#getResponse {
-    box-sizing: border-box;
-    padding: 30px;
-}
 
 #computer-screen {
     width: 100%;
@@ -194,7 +189,7 @@ label[for]:has(+ input[type="file"]) {
     overflow: scroll;
     border: 2px, solid, black;
     border-radius: var(--containerBorderRadius);
-    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.3); 
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.3);
 
 }
 
@@ -296,13 +291,12 @@ label[for]:has(+ input[type="file"]) {
     align-items: center;
     justify-content: center;
     gap: 20px; /* Adds spacing between flex items */
-    padding: 20px; /* Adds padding to the container */
+    /* padding: 20px; Adds padding to the container */
 }
 
 #showImageDiv {
-    padding: 20px;
-    overflow: hidden;
-    border-radius: 10px;
+    padding: 0px;
+    overflow: hidden;cgi-image-window
 }
 
 #imageUploadForm > * {
@@ -339,8 +333,12 @@ label[for]:has(+ input[type="file"]) {
 
 .index-menu button {
     background-color: violet;
+    white-space: nowrap;
 }
 
+.index-menu .flex-container {
+    flex-wrap: wrap;
+}
 
 .popup {
     position: fixed;
@@ -364,6 +362,62 @@ label[for]:has(+ input[type="file"]) {
 }
 .popup button {
     margin: 5px;
+
+}
+
+.cgi-image-window {
+
+    border: 2px solid black;
+    background-color: #d0d0d0;
+    padding: 0px;
+    margin: 10px;
 }
 
 
+
+.cgi-output-container {
+    padding: 1px;
+    border-radius: 0px;
+
+}
+
+.cgi-output-image {
+    border: 2px solid black;
+}
+
+.cgi-output-window-header {
+    padding: 1px;
+    border-bottom: 2px solid black;
+}
+
+.cgi-output-window-header button {
+    border-radius: 0;
+    background-color: #fdfbf7;
+    box-shadow: none;
+    height: 100%;
+    border: 1px solid black;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0px; 
+}
+
+.cgi-computer-screen {
+    padding:10px;
+}
+
+.cgi-header-button-container
+{
+    border: 1px solid black;
+    padding: 1px;
+    width: 40px;
+    height: 40px;
+}
+
+#computer-screen.computer-screen-class.cgi-computer-screen {
+    position: relative; /* This will allow absolute positioning of the pop-up windows */
+    width: 100%; /* Set the width and height as required */
+    height: 100%;
+    overflow: hidden; /* Hide anything that goes outside the container */
+}
