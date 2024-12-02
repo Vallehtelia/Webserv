@@ -57,7 +57,10 @@ void Response::setResponse(int statusCode, const std::string& contentType, const
         _contentLength = _body.size();
     }
     _headers = "Content-Type: " + _contentType + "\r\n" +
-              "Content-Length: " + std::to_string(_contentLength) + "\r\n";
+              "Content-Length: " + std::to_string(_contentLength) + "\r\n" +
+              "Access-Control-Allow-Origin: *" + "\r\n" +
+              "Access-Control-Allow-Methods: GET, POST, OPTIONS" + "\r\n" +
+              "Access-Control-Allow-Headers: Content-Type" + "\r\n";
 }
 
 void Response::setStatusLine()
