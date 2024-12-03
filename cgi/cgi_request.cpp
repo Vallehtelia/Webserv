@@ -2,7 +2,6 @@
 #include <iostream>
 #include <filesystem>
 #include "cgi_request.hpp"
-#include "../sockets/socket.hpp"
 
 cgiRequest::cgiRequest(const std::string &path, const std::string &method, const std::string &queryString, const std::string &protocol, const std::string &bodyData, const std::string &contentType) : script_path(path), request_method(method), httpProtocol(protocol), body_data(bodyData)
 {
@@ -272,4 +271,32 @@ std::string	findPath(const std::string &path)
 		directPath = path;
 	directPath = '.' + directPath;
 	return directPath;
+}
+
+void	handleCgiRequest(Request &req, const Socket &socket)
+{
+	std::string	queryString = findQueryStr(req.getUri());
+	std::string	directPath = findPath(req.getUri());
+	std::cout << "DIRECTPATH: " << directPath << std::endl;
+	cgiRequest	cgireq(directPath, req.getMethod(), queryString, req.getVersion(), req.getBody(), req.getContentType());
+	int			executeResult = cgireq.execute();
+	if (executeResult != 0)
+		req.setPath(socket.getServer().getErrorPage(executeResult));
+	switch (executeResult)
+	{
+	case 0:
+		req.setPath("/cgi_output.html");
+		break;
+	case 404:
+		req.setState(State::CGI_NOT_FOUND);
+		break;
+	case 500:
+		req.setState(State::CGI_ERROR);
+		break;
+	case 504:
+		req.setState(State::TIMEOUT);
+		break;
+	default:
+		req.setState(State::CGI_NOT_PERMITTED);
+	}
 }
