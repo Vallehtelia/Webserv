@@ -6,9 +6,9 @@ RequestHandler::RequestHandler() {}
 RequestHandler::~RequestHandler() {}
 
 
-void RequestHandler::handleRequest(Request& req, Response& res, LocationConfig &location)
+void RequestHandler::handleRequest(Request& req, Response& res)
 {
-    _location = location;
+    _location = req.getLocation();
 
 	if (req.getUri() == "/")
 		req.setPath("/index.html");

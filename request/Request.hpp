@@ -10,6 +10,8 @@
 #include <iomanip>
 #include <regex>
 #include "../utils.hpp"
+#include "../parsing/LocationConfig.hpp"
+#include "../sockets/socket.hpp"
 
 
 void checkline(std::string line);
@@ -47,7 +49,7 @@ class Request {
 
         void                                reset();
         void                                printRequest();
-        void                                parseRequest(std::string &rawReques);
+        void                                parseRequest(std::string &rawReques, const Socket &socket);
         void                                setPath(std::string newPath);
         void                                setState(State state);
         void                                setReceived(bool state);
@@ -60,6 +62,8 @@ class Request {
         State                               getState();
         std::string                         getContentType() const;
         bool                                isMultiPart() const;
+        void                                validateHeaders();
+        LocationConfig                      getLocation() const;
         Request &operator=(const Request &rhs);
 
     private:
@@ -83,13 +87,14 @@ class Request {
         std::map<std::string, std::string>  headers;
         std::vector<MultipartData>          multipartData;
         std::map<std::string, std::string>  queryParams;
+        LocationConfig                      location;
 
         void                                prepareRequest();
         void                                parseMultipartData();
         void                                parseHeaders();
         void                                parseBody();
         void                                handleError(const std::string& errorMsg);
-        void                                parseRequestLine();
+        void                                parseRequestLine(const Socket &socket);
         void                                parseQueryString();
         void                                printMultipartdata();
         void                                createMultipartBody(MultipartData &multipartData, std::istringstream &rawMultipartData);
@@ -98,6 +103,7 @@ class Request {
         bool                                isValidHeaderKey(const std::string& key);
         bool                                isValidHeaderValue(const std::string& key, const std::string& value);
         MultipartData                       createData(std::string &rawData);
+        LocationConfig                      findLocation(const std::string &uri, const Socket &socket);
 } ;
 
 # endif

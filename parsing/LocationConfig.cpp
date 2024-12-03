@@ -99,5 +99,4 @@ void LocationConfig::printLocation() const {
 				std::cout << "ALLOWED METHOD: " << *it << std::endl;
 	}
 	std::cout << "---------------------" << std::endl;
-	
 }

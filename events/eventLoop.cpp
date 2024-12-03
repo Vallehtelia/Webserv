@@ -89,24 +89,7 @@ void cleanupTempFiles()
 	}
 }
 
-LocationConfig findLocation(const std::string &uri, const Socket &socket) {
-    LocationConfig bestMatch; // Default location config to return if no match
-    size_t bestMatchLength = 0; // Track the length of the best match
-    std::vector<LocationConfig> locations = socket.getServer().getLocations();
 
-    for (std::vector<LocationConfig>::iterator it = locations.begin(); it != locations.end(); ++it) {
-        std::string locationPath = it->getLocation();
-		if (locationPath != "/" && locationPath.end()[-1] == '/')
-			locationPath = locationPath.substr(0, locationPath.length() - 1);
-        if (uri.find(locationPath) == 0 && locationPath.length() > bestMatchLength) {
-            // Check if locationPath is a prefix of uri and is more specific
-            bestMatch = *it;
-            bestMatchLength = locationPath.length();
-        }
-    }
-
-    return bestMatch;
-}
 
 int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unordered_map<int, std::vector<char>> &client_data, const Socket &socket)
 {
@@ -140,7 +123,7 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 		else
 		{
 			std::string rawRequest(buffer, bytes_read);
-			req.parseRequest(rawRequest);
+			req.parseRequest(rawRequest, socket);
 			if (req.getState() == State::INCOMPLETE)
 			{
 				continue;
@@ -182,10 +165,8 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 				//req.printRequest();
 				Response res;
 				std::cout << "URI FROM EVENT LOOP: " << req.getUri() << std::endl;
-				LocationConfig location = findLocation(req.getUri(), socket);
-				location.printLocation();
 				RequestHandler requestHandler;
-				requestHandler.handleRequest(req, res, location);
+				requestHandler.handleRequest(req, res);
 				//res.printResponse();
 				// Get the full HTTP response string from the Response class
 				std::string http_response = res.getResponseString();
