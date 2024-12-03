@@ -30,6 +30,13 @@
 	return 0;
 }*/
 
+/*
+* @brief Accept new connection
+*
+* @param fd File descriptor of the server socket
+* @param epoll_fd File descriptor for epoll
+* @return File descriptor of the new client socket
+*/
 int acceptConnection(int fd, int epoll_fd)
 {
     struct sockaddr_in client_addr;
@@ -72,7 +79,9 @@ int acceptConnection(int fd, int epoll_fd)
     return client_fd;
 }
 
-
+/*
+* @brief Remove temporary cgi files
+*/
 void cleanupTempFiles()
 {
 	std::string tempInFilePath = "./html/tmp/cgi_output.html";
@@ -89,6 +98,11 @@ void cleanupTempFiles()
 	}
 }
 
+/*
+* @brief Close file descriptor if open
+*
+* @param fd File descriptor to close
+*/
 static void	closeOnce(int &fd)
 {
 	if (fd != -1)
@@ -98,6 +112,12 @@ static void	closeOnce(int &fd)
 	}
 }
 
+/*
+* @brief Send data to the client and handle timeouts
+*
+* @param httpRespose HTTP response to send
+* @param event epoll_event object
+*/
 static void	sendData(std::string httpRespose, epoll_event &event)
 {
 	size_t		totalSent = 0;
@@ -132,6 +152,14 @@ static void	sendData(std::string httpRespose, epoll_event &event)
 	}
 }
 
+/*
+* @brief Check if the received data is valid or end of file
+*
+* @param fd File descriptor of the client socket
+* @param bytesRead Number of bytes read
+* @param clientData Map of client file descriptors to data
+* @return 1 if the data is invalid or end of file, 0 otherwise
+*/
 static int	checkRecievedData(int &fd, int bytesRead, std::unordered_map<int, std::vector<char>> &clientData)
 {
 	if (bytesRead != 0)
@@ -157,11 +185,27 @@ static int	checkRecievedData(int &fd, int bytesRead, std::unordered_map<int, std
 	}
 }
 
+/*
+* @brief Check if the request is a CGI request
+*
+* @param path Path of the request
+* @return true if the request is a CGI request, false otherwise
+*/
 static bool	isCgi(const std::string &path)
 {
 	return (path.find("/cgi-bin/") != std::string::npos || (path.size() > 3 && path.substr(path.size() - 3) == ".py"));
 }
 
+/*
+* @brief Handles the client data and sends the response back to the client
+*
+* @param fd File descriptor of the client socket
+* @param req Request object
+* @param event epoll_event object
+* @param client_data Map of client file descriptors to data
+* @param socket Server socket
+* @return int 0 on success, -1 on failure
+*/
 int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unordered_map<int, std::vector<char>> &client_data, const Socket &socket)
 {
     std::cout << "RECEIVING DATA FROM FD: " << fd << std::endl; // debug
@@ -216,6 +260,15 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 	return 0;
 }
 
+/*
+* @brief Add new file descriptor to client_to_server_map
+*
+* @param client_to_server_map Map of client to server file descriptors that are connected
+* @param fd File descriptor of the server socket
+* @param new_fd File descriptor of the new client socket
+* @param requests Map of client file descriptors to Request objects
+* @param client_data Map of client file descriptors to data
+*/
 static void	addNewFd(std::unordered_map<int, int> &client_to_server_map,
 						const int &fd,
 						const int &new_fd,
@@ -230,6 +283,15 @@ static void	addNewFd(std::unordered_map<int, int> &client_to_server_map,
 	client_data[new_fd] = std::vector<char>();
 }
 
+/*
+* @brief Cleanup client connection
+*
+* @param fd File descriptor to close
+* @param epoll_fd File descriptor for epoll
+* @param client_to_server_map Map of client to server file descriptors
+* @param requests Map of client file descriptors to Request objects
+* @param client_data Map of client file descriptors to data
+*/
 static void	cleanupClientConnection(int fd,
 									int epoll_fd,
 									std::unordered_map<int, int> &client_to_server_map,
@@ -243,6 +305,12 @@ static void	cleanupClientConnection(int fd,
 	client_data.erase(fd);
 }
 
+/*
+* @brief Event loop for handling incoming connections and data
+*
+* @param sockets Vector of server sockets
+* @param epoll_fd File descriptor for epoll
+*/
 void event_loop(const std::vector<Socket> &sockets, int epoll_fd)
 {
     struct epoll_event events[MAX_EVENTS];

@@ -20,6 +20,11 @@ cgiRequest::~cgiRequest()
 	std::cout << "cgi request deconstructor" << std::endl;
 }
 
+/*
+* @brief Set the environment variables for the CGI script
+*
+* @param contentType Content type of the request
+*/
 void	cgiRequest::setEnvironmentVariables(const std::string &contentType)
 {
 	env["REQUEST_METHOD"] = request_method;
@@ -37,6 +42,11 @@ void	cgiRequest::setEnvironmentVariables(const std::string &contentType)
 	}
 }
 
+/*
+* @brief Print the environment variables
+*
+* @param envp Array of environment variables
+*/
 void	cgiRequest::printEnv(char **envp) // debugging purposes only
 {
 	for (int i = 0; envp[i]; i++)
@@ -45,6 +55,9 @@ void	cgiRequest::printEnv(char **envp) // debugging purposes only
 	}
 }
 
+/*
+* @brief Print the CGI request data
+*/
 void	cgiRequest::printCgiRequestData()
 {
 	std::cout << "Script path: " << script_path << std::endl;
@@ -65,6 +78,11 @@ void	cgiRequest::printCgiRequestData()
 	}
 }
 
+/*
+* @brief Build the environment variables for the CGI script
+*
+* @return Array of environment variables
+*/
 char	**cgiRequest::buildEnv()
 {
 	char	**envp = new char*[env.size() + 1];
@@ -81,6 +99,11 @@ char	**cgiRequest::buildEnv()
 	return envp;
 }
 
+/*
+* @brief Clean the environment variables
+*
+* @param envp Array of environment variables
+*/
 void	cleanEnv(char **envp)
 {
 	if (envp)
@@ -123,6 +146,11 @@ std::map<std::string, std::string>	cgiRequest::getEnv()
 	return (env);
 }
 
+/*
+* @brief Check if the CGI script exists and is valid
+*
+* @return 0 on success, 1 if the script does not exist, 2 if the script cannot be opened
+*/
 int	cgiRequest::isValidCgi()
 {
 	if (!std::filesystem::exists(script_path))
@@ -146,6 +174,12 @@ int	cgiRequest::isValidCgi()
 	}
 }
 
+/*
+* @brief Ensure that the folder exists and create it if it doesn't
+*
+* @param folderPath Path of the folder
+* @return true if the folder exists or was created, false otherwise
+*/
 static bool	ensureFolderExists(const std::string &folderPath)
 {
 	if (!std::filesystem::exists(folderPath))
@@ -159,6 +193,11 @@ static bool	ensureFolderExists(const std::string &folderPath)
 	return true;
 }
 
+/*
+* @brief Execute the CGI script
+*
+* @return 0 on success and error code on failure
+*/
 int	cgiRequest::execute()
 {
 	int status = 0;
@@ -246,8 +285,12 @@ int	cgiRequest::execute()
 	return 1;
 }
 
-
-
+/*
+* @brief Find the query string from the path
+*
+* @param path Path of the request
+* @return Query string
+*/
 std::string	findQueryStr(const std::string &path)
 {
 	std::string query;
@@ -260,6 +303,12 @@ std::string	findQueryStr(const std::string &path)
 	return(query);
 }
 
+/*
+* @brief Find the path of requested script
+*
+* @param path Path of the request
+* @return Path of the requested script
+*/
 std::string	findPath(const std::string &path)
 {
 	std::string	directPath;
@@ -273,6 +322,12 @@ std::string	findPath(const std::string &path)
 	return directPath;
 }
 
+/*
+* @brief Handle the CGI request and set the state of the on failure
+*
+* @param req Request object
+* @param socket Server socket
+*/
 void	handleCgiRequest(Request &req, const Socket &socket)
 {
 	std::string	queryString = findQueryStr(req.getUri());
