@@ -18,7 +18,7 @@ class RequestHandler {
 public:
 	RequestHandler();
 	~RequestHandler();
-    void handleRequest(Request& req, Response& res, LocationConfig &location);
+    void handleRequest(Request& req, Response& res);
     std::string readFileContent(std::string& filePath);
 private:
 	void prepareHandler(const Request &req);
