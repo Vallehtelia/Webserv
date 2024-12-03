@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 const resultHtml = await response.text();
+				imageDiv.innerHTML = '';
                 postResponseDiv.innerHTML = resultHtml; // Display server response
             } else {
                 // postResponseDiv.innerHTML = '<p style="color:red;">Failed to upload image</p>';
@@ -64,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 const imageBlob = await response.blob();
                 const imageUrl = URL.createObjectURL(imageBlob);
+				postResponseDiv.innerHTML = '';
                 imageDiv.innerHTML = `<img class="cgi-output-image" src="${imageUrl}" alt="Processed image">`;
             } else {
                 imageDiv.innerHTML = '<p style="color:red;">Failed to load image.</p>';
