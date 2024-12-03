@@ -421,3 +421,12 @@ label[for]:has(+ input[type="file"]) {
     height: 100%;
     overflow: hidden; /* Hide anything that goes outside the container */
 }
+
+
+.cgi-image-window .text-container {
+    padding:20px;
+}
+
+.cgi-image-window .text-container h1 {
+    font-size: 16px;
+}

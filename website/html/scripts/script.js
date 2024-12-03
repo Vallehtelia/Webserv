@@ -48,7 +48,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 // postResponseDiv.innerHTML = '<p style="color:red;">Failed to upload image</p>';
 				const resultHtml = await response.text();
-				postResponseDiv.innerHTML = resultHtml;
+                const textContainer = document.createElement("div");
+                textContainer.innerHTML = resultHtml;
+                textContainer.classList.add("text-container")
+                const imageWindow = createImageWindow();
+				imageWindow.appendChild(textContainer);
                 console.error('Server responded with status:', response.status);
             }
         } catch (error) {
@@ -71,7 +75,8 @@ document.addEventListener('DOMContentLoaded', () => {
     //     </div>
     // </div>
 
-    function createImageWindow(file) {
+    function createImageWindow() {
+        computerScreen.innerHTML = "";
         const imageWindow = document.createElement('div');
         imageWindow.classList.add('cgi-image-window');
         imageWindow.style.visibility = 'hidden'; // Initially hidden
@@ -113,6 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Now you can handle the file (e.g., show an image or response in the window)
         displayImage(file, showImageDiv);
 
+
         // Add event listener to close button
         closeButton.addEventListener('click', function () {
             imageWindow.remove();  // Hide the image window when close button is clicked
@@ -144,9 +150,11 @@ function displayImage(file, container) {
             if (response.ok) {
                 const imageBlob = await response.blob();
                 const imageUrl = URL.createObjectURL(imageBlob);
-                postResponseDiv.innerHTML = '';
-				console.log(imageUrl)
-                createImageWindow(imageUrl);
+                console.log(imageUrl)
+                computerScreen.innerHTML = "";
+                const imageWindow = createImageWindow();
+                console.log(imageWindow)
+                displayImage(imageUrl, imageWindow);
                 // imageDiv.innerHTML += `<img class="cgi-output-image" src="${imageUrl}" alt="Processed image">`;
                 // imageWindow.style.visibility = 'visible';
             } else {
