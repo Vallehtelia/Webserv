@@ -3,6 +3,9 @@
     --buttonShadowDimensions: 2px 4px 0px 0px black;
     --buttonBorderRadius: 20px;
     --submitButtonColor: #2fff2f;
+    --buttonColor: violet;
+    --navBorderRadius: 10px;
+    --containerBorderRadius: 10px;
 }
 
 .todo-container {
@@ -72,6 +75,9 @@ input[type="text"] {
     overflow: scroll;
     width:100%;
     padding: 10px;
+    border: 2px solid black;
+    border-radius: var(--containerBorderRadius);
+    box-shadow: inset 0 -10px 6px rgba(0, 0, 0, 0.2);
 }
 
 .todo-list > li {
@@ -81,7 +87,7 @@ input[type="text"] {
     border-bottom: 1px solid #ddd;
     border-radius: 4px; /* Rounded corners for list items */
     margin-bottom: 10px; /* Space between list items */
-    border: 1px solid black;
+    border: 2px solid black;
     padding:5px;
     margin:0px;
     margin-bottom: 10px;
@@ -120,7 +126,7 @@ button.remove {
     color: black;
     cursor: pointer;
     background-color: white;
-    border: 1px solid black;
+    border: 2px solid black;
     font-size: 12px;
 }
 
@@ -131,7 +137,7 @@ button.remove:hover {
 
 .todo-container input[type="text"] {
     all: unset;
-    border: 1px solid black;
+    border: 2px solid black;
     padding: 2px;
     box-shadow: var(--buttonShadowDimensions);
     min-width: 400px;
@@ -140,13 +146,14 @@ button.remove:hover {
 
 .todo-container .submit-button {
     border-radius: var(--buttonBorderRadius);
-    border: 1px solid black;
+    border: 2px solid black;
     padding-left: 20px;
     padding-right: 20px;
     padding-top: 5px;
     padding-bottom: 5px;
     box-shadow: var(--buttonShadowDimensions);
     background-color: var(--submitButtonColor);
+    box-shadow: 2px 4px 0px 0px black;
     
 }
 

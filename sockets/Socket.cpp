@@ -3,7 +3,7 @@
 #include "./Socket.hpp"
 #include "../epoll/epoll.hpp"
 
-Socket::Socket(int port, std::string host) : _socket_fd(0), _active(false)
+Socket::Socket(int port, std::string host) : _socket_fd(0), _active(false), _server()
 {
 	this->_port = port;
 	this->_ip = host;
@@ -17,6 +17,7 @@ Socket::Socket(Socket const &other)
 	this->_ip = other._ip;
 	this->_socket_fd = other._socket_fd;
 	this->_active = other._active;
+	this->_server = other._server;
 }
 
 Socket &Socket::operator=(Socket const &other)
@@ -25,6 +26,7 @@ Socket &Socket::operator=(Socket const &other)
 	this->_ip = other._ip;
 	this->_socket_fd = other._socket_fd;
 	this->_active = other._active;
+	this->_server = other._server;
 	return (*this);
 }
 
@@ -53,6 +55,11 @@ void	Socket::setActiveMode(bool mode)
 	this->_active = mode;
 }
 
+void	Socket::setServer(ServerConfig server)
+{
+	this->_server = server;
+}
+
 int	Socket::getPort() const
 {
 	return (this->_port);
@@ -73,6 +80,7 @@ bool	Socket::getActiveMode() const
 return (this->_active);
 }
 
+<<<<<<< HEAD:sockets/Socket.cpp
 
 void increaseFileDescriptorLimit(int new_limit) {
     struct rlimit limit;
@@ -92,6 +100,11 @@ void increaseFileDescriptorLimit(int new_limit) {
     } else {
         std::cerr << "Error: Failed to get file descriptor limit" << std::endl;
     }
+=======
+ServerConfig	Socket::getServer() const
+{
+	return (this->_server);
+>>>>>>> ollis_branch:sockets/socket.cpp
 }
 
 bool	initSocket(std::vector<ServerConfig> &server, std::vector<Socket> &sockets)
@@ -138,6 +151,7 @@ bool	initSocket(std::vector<ServerConfig> &server, std::vector<Socket> &sockets)
 			cleanup(sockets, -1);
 			return false;
 		}
+		sock.setServer(config);
 		sockets.push_back(sock);
 	}
 	return true;

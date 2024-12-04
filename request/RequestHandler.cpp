@@ -8,6 +8,30 @@ RequestHandler::~RequestHandler() {}
 
 void RequestHandler::handleRequest(Request& req, Response& res)
 {
+    _location = req.getLocation();
+
+	if (req.getUri() == "/")
+		req.setPath("/index.html");
+	if (req.getState() == State::CGI_ERROR) // Naa johonki siistimmin
+	{
+		res.setResponse(500, "text/html", "");
+		return ;
+	}
+	if (req.getState() == State::TIMEOUT)
+	{
+		res.setResponse(504, "text/html", "");
+		return ;
+	}
+	if (req.getState() == State::CGI_NOT_FOUND)
+	{
+		res.setResponse(404, "text/html", "");
+		return ;
+	}
+	if (req.getState() == State::CGI_NOT_PERMITTED)
+	{
+		res.setResponse(403, "text/html", "");
+		return ;
+	}
     if (req.getState() == State::ERROR)
     {
         std::cout << "it gets here!" << std::endl;
@@ -89,33 +113,31 @@ static std::string urlDecode(const std::string& src) {
     return decoded;
 }
 
+
+void removePrefix(std::string& str, const std::string& prefix) {
+    if (str.rfind(prefix, 0) == 0) { // Check if the string starts with the prefix
+        str.erase(0, prefix.length()); // Remove the prefix
+    }
+}
+
 std::string RequestHandler::getFilepath(std::string filepath)
 {
 	filepath = urlDecode(filepath);
+    removePrefix(filepath, _location.getRoot());
 	if (filepath.front() == '/' && filepath.length() > 1) {
             filepath.erase(0, 1);
     }
-    std::filesystem::path baseDir = std::filesystem::current_path() / "html";
+	std::string tmp = _location.getLocation();
+	removePrefix(tmp, _location.getRoot());
+	_location.path = tmp;
+	tmp = _location.getRoot();
+	removePrefix(tmp, "/");
+    std::filesystem::path baseDir = std::filesystem::current_path() / tmp;
     std::filesystem::path path;
     if (filepath.find("cgi") != std::string::npos)
         path = baseDir / "tmp" / filepath;
-    else if (_method == "GET") {
-        if (filepath == "/") {
-            path = baseDir / "index.html";
-        }
-        else if (_contentType == "text/html" || _contentType == "text/css" || _contentType == "application/javascript") {
-            path = baseDir / filepath;
-        }
-        else {
-            path = baseDir / "uploads" / filepath;
-        }
-    }
-    else if (_method == "POST" || _method == "PUT" || _method == "DELETE") {
-        path = baseDir / "uploads" / filepath;
-    }
     else {
-		std::cout << "somethings off!" << std::endl;
-        path = std::filesystem::path(filepath);
+            path = baseDir / filepath;
     }
 	std::cout << "FILEPATH CREATED: " << path.string() << std::endl;
     return path.string();
@@ -125,12 +147,13 @@ std::string RequestHandler::getFilepath(std::string filepath)
 bool RequestHandler::validFile(const std::string& filePath) {
     try {
         std::filesystem::path fullPath = std::filesystem::path(filePath);
-        const std::filesystem::path baseDir = std::filesystem::current_path() / "html";
+        const std::filesystem::path baseDir = std::filesystem::current_path();
+        std::cout << "Full Path: " << fullPath << std::endl;
+        std::cout << "Base Directory: " << baseDir << std::endl;
+
         std::filesystem::path dirPath = std::filesystem::canonical(baseDir);
 
-        std::cout << "Base Directory: " << baseDir << std::endl;
         std::cout << "Canonical Directory Path: " << dirPath << std::endl;
-        std::cout << "Full Path: " << fullPath << std::endl;
 
         if (std::filesystem::relative(fullPath, dirPath).string().find("..") == 0) {
             std::cerr << "Error: Access outside base directory is prohibited." << std::endl;
@@ -201,10 +224,57 @@ std::string RequestHandler::readFileContent(std::string& filePath)
     }
 }
 
+std::string generateDirectoryListing(const std::string& directoryPath) {
+    std::ostringstream jsonStream;
+    jsonStream << "{\n\t\"files\": [\n";
+
+    try {
+        for (const auto& entry : std::filesystem::directory_iterator(directoryPath)) {
+            jsonStream << "\t\t{\n";
+            jsonStream << "\t\t\t\"name\": \"" << entry.path().filename().string() << "\",\n";
+            jsonStream << "\t\t\t\"type\": \""
+                       << (entry.is_directory() ? "directory" : "file") << "\",\n";
+
+            if (!entry.is_directory()) {
+                jsonStream << "\t\t\t\"size\": " << entry.file_size() << "\n";
+            } else {
+                jsonStream << "\t\t\t\"size\": null\n";
+            }
+
+            jsonStream << "\t\t},\n";
+        }
+
+        std::string result = jsonStream.str();
+        // Remove the trailing comma and newline for valid JSON
+        if (result.size() > 2) {
+            result.erase(result.size() - 2, 2);
+        }
+        result += "\n\t]\n}";
+
+        return result;
+    } catch (const std::filesystem::filesystem_error& e) {
+        std::cerr << "Error accessing directory: " << e.what() << std::endl;
+        return "{\"error\": \"Unable to access directory.\"}";
+    }
+}
+
 void RequestHandler::handleGetRequest(Response& res) {
 
     std::cout << "HANDLE GET" << std::endl;
-    if (validFile(_filePath)) {
+    std::cout << "----------" << std::endl;
+    std::cout << "Path: " << _filePath << std::endl;
+    std::cout << "Is directory: " << std::filesystem::is_directory(_filePath) << std::endl;
+    std::cout << "----------" << std::endl;
+    if (std::filesystem::is_directory(_filePath)){
+        std::cout << "it is a directory" << std::endl ;
+        if (_location.isAutoindex()) { // Assuming there's a method to check if auto-index is enabled
+            std::string directoryListing = generateDirectoryListing(_filePath);
+            res.setResponse(200, "text/html", directoryListing);
+        } else {
+            res.setResponse(403, "text/html", "Auto-indexing is disabled for this directory.");
+        }
+    }
+    else if (validFile(_filePath)) {
         std::cout << "FILE IS LEGIT" << std::endl;
        	_body = readFileContent(_filePath);
         res.setResponse(200, getContentType(_filePath), _body);
@@ -346,7 +416,7 @@ void RequestHandler::handleFileUpload(const MultipartData& part, Response& res)
         res.setResponse(400, "application/json", R"({"error": "File name is missing."})");
         return;
     }
-    std::string uploadPath = getFilepath(part.filename);
+    std::string uploadPath = getFilepath("/uploads/" + part.filename);
     if (validFile(uploadPath)) {
     	std::ofstream file(uploadPath, std::ios::binary);
 		if (file)

@@ -3,13 +3,20 @@
 <head>
     <link rel="stylesheet" href="styles.css">
     <title>webserver</title>
-    <script src="script.js" defer></script>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="orbit.css">
+    <script src="./scripts/script.js" defer></script>
+    <script src="./scripts/terms.js" defer></script>
+    <link rel="stylesheet" href="./styles/styles.css">
+    <link rel="stylesheet" href="./styles/orbit.css">
 </head>
 <body>
+    <div id="popup" class="popup" style="display: none;">
+        <p>Do you agree to the terms and conditions?</p>
+        <button id="agree">Yes</button>
+        <button id="disagree">No</button>
+    </div>
+    <div id="overlay" class="overlay" style="display: none;"></div>
     <div class="header">
-        <img src="masters_logo_text.png"/>
+        <img src="/assets/images/masters_logo_text.png"/>
     </div>
     <div class="flex-container">
         <div class="form-container index-menu">
@@ -17,6 +24,7 @@
                 <h1>Webserver</h1>
                 <h4>Welcome to our Webserver</h4>
                 <p>To make thing easy, here is a list of functionalities you can test. Choose one and let the evaluation begin.</p>
+
             </div>
             <div class="flex-container">
                 <form action="file_upload.html" method="GET">
@@ -28,10 +36,14 @@
                 <form action="todo.html" method="GET">
                     <button type="submit">JSON data</button>
                 </form>
+                <form action="terminal.html" method="GET">
+                    <button type="submit">Terminal</button>
+                </form>
             </div>
         </div>
     </div>
     <div class="credits-wrapper">
+        <p>server by: </p>
         <div class="atom">
             <div class="nucleus"></div>
             <div class="orbit-path"></div>
@@ -41,7 +53,10 @@
             <div class="electron">mburakow</div>
             <div class="electron">okarejok</div>
         </div>
-        <p>42 WEBSERV HIVE HELSINKI 2024</p>
+        <div>
+            <p>front end by: okarejok</p>
+            <p>42 WEBSERV HIVE HELSINKI 2024</p>
+        </div>
     </div >
 </body>
 </html>

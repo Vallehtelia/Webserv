@@ -54,8 +54,9 @@ class ServerConfig
 		std::string	getIndex() const;
 		const std::map<int, std::string>	&getErrorPages() const;
 
-		std::string	getLocation(std::string key) const;
+		std::string	getLocation(const std::string key) const;
     	std::string getErrorPage(int code) const;
+		std::vector<LocationConfig>	getLocations() const;
 
 		void	printConfig() const;
 };

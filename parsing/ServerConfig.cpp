@@ -106,12 +106,16 @@ std::string ServerConfig::getErrorPage(int code) const {
     return "";  // Return an empty string if the error page code is not found
 }
 
+std::vector<LocationConfig> ServerConfig::getLocations() const {
+	return _locations;
+}
+
 const std::map<int, std::string>	&ServerConfig::getErrorPages() const
 {
 	return _error_pages;
 }
 
-std::string	ServerConfig::getLocation(std::string key) const
+std::string	ServerConfig::getLocation(const std::string key) const
 {
 	for (std::vector<LocationConfig>::const_iterator it = _locations.begin(); it != _locations.end(); it++)
 	{

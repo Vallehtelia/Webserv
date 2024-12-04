@@ -11,6 +11,8 @@
 #include <unordered_map>
 #include <filesystem>
 
+#include "../parsing/LocationConfig.hpp"
+
 
 class RequestHandler {
 public:
@@ -40,6 +42,7 @@ private:
 	std::string				_method;
 	std::string				_contentType;
 	int						_statusCode;
+	LocationConfig 			_location;
 };
 
 #endif

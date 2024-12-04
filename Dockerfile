@@ -1,23 +1,16 @@
 # Use the official Ubuntu 20.04 image
 FROM ubuntu:20.04
 
-# Inspect the architecture and sources list
-RUN uname -m && cat /etc/apt/sources.list
-
-# Add necessary repositories explicitly
-RUN echo "deb http://archive.ubuntu.com/ubuntu focal main restricted universe multiverse" > /etc/apt/sources.list && \
-    echo "deb http://archive.ubuntu.com/ubuntu focal-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
-    echo "deb http://security.ubuntu.com/ubuntu focal-security main restricted universe multiverse" >> /etc/apt/sources.list
-
-# Ensure apt-get doesn't prompt for user input
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Update package lists and install necessary tools
+# Update package list and install necessary tools
+ARG CACHE_BUSTER=1
 RUN apt-get update && \
-    apt-get dist-upgrade -y && \
-    apt-get install -y g++ make build-essential && \
-    apt-get clean && \
+    apt-get install -y build-essential g++ cmake siege python3 python3-pip && \
+    siege --version && \
+    python3 --version && \
+    ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
+    dpkg-reconfigure --frontend noninteractive tzdata && \
     rm -rf /var/lib/apt/lists/*
+
 
 # Set the working directory
 WORKDIR /app
@@ -28,7 +21,7 @@ COPY . /app
 # Build the server using a Makefile
 RUN make FLAGS="-std=c++17 -Wall -Wextra -Werror -fPIE -pie"
 
-# Expose the port for the server
+# Expose the server port
 EXPOSE 8002
 
 # Run the server with the configuration file

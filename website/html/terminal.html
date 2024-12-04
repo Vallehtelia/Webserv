@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>file upload</title>
+    <script src="./scripts/terminal.js" defer></script>
+    <link rel="stylesheet" href="./styles/styles.css">
+    <link rel="stylesheet" href="./styles/orbit.css">
+    <link rel="stylesheet" href="./styles/terminal.css">
+</head>
+<body>
+    <div class="header">
+        <img src="/assets/images/masters_logo_text.png"/>
+        <div class="header-button-container">
+            <form action="file_upload.html" method="GET">
+                <button type="submit">Upload a File</button>
+            </form>
+            <form action="scripts.html" method="GET">
+                <button type="submit">cgi scripts</button>
+            </form>
+            <form action="todo.html" method="GET">
+                <button type="submit">JSON data</button>
+            </form>
+            <form action="terminal.html" method="GET">
+                <button type="submit">Terminal</button>
+            </form>
+        </div>
+    </div>
+    <div class="flex-container">
+    <div class="terminal-main-container">
+            <div id="terminal-manual-container" class="terminal-cont">
+                <div class="terminal-manual">
+                    <h1>CGI scripts to test:</h1>
+                    <ul id="cgi-script-list">
+                        <li>dog</li>
+                        <li>cow</li>
+                        <li>date</li>
+                    </ul>
+                </div>
+                <div class="terminal-instructions">
+                    <span>
+                    You can try running some CGI scripts listed above in the terminal -></span>
+                </div>
+            </div>
+            <div id="getResponse" class="terminal-cont">
+                    <div  class="terminal">
+                        <div id="terminal-body" class="terminal-body">
+                            <form id="prompt-container">
+                                <span class="dollar-sign">$</span>
+                                <input id="prompt" type="text" />
+                            </form>
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="credits-wrapper">
+        <p>server by: </p>
+        <div class="atom">
+            <div class="nucleus"></div>
+            <div class="orbit-path"></div>
+            <div class="orbit-path-3"></div>
+            <div class="orbit-path-2"></div>
+            <div class="electron">vvaalant</div>
+            <div class="electron">mburakow</div>
+            <div class="electron">okarejok</div>
+        </div>
+        <div>
+            <p>front end by: okarejok</p>
+            <p>42 WEBSERV HIVE HELSINKI 2024</p>
+        </div>
+    </div >
+</body>
+</html>
+
+
+

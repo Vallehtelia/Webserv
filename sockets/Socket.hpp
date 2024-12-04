@@ -17,6 +17,7 @@ class	Socket
 		std::string	_ip;
 		int			_socket_fd;
 		bool		_active;
+		ServerConfig	_server;
 	public:
 		Socket(int port, std::string host);
 		Socket(Socket const &other);
@@ -27,11 +28,17 @@ class	Socket
 		void	setIp(std::string ip);
 		void	setSocketFd(int socketFd);
 		void	setActiveMode(bool mode);
+		void	setServer(ServerConfig server);
 
 		int			getPort() const;
 		std::string	getIp() const;
 		int			getSocketFd() const;
+<<<<<<< HEAD:sockets/Socket.hpp
 		bool		getActiveMode() const;
+=======
+		bool			getActiveMode() const;
+		ServerConfig	getServer() const;
+>>>>>>> ollis_branch:sockets/socket.hpp
 };
 
 bool	initSocket(std::vector<ServerConfig> &server, std::vector<Socket> &sockets);
