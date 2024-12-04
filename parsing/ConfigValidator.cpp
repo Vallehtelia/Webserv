@@ -54,7 +54,7 @@ bool ConfigValidator::validateDirective(const std::string& line) {
 
 bool ConfigValidator::validateRoot(const std::string& line) {
 	std::regex rootRegex(R"(^\s*root\s+(.*?);\s*$)");
-	return std::regex_match(line, rootRegex);	
+	return std::regex_match(line, rootRegex);
 }
 
 bool ConfigValidator::validateIndex(const std::string& line) {
@@ -161,13 +161,13 @@ bool ConfigValidator::validateServerBlock(std::istream &input) {
             if (!validateLocationBlock(input)) {
                 return false;
             }
-        } else if (line.find("listen") == 0 || 
+        } else if (line.find("listen") == 0 ||
 					line.find("server_name") == 0 ||
                    	line.find("host") == 0 ||
 					line.find("root") == 0 ||
 					line.find("client_max_body_size") == 0 ||
                    	line.find("max_events") == 0 ||
-					line.find("index") == 0 || 
+					line.find("index") == 0 ||
 					line.find("error_page") == 0) {
             if (!validateDirective(line)) {
                 std::cerr << "Invalid directive: " << line << std::endl;
@@ -194,6 +194,7 @@ bool ConfigValidator::validateConfigFile(const std::string &filename) {
     std::string line;
     while (std::getline(file, line)) {
         trim(line);
+<<<<<<< HEAD
 		if (line.empty() || line[0] == '#') {
 			continue;
 		}
@@ -237,6 +238,39 @@ bool ConfigValidator::validateConfigFile(const std::string &filename) {
                 return false;
             }
         } else {
+=======
+        if (line.empty() || line[0] == '#') continue; // taa odottaa et kommentti alkaa ensimmaisest indexista trimmin jalkeen
+		if (line == "server") {
+			while (std::getline(file, line)) {
+				trim(line);
+				if (line.empty() || line[0] == '#') continue;
+				if (line == "{") {
+					if (!validateServerBlock(file)) {
+						return false;
+					}
+					std::cout << "Found valid server block!" << std::endl;
+					break;
+				} else {
+					std::cerr << "Expected '{' after 'server', but got: " << line << std::endl;
+					return false;
+				}
+				if (file.eof()) {
+					std::cerr << "Unexpected end of file after 'server'" << std::endl;
+					return false;
+				}
+			}
+		} else if (line.find("server") == 0) {
+			std::string trimmedRest = line.substr(6);
+			trim(trimmedRest);
+			if (trimmedRest != "{") {
+				std::cerr << "Unexpected content after 'server {': " << trimmedRest << std::endl;
+				return false;
+			}
+			if (!validateServerBlock(file)) {
+				return false;
+			}
+		} else {
+>>>>>>> mareks_branch
 			std::cerr << "Unexpected directive outside server block: " << line << std::endl;
 			return false;
 		}

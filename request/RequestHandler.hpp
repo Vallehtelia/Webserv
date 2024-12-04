@@ -11,6 +11,8 @@
 #include <unordered_map>
 #include <filesystem>
 
+#include "../parsing/LocationConfig.hpp"
+
 
 class RequestHandler {
 public:
@@ -24,8 +26,8 @@ private:
     void handlePutRequest(const Request& req, Response& res);
     void handleDeleteRequest(Response& res);
 	void handlePostRequest(const Request& req, Response& res);
-    std::string createJsonResponse(const std::unordered_map<std::string, std::string>& formData);
-	void handleFormField(const MultipartData& part, std::unordered_map<std::string, std::string>& formData);
+    std::string createJsonResponse(const std::vector<std::string> uploadedFiles);
+	void handleFormField(const MultipartData& part);
 	void handleFileUpload(const MultipartData& part, Response& res);
 	void handleJsonData(const Request &req, Response &res);
     std::string getContentType(const std::string& uri) const;
@@ -40,6 +42,7 @@ private:
 	std::string				_method;
 	std::string				_contentType;
 	int						_statusCode;
+	LocationConfig 			_location;
 };
 
 #endif

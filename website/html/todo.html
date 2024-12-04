@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+	<link rel="stylesheet" href="./styles/todo.css">
+    <link rel="stylesheet" href="./styles/styles.css">
+	<link rel="stylesheet" href="./styles/orbit.css">
+	<script src="./scripts/todo.js"></script>
+</head>
+<body>
+    <div class="header">
+        <img src="/assets/images/masters_logo_text.png"/>
+        <div class="header-button-container">
+            <form action="file_upload.html" method="GET">
+                <button type="submit">Upload a File</button>
+            </form>
+            <form action="scripts.html" method="GET">
+                <button type="submit">cgi scripts</button>
+            </form>
+            <form action="todo.html" method="GET">
+                <button type="submit">JSON data</button>
+            </form>
+            <form action="terminal.html" method="GET">
+                <button type="submit">Terminal</button>
+            </form>
+        </div>
+    </div>
+	<div class="flex-container">
+		<div class="todo-container">
+				<div class="todo-list-container">
+					<ul id="todo-list" class="todo-list"></ul>
+				</div>
+				<form id="todo-form" class="todo-form add-todo">
+					<input type="text" id="todo-title" placeholder="New to-do item" required>
+					<button type="submit" class="submit-button">Add to-do</button>
+				</form>
+		</div>
+	</div>
+    <div class="credits-wrapper">
+        <p>server by: </p>
+        <div class="atom">
+            <div class="nucleus"></div>
+            <div class="orbit-path"></div>
+            <div class="orbit-path-3"></div>
+            <div class="orbit-path-2"></div>
+            <div class="electron">vvaalant</div>
+            <div class="electron">mburakow</div>
+            <div class="electron">okarejok</div>
+        </div>
+        <div>
+            <p>front end by: okarejok</p>
+            <p>42 WEBSERV HIVE HELSINKI 2024</p>
+        </div>
+    </div >
+</body>
+</html>

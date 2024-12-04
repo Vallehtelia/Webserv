@@ -52,13 +52,15 @@ class ServerConfig
 		int 		getBodySize() const;
 		int 		getEpollMaxEvents() const;
 		std::string	getIndex() const;
+		const std::map<int, std::string>	&getErrorPages() const;
 
-		std::string	getLocation(std::string key) const;
+		std::string	getLocation(const std::string key) const;
     	std::string getErrorPage(int code) const;
+		std::vector<LocationConfig>	getLocations() const;
 
 		void	printConfig() const;
 };
 
-bool	checkConfFile(char *filename);
-void	parseData(char *filename, std::vector<ServerConfig> &server);
+bool	checkConfFile(const std::string &filename);
+void	parseData(const std::string &filename, std::vector<ServerConfig> &server);
 #endif

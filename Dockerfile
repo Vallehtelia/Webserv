@@ -1,45 +1,28 @@
-# run this using 	docker build --no-cache -t cpp-webserver . 2>&1 | tee build.log
-# or just 			docker build -t cpp-webserver .
-# then 				docker run -d -p 8002:8002 --name webserverc cpp-webserver
-# or without name 	docker ps
-# then				docker stop <id from ps> or webserverc
-# Use a lightweight Linux distribution like Ubuntu
+# Use the official Ubuntu 20.04 image
 FROM ubuntu:20.04
 
-# Add a line to inspect the sources.list
-RUN cat /etc/apt/sources.list
-
-# Add necessary repositories
-RUN echo "deb http://archive.ubuntu.com/ubuntu focal main restricted universe multiverse" > /etc/apt/sources.list && \
-    echo "deb http://archive.ubuntu.com/ubuntu focal-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
-    echo "deb http://security.ubuntu.com/ubuntu focal-security main restricted universe multiverse" >> /etc/apt/sources.list
-
-# Ensure apt-get does not prompt for user input
-# ENV DEBIAN_FRONTEND=noninteractive
-
 # Update package list and install necessary tools
+ARG CACHE_BUSTER=1
 RUN apt-get update && \
-    apt-get dist-upgrade -y && \
-    #  apt-mark unhold $(dpkg --get-selections | grep hold | awk '{print $1}') && \
-    apt-get install -y --fix-missing g++ && \
-    apt-get install -y --fix-missing make && \
-    apt-get install -y --fix-missing build-essential && \
-    apt-get clean && \
+    apt-get install -y build-essential g++ cmake siege python3 python3-pip && \
+    siege --version && \
+    python3 --version && \
+    ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
+    dpkg-reconfigure --frontend noninteractive tzdata && \
     rm -rf /var/lib/apt/lists/*
+
 
 # Set the working directory
 WORKDIR /app
 
-# Copy your C++ server code to the container
+# Copy the server code into the container
 COPY . /app
-#RUN chmod +r /app/main.cpp
-#RUN ls -l /app
 
-# Compile the code with -fPIE and -pie flags
+# Build the server using a Makefile
 RUN make FLAGS="-std=c++17 -Wall -Wextra -Werror -fPIE -pie"
 
 # Expose the server port
 EXPOSE 8002 8003
 
-# Run the server
+# Run the server with the configuration file
 CMD ["./socket", "configuration/default.conf"]

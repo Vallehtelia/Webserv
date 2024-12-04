@@ -1,0 +1,164 @@
+:root {
+    --containerShadowDimensions: 3px 6px 0px 0px black;
+    --buttonShadowDimensions: 2px 4px 0px 0px black;
+    --buttonBorderRadius: 20px;
+    --submitButtonColor: #2fff2f;
+    --buttonColor: violet;
+    --navBorderRadius: 10px;
+    --containerBorderRadius: 10px;
+}
+
+.todo-container {
+    width: 800px; /* Set a max width for the container */
+    height: 400px;
+    padding: 20px; /* Space inside the container */
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: var(--containerShadowDimensions);
+    border: 2px solid black;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+}
+
+.todo-form {
+    display: flex;
+    width:100%;
+    margin-top: 10px;
+    gap:20px;
+}
+
+
+input[type="text"] {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    min-width: 200px;
+    background-color: black;
+}
+
+.todo-container > button {
+    padding: 7px 7px;
+    background-color: black;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+
+.todo-form > ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.todo-list {
+    width:100%;
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+}
+
+.todo-list-container {
+    overflow: scroll;
+    max-height: 80%;
+    overflow: scroll;
+    width:100%;
+    padding: 10px;
+    border: 2px solid black;
+    border-radius: var(--containerBorderRadius);
+    box-shadow: inset 0 -10px 6px rgba(0, 0, 0, 0.2);
+}
+
+.todo-list > li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+    border-radius: 4px; /* Rounded corners for list items */
+    margin-bottom: 10px; /* Space between list items */
+    border: 2px solid black;
+    padding:5px;
+    margin:0px;
+    margin-bottom: 10px;
+    box-shadow: var(--buttonShadowDimensions);
+}
+
+.todo-container > *  {
+    font-size: 12px;
+}
+
+.button-container {
+    display:flex;
+    gap: 10px;
+}
+
+li.completed > .button-container > button.toggle {
+    background-color: var(--submitButtonColor);
+}
+
+li:not(.completed) > .button-container > button.toggle {
+    background-color: #ff3d00;
+}
+
+
+button.toggle {
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid black;
+}
+
+
+button.remove {
+    border: none;
+    border-radius: 4px;
+    color: black;
+    cursor: pointer;
+    background-color: white;
+    border: 2px solid black;
+    font-size: 12px;
+}
+
+button.remove:hover {
+    background-color: #ff3d00;
+    color: white;
+}
+
+.todo-container input[type="text"] {
+    all: unset;
+    border: 2px solid black;
+    padding: 2px;
+    box-shadow: var(--buttonShadowDimensions);
+    min-width: 400px;
+    
+}
+
+.todo-container .submit-button {
+    border-radius: var(--buttonBorderRadius);
+    border: 2px solid black;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    box-shadow: var(--buttonShadowDimensions);
+    background-color: var(--submitButtonColor);
+    box-shadow: 2px 4px 0px 0px black;
+    
+}
+
+
+/* Add space around the container */
+.container {
+    margin: 50px auto; /* Adjust this value for more or less space around the container */
+}
