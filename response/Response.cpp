@@ -57,7 +57,10 @@ void Response::setResponse(int statusCode, const std::string& contentType, const
         _contentLength = _body.size();
     }
     _headers = "Content-Type: " + _contentType + "\r\n" +
-              "Content-Length: " + std::to_string(_contentLength) + "\r\n";
+              "Content-Length: " + std::to_string(_contentLength) + "\r\n"
+			  "Connection: keep-alive\r\n" +
+			  "Keep-Alive: timeout=5, max=100\r\n" +
+			  "\r\n";
 }
 
 void Response::setStatusLine()

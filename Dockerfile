@@ -1,51 +1,35 @@
-# This is the best dockerfile!!! It is the best dockerfile in the world!!!
-#
-# run this using 	docker build --no-cache -t cpp-webserver . 2>&1 | tee build.log
-# or just 			docker build -t cpp-webserver .
-# then 				docker run -d -p 8002:8002 --name webserverc cpp-webserver
-# or without name 	docker ps
-# then				docker stop <id from ps> or webserverc
-# Use a lightweight Linux distribution like Ubuntu
+# Use the official Ubuntu 20.04 image
 FROM ubuntu:20.04
 
-# Add a line to inspect the sources.list
-RUN cat /etc/apt/sources.list
+# Inspect the architecture and sources list
+RUN uname -m && cat /etc/apt/sources.list
 
-# Add necessary repositories
+# Add necessary repositories explicitly
 RUN echo "deb http://archive.ubuntu.com/ubuntu focal main restricted universe multiverse" > /etc/apt/sources.list && \
     echo "deb http://archive.ubuntu.com/ubuntu focal-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
     echo "deb http://security.ubuntu.com/ubuntu focal-security main restricted universe multiverse" >> /etc/apt/sources.list
-	
-# Update package list and install necessary tools
+
+# Ensure apt-get doesn't prompt for user input
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update package lists and install necessary tools
 RUN apt-get update && \
     apt-get dist-upgrade -y && \
-    #  apt-mark unhold $(dpkg --get-selections | grep hold | awk '{print $1}') && \
-    apt-get install -y --fix-missing g++ && \
-    apt-get install -y --fix-missing make && \
-    apt-get install -y --fix-missing build-essential && \
+    apt-get install -y g++ make build-essential && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
 WORKDIR /app
 
-# Copy your C++ server code to the container
+# Copy the server code into the container
 COPY . /app
-#RUN chmod +r /app/main.cpp
-#RUN ls -l /app
 
-# Compile the code
-RUN make
+# Build the server using a Makefile
+RUN make FLAGS="-std=c++17 -Wall -Wextra -Werror -fPIE -pie"
 
-# Expose the server port
-EXPOSE 8002 8003
+# Expose the port for the server
+EXPOSE 8002
 
-# Run the server
-# CMD ["./socket", "configuration/default.conf"]
-
-
-# Stop all containers
-# docker stop $(docker ps -a -q)
-# Remove all containers
-# docker rm $(docker ps -a -q)
-
+# Run the server with the configuration file
+CMD ["./socket", "configuration/default.conf"]
