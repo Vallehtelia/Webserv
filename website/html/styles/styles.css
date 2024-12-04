@@ -296,7 +296,7 @@ label[for]:has(+ input[type="file"]) {
 
 #showImageDiv {
     padding: 0px;
-    overflow: hidden;cgi-image-window
+    overflow: hidden;
 }
 
 #imageUploadForm > * {
