@@ -1,12 +1,46 @@
-{/* <button id="custom-file-button">Choose a File</button>
-
-document.getElementById('custom-file-button').addEventListener('click', function() {
-    document.getElementById('image').click();
-});
- */}
+import {createImageWindow, displayMedia} from './displayImage.js'
+import { directoryListing } from './directoryListing.js';
 
 
+
+
+async function uploadFiles(data) {
+    console.log("DATA: ", data);
+    try {
+    const response = await fetch('/uploads', {
+        method: 'POST',
+        body: data,
+    });
+    if (!response.ok) {
+        throw new Error(`Chunk upload failed: ${response.statusText}`);
+    }
+    if (response.ok) {
+        try {
+            // Parse the JSON body of the response
+            const jsonResponse = await response.json();
+            console.log(jsonResponse);
+        } catch (error) {
+            console.error('Error parsing JSON:', error);
+        }
+    }
+    }
+    catch (error) {
+        console.error('Error:', error); // Log any errors
+        alert('An error occurred during upload. Please try again.'); // Alert the user of the error
+}
+}
+
+
+
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    const computerScreen = document.getElementById("computer-screen")
+
+    directoryListing(computerScreen);
  document.querySelectorAll("#file-upload-form input[type='file']").forEach(function(input) {
+
      input.addEventListener("change", function() {
          // Find the sibling span element (file name display)
          var fileNameDisplay = this.nextElementSibling;
@@ -19,89 +53,9 @@ document.getElementById('custom-file-button').addEventListener('click', function
         });
     });
 
-    const listUploadedFiles = (response) => {
-        // Create a new div to hold the response
-        const newDiv = document.createElement("div");
-        const fileList = document.createElement("ul");
-        fileList.classList.add('file-list');
-        //newDiv.classList.add('file-list');
-        response.uploadedFiles.forEach(file => {
-            const listItem = document.createElement("li");
-            listItem.innerHTML = "file: " + file.filename + "<br>url: " + file.fileurl;
-            fileList.appendChild(listItem);
-        });
-
-        // Append the file list to the new div
-        newDiv.appendChild(fileList);
-        document.getElementById("getResponse").innerHTML = "<h1>uploaded files succesfully:</h1>";
-        document.getElementById("getResponse").appendChild(newDiv);
-    };
-
-    const showLoadingSpinner = () => {
-        document.getElementById("getResponse").innerHTML = '<h1>uploading files<h1><div id="loading-icon" class="spinner"></div>'
-    }
-
-    
-    const getFileType = (file) => {
-        if (!file || !file.name) return null; // Handle cases where file or file.name is undefined
-        const dotIndex = file.name.lastIndexOf('.');
-        if (dotIndex > -1)
-        {
-            const extension = file.name.slice(dotIndex + 1).toLowerCase()
-            console.log(extension)
-            if (extension === "mp3")
-                return "/assets/audio_icon.png"
-            else if (extension === "jpg" || extension === "jpeg" || extension === "png")
-                return "/assets/image_icon.png"
-            else if (extension === "mp4")
-                return "/assets/video_icon.png"
-        }
-        return "/assets/random_icon.png"
-    }
-
-    const selectIcon = (file) => {
-        console.log(file.type)
-        if (file.type === "file")
-        {
-            return getFileType(file)
-        }
-        else
-            return "/assets/folder-icon.png"
-    }
-
-    const directoryListing = async () => {
-        const response = await fetch('/uploads/');
-        const jsonResponse = await response.json();
-        console.log(jsonResponse);
-
-        document.getElementById("computer-screen").innerHTML = "";
-        const newDiv = document.createElement("div");
-        newDiv.classList.add('directory-list');
-        jsonResponse.files.forEach(file => {
-            const listItem = document.createElement("div");
-            const fileIcon = document.createElement("img");
-            fileIcon.src = selectIcon(file) // Set the image path
-            fileIcon.alt = "file icon"; // Optionally set alternative text
-            fileIcon.classList.add('file-icon');
-            listItem.classList.add('directory-item');
-            const fileName = document.createElement("p");
-            fileName.classList.add('file-name');
-            fileName.innerHTML = file.name;
-            listItem.appendChild(fileIcon);
-            listItem.appendChild(fileName);
-            newDiv.appendChild(listItem);
-        });
-        document.getElementById("computer-screen").appendChild(newDiv);
-    }
 
 
-    document.addEventListener("DOMContentLoaded", function() {
-       directoryListing();
-
-
-   });
-
-const form = document.querySelector('#file-upload-form');
+    const form = document.querySelector('#file-upload-form');
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault(); // Prevent the default form submission
@@ -121,26 +75,12 @@ const form = document.querySelector('#file-upload-form');
             if (audio) {
                 formData.append('audio', audio);
             }
-            const response = await fetch('/uploads', {
-                method: 'POST',
-                body: formData,
-            });
-            if (!response.ok) {
-                throw new Error(`Chunk upload failed: ${response.statusText}`);
-            }
-            if (response.ok) {
-                try {
-                    // Parse the JSON body of the response
-                    const jsonResponse = await response.json();
-                    console.log(jsonResponse);
-                    directoryListing();
-                } catch (error) {
-                    console.error('Error parsing JSON:', error);
-                }
-            }
+            await uploadFiles(formData);
+            directoryListing(computerScreen);
         } catch (error) {
             console.error('Error:', error); // Log any errors
             alert('An error occurred during upload. Please try again.'); // Alert the user of the error
         }
     });
 
+} );

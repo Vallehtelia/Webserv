@@ -239,8 +239,8 @@ label[for]:has(+ input[type="file"]) {
 }
 
 #file-name {
-    display: inline-block;
-    margin-left: 10px;
+    display: block;
+    margin-top: 10px;
     color: #555;
     font-style: italic;
     font-size: 12px;
@@ -278,7 +278,7 @@ label[for]:has(+ input[type="file"]) {
 }
 
 .cgi-output-image {
-    width:100%;
+    max-width:100%;
     height:auto;
     display:block;
     object-fit: contain;
@@ -292,6 +292,10 @@ label[for]:has(+ input[type="file"]) {
     justify-content: center;
     gap: 20px; /* Adds spacing between flex items */
     /* padding: 20px; Adds padding to the container */
+}
+
+.cgi-form-data div {
+    display:block;
 }
 
 #showImageDiv {
@@ -374,7 +378,6 @@ label[for]:has(+ input[type="file"]) {
 }
 
 
-
 .cgi-output-container {
     padding: 1px;
     border-radius: 0px;
@@ -415,11 +418,33 @@ label[for]:has(+ input[type="file"]) {
     height: 40px;
 }
 
-#computer-screen.computer-screen-class.cgi-computer-screen {
-    position: relative; /* This will allow absolute positioning of the pop-up windows */
-    width: 100%; /* Set the width and height as required */
+.cgi-output-window-header {
+    display: flex;
+    gap: 20px;
+    padding-right: 20px;
+}
+
+.cgi-output-window-header p {
+    max-width: 100%;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#computer-screen {
+    position: relative; /* Allow absolute positioning inside */
+    width: 100%;
     height: 100%;
-    overflow: hidden; /* Hide anything that goes outside the container */
+    overflow: auto; /* Allows scrolling if content overflows */
+}
+
+#file-display-window {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    max-width: 80%;
+
 }
 
 
@@ -429,4 +454,127 @@ label[for]:has(+ input[type="file"]) {
 
 .cgi-image-window .text-container h1 {
     font-size: 16px;
+}
+
+
+.show-image-div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+
+/* Style the container of the audio player */
+.cgi-output-audio {
+    max-width: 100%;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.cgi-output-video {
+    max-width: 100%;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+
+.cgi-output-audio::-webkit-media-controls {
+} 
+
+.cgi-filter {
+    background-color: red;
+
+}
+
+#cgi-filter-list-container {
+    width: 800px;
+    height: 500px;
+    background-color: white;
+    position: fixed;
+    top: 50%;               /* Vertically center */
+    left: 50%;              /* Horizontally center */
+    transform: translate(-50%, -50%);  /* Adjust for exact center */
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--containerBorderRadius);
+    box-shadow: var(--containerShadowDimensions);
+    border: solid black 2px;
+    overflow: hidden;
+    padding:30px;
+}
+
+#edited-image-container {
+    max-height: 50%;
+}
+
+#cgi_filter-list {
+    
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+
+}
+
+.cgi-filter {
+    width: 150px; /* Fixed size for each <li> */
+    height: 150px; /* Ensures the image container is square */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid #ccc; /* For visualization */
+    background-color: white;
+    padding: 10px;
+}
+
+.image-filter-preview {
+    max-width:100%;
+    height:auto;
+    display:block;
+    object-fit: contain;
+    margin: 0px;
+}
+
+.cgi-filter p {
+    margin: 0px;
+}
+
+
+#edited_image {
+    max-height:100%;
+    width:auto;
+    display:block;
+    object-fit: contain;
+    margin: 0px;
+    border: 2px solid black;
+}
+
+#cgi-filter-list-container h1 {
+    margin: 2px;
+}
+
+#cgi-filter-list-container > button {
+    margin: 2px;
+    position: absolute;
+    bottom: 3px;
+    right:3px;
+}
+
+.submit-button  {
+    border-radius: var(--buttonBorderRadius);
+    border: 1px solid black;
+    background-color: rgb(175, 175, 175);
+    box-shadow: #333;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    box-shadow: var(--buttonShadowDimensions);
+    background-color: var(--submitButtonColor);
 }

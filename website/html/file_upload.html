@@ -2,7 +2,10 @@
 <html>
 <head>
     <title>file upload</title>
-    <script src="./scripts/fileUpload.js" defer></script>
+    <script type="module" src="./scripts/displayImage.js" defer></script>
+    <script type="module" src="./scripts/directoryListing.js" defer></script>
+    <script type="module" src="./scripts/displayImage.js" defer></script>
+    <script type="module" src="./scripts/fileUpload.js" defer></script>
     <link rel="stylesheet" href="./styles/styles.css">
     <link rel="stylesheet" href="./styles/orbit.css">
 </head>
@@ -49,7 +52,9 @@
             </form>
         </div>
         <div id="getResponse" class="form-container">
-            <div id="computer-screen" class="computer-screen-class"></div>
+            <div id="computer-screen" class="computer-screen-class">
+                <div id="file-display-window">x</div>
+            </div>
         </div>
     </div>
     <div class="credits-wrapper">

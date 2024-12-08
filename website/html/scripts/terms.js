@@ -1,4 +1,6 @@
-document.addEventListener('DOMContentLoaded', () => { 
+document.addEventListener('DOMContentLoaded', () => {
+
+    
  
  // Get the popup and overlay elements
         const popup = document.getElementById("popup");

@@ -6,10 +6,15 @@ RequestHandler::RequestHandler() {}
 RequestHandler::~RequestHandler() {}
 
 
-void RequestHandler::handleRequest(Request& req, Response& res)
+void RequestHandler::handleRequest( Request& req, Response& res)
 {
     _location = req.getLocation();
 
+    prepareHandler(req);
+    if (_location.getLocation() == "/cgi")
+    {
+        handleCgi(req);
+    }
 	if (req.getUri() == "/")
 		req.setPath("/index.html");
 	if (req.getState() == State::CGI_ERROR) // Naa johonki siistimmin
@@ -39,7 +44,6 @@ void RequestHandler::handleRequest(Request& req, Response& res)
         std::cout << "but not here" << std::endl;
         return ;
     }
-	prepareHandler(req);
     if (_method == "GET")
 	{
         handleGetRequest(res);
@@ -60,6 +64,21 @@ void RequestHandler::handleRequest(Request& req, Response& res)
 	{
         res.setResponse(405, "text/html", "");
     }
+}
+
+void RequestHandler::handleCgi(Request &req)
+{
+	std::cout << "content type: " << req.getContentType() << std::endl;
+	std::cout << "THE REQUEST IS CGI" << std::endl;
+	std::string queryString = findQueryStr(req.getUri());
+	std::string directPath;
+
+	directPath = _filePath;
+	std::cout << "DIRECT PATH: " << directPath << std::endl;
+	cgiRequest cgireg(req, directPath, req.getMethod(), queryString, req.getVersion(), req.getBody(), req.getContentType());
+	int execute_result = cgireg.execute();
+	if (execute_result == 0)
+        _filePath = getFilepath("/cgi/tmp/cgi_output.html");
 }
 
 std::string RequestHandler::getContentType(const std::string& path) const {
@@ -95,6 +114,7 @@ void RequestHandler::prepareHandler(const Request &req)
 	_method = req.getMethod();
 	_contentType = getContentType(_uri);
     _filePath = getFilepath(_uri);
+    _responseFileUrl = _uri;
 }
 
 static std::string urlDecode(const std::string& src) {
@@ -113,48 +133,88 @@ static std::string urlDecode(const std::string& src) {
     return decoded;
 }
 
+std::string trimSlashes(const std::string& str) {
+    if (str.empty()) return str;
+
+    size_t start = 0;
+    size_t end = str.size() - 1;
+
+    if (str[start] == '/') ++start;
+    if (str[end] == '/') --end;
+
+    return str.substr(start, end - start + 1);
+}
 
 void removePrefix(std::string& str, const std::string& prefix) {
-    if (str.rfind(prefix, 0) == 0) { // Check if the string starts with the prefix
-        str.erase(0, prefix.length()); // Remove the prefix
+    // std::cout << "Original string: " << str << "\nPrefix to remove: " << prefix << std::endl;
+
+    // Normalize prefix by removing trailing slashes
+    std::string normalizedPrefix = prefix;
+    if (!prefix.empty() && prefix.back() == '/') {
+        normalizedPrefix.pop_back();
+    }
+
+    // If the string starts with the normalized prefix, remove it
+    if (str.rfind(normalizedPrefix, 0) == 0) {
+        str.erase(0, normalizedPrefix.length());
+        // std::cout << "After removing prefix: " << str << std::endl;
+    } else {
+        // std::cout << "Prefix not found at the start of the string.\n";
     }
 }
 
 std::string RequestHandler::getFilepath(std::string filepath)
 {
-	filepath = urlDecode(filepath);
-    removePrefix(filepath, _location.getRoot());
-	if (filepath.front() == '/' && filepath.length() > 1) {
-            filepath.erase(0, 1);
-    }
-	std::string tmp = _location.getLocation();
-	removePrefix(tmp, _location.getRoot());
-	_location.path = tmp;
-	tmp = _location.getRoot();
-	removePrefix(tmp, "/");
-    std::filesystem::path baseDir = std::filesystem::current_path() / tmp;
-    std::filesystem::path path;
-    if (filepath.find("cgi") != std::string::npos)
-        path = baseDir / "tmp" / filepath;
-    else {
-            path = baseDir / filepath;
-    }
-	std::cout << "FILEPATH CREATED: " << path.string() << std::endl;
-    return path.string();
+    filepath = urlDecode(filepath);  // Assuming urlDecode() is defined elsewhere
+
+    // Remove the root path (from location data) from the file path
+    std::string tmp = _location.getLocation(); // This should be "/uploads"
+    removePrefix(tmp, _location.getLocation());
+    std::cout << "LOCATION NAME: " << tmp << std::endl;
+
+    std::string locationRoot = _location.getRoot(); // Assume this returns something like "/website/html/uploads"
+    removePrefix(locationRoot, "/");
+    std::cout << "LOCATION ROOT: " << locationRoot << std::endl;
+
+    std::cout << _location.getLocation() << std::endl;
+     
+    // std::cout << "FILEPATH: " << filepath << std::endl;
+    removePrefix(filepath, _location.getLocation());
+    // std::cout << "FILEPATH AFTER REMOVE PREFIX: " << filepath << std::endl;
+    std::filesystem::path baseDir = std::filesystem::current_path();
+    // std::cout << "BASE DIRECTORY: " << baseDir << std::endl;
+
+    std::string baseDirStr = baseDir.string();
+    // std::cout << "baseDirStr: " << baseDirStr << std::endl;
+    std::string path;
+    checkline(_location.getLocation());
+    // if (_location.getLocation() == "/cgi")
+    // {
+    //     path = baseDirStr + locationRoot + "tmp" + filepath;
+    //     std::cout << "CGI PATH CREATED" << std::endl;
+    // }
+    // else
+    path = baseDirStr + locationRoot + filepath;
+    std::cout << "FILEPATH CREATED: " << path << std::endl;
+
+    return path;
 }
+
+
 
 
 bool RequestHandler::validFile(const std::string& filePath) {
     try {
         std::filesystem::path fullPath = std::filesystem::path(filePath);
         const std::filesystem::path baseDir = std::filesystem::current_path();
-        std::cout << "Full Path: " << fullPath << std::endl;
-        std::cout << "Base Directory: " << baseDir << std::endl;
+        // std::cout << "Full Path: " << fullPath << std::endl;
+        // std::cout << "Base Directory: " << baseDir << std::endl;
 
         std::filesystem::path dirPath = std::filesystem::canonical(baseDir);
 
-        std::cout << "Canonical Directory Path: " << dirPath << std::endl;
+        // std::cout << "Canonical Directory Path: " << dirPath << std::endl;
 
+        
         if (std::filesystem::relative(fullPath, dirPath).string().find("..") == 0) {
             std::cerr << "Error: Access outside base directory is prohibited." << std::endl;
 			_statusCode = 403;
@@ -224,16 +284,23 @@ std::string RequestHandler::readFileContent(std::string& filePath)
     }
 }
 
-std::string generateDirectoryListing(const std::string& directoryPath) {
+std::string RequestHandler::generateDirectoryListing(const std::string& directoryPath) {
     std::ostringstream jsonStream;
-    jsonStream << "{\n\t\"files\": [\n";
+
+
+    jsonStream << "{\n\t\"directoryPath\":\"" << _responseFileUrl << "\",\n\t\"files\": [\n";
 
     try {
+        bool isFirstEntry = true;
         for (const auto& entry : std::filesystem::directory_iterator(directoryPath)) {
+            if (!isFirstEntry) {
+                jsonStream << ",\n";
+            }
             jsonStream << "\t\t{\n";
             jsonStream << "\t\t\t\"name\": \"" << entry.path().filename().string() << "\",\n";
             jsonStream << "\t\t\t\"type\": \""
                        << (entry.is_directory() ? "directory" : "file") << "\",\n";
+            jsonStream << "\t\t\t\"fileurl\": \"" << _responseFileUrl + "/" + entry.path().filename().string() << "\",\n";
 
             if (!entry.is_directory()) {
                 jsonStream << "\t\t\t\"size\": " << entry.file_size() << "\n";
@@ -241,32 +308,30 @@ std::string generateDirectoryListing(const std::string& directoryPath) {
                 jsonStream << "\t\t\t\"size\": null\n";
             }
 
-            jsonStream << "\t\t},\n";
+            jsonStream << "\t\t}";
+            isFirstEntry = false;
         }
 
-        std::string result = jsonStream.str();
-        // Remove the trailing comma and newline for valid JSON
-        if (result.size() > 2) {
-            result.erase(result.size() - 2, 2);
+        if (!isFirstEntry) {
+            jsonStream << "\n"; // Add newline after the last entry
         }
-        result += "\n\t]\n}";
-
-        return result;
     } catch (const std::filesystem::filesystem_error& e) {
         std::cerr << "Error accessing directory: " << e.what() << std::endl;
         return "{\"error\": \"Unable to access directory.\"}";
     }
+    jsonStream << "\t]\n}";
+
+    std::string result = jsonStream.str();
+    // std::cout << result << std::endl;
+    return result;
 }
+
 
 void RequestHandler::handleGetRequest(Response& res) {
 
     std::cout << "HANDLE GET" << std::endl;
-    std::cout << "----------" << std::endl;
-    std::cout << "Path: " << _filePath << std::endl;
     std::cout << "Is directory: " << std::filesystem::is_directory(_filePath) << std::endl;
-    std::cout << "----------" << std::endl;
     if (std::filesystem::is_directory(_filePath)){
-        std::cout << "it is a directory" << std::endl ;
         if (_location.isAutoindex()) { // Assuming there's a method to check if auto-index is enabled
             std::string directoryListing = generateDirectoryListing(_filePath);
             res.setResponse(200, "text/html", directoryListing);
@@ -288,17 +353,31 @@ void RequestHandler::handleGetRequest(Response& res) {
 
 void RequestHandler::handleDeleteRequest(Response& res)
 {
-
-    if (validFile(_filePath))
+    if (_location.getLocation() == "/cgi")
+    {
+            std::string response_body = readFileContent(_filePath);
+            res.setResponse(200, getContentType(_filePath), response_body);
+    }
+    else if (validFile(_filePath))
     {
         if (remove(_filePath.c_str()) == 0)
-            res.setResponse(200, "text/plain", "SUCCESS!");
+        {
+            res.setResponse(200, "application/json", 
+                R"({"status":"success","message":"File deleted successfully","filePath":")" + _filePath + R"("})");
+        }
         else
-            res.setResponse(500, "text/html", "");
+        {
+            res.setResponse(500, "application/json", 
+                R"({"status":"error","message":"Failed to delete the file","filePath":")" + _filePath + R"("})");
+        }
     }
     else
-        res.setResponse(404, "text/html", "");
+    {
+        res.setResponse(404, "application/json", 
+            R"({"status":"error","message":"File not found","filePath":")" + _filePath + R"("})");
+    }
 }
+
 
 
 void RequestHandler::handlePostRequest(const Request& req, Response& res)
@@ -322,7 +401,6 @@ void RequestHandler::handlePostRequest(const Request& req, Response& res)
 void RequestHandler::handlePutRequest(const Request& req, Response& res)
 {
     std::cout << "HANDLING PUT REQUEST" << std::endl;
-	std::cout << "CONTENT TYPE: " << req.getContentType() << std::endl;
 
     if (req.isMultiPart()) {
         handleMultipartRequest(req, res);
@@ -380,7 +458,7 @@ void RequestHandler::handleMultipartRequest(const Request &req, Response &res) {
             handleFileUpload(part, res);
             if (_statusCode == 200)
             {
-                uploadedFiles.push_back("{\"filename\" : \"" + part.filename + "\", \"fileurl\" : \"uploads/" + part.filename + "\"}");
+                uploadedFiles.push_back("{\"filename\" : \"" + part.filename + "\", \"fileurl\" : \"" + trimSlashes(_uri) + "/" + trimSlashes(part.filename) + "\"}");
             }
 			if (_statusCode != 200 && _statusCode != 201)
 			{
@@ -395,20 +473,7 @@ void RequestHandler::handleMultipartRequest(const Request &req, Response &res) {
     }
 }
 
-// {
-//   "uploadedFiles": [
-//     {
-//       "fileName": "image1.jpg",
-//       "fileUrl": "https://example.com/uploads/image1.jpg",
-//       "fileId": "abc123"
-//     },
-//     {
-//       "fileName": "image2.png",
-//       "fileUrl": "https://example.com/uploads/image2.png",
-//       "fileId": "xyz789"
-//     }
-//   ]
-// }
+
 
 void RequestHandler::handleFileUpload(const MultipartData& part, Response& res)
 {
@@ -416,12 +481,12 @@ void RequestHandler::handleFileUpload(const MultipartData& part, Response& res)
         res.setResponse(400, "application/json", R"({"error": "File name is missing."})");
         return;
     }
-    std::string uploadPath = getFilepath("/uploads/" + part.filename);
-    if (validFile(uploadPath)) {
-    	std::ofstream file(uploadPath, std::ios::binary);
+    _uploadPath = getFilepath("/" + part.filename);
+    if (validFile(_uploadPath)) {
+    	std::ofstream file(_uploadPath, std::ios::binary);
 		if (file)
 		{
-			std::cout << "WRITING TO FILE" << uploadPath << std::endl;
+			std::cout << "WRITING TO FILE" << _uploadPath << std::endl;
         	file.write(part.data.data(), part.data.size());
         	file.close();
 			_statusCode = 200;
@@ -441,6 +506,7 @@ void RequestHandler::handleFormField(const MultipartData& part) {
         return ;
     }
 }
+
 
 std::string RequestHandler::createJsonResponse(const std::vector<std::string> uploadedFiles) {
     std::string json;

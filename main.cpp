@@ -19,7 +19,7 @@
 #include "request/Request.hpp"
 #include "request/RequestHandler.hpp"
 #include "response/Response.hpp"
-#include "./cgi/cgi_request.hpp"
+#include "./request/cgi_request.hpp"
 #include "utils.hpp"
 #include "./events/eventLoop.hpp"
 #include <csignal>
