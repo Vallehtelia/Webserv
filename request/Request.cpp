@@ -89,6 +89,11 @@ LocationConfig  Request::getLocation() const {
     return location;
 }
 
+std::map<std::string, std::string>  Request::getQueryParams() const
+{
+    return queryParams;
+}
+
 void Request::reset()
 {
     currentState = State::REQUEST_LINE;
@@ -162,16 +167,28 @@ LocationConfig Request::findLocation(const std::string &uri, const Socket &socke
 
     for (std::vector<LocationConfig>::iterator it = locations.begin(); it != locations.end(); ++it) {
         std::string locationPath = it->getLocation();
-		if (locationPath != "/" && locationPath.end()[-1] == '/')
-			locationPath = locationPath.substr(0, locationPath.length() - 1);
-        if (uri.find(locationPath) == 0 && locationPath.length() > bestMatchLength) {
-            // Check if locationPath is a prefix of uri and is more specific
-            bestMatch = *it;
-            bestMatchLength = locationPath.length();
+
+        // Ensure no trailing slash in location unless it’s "/"
+        if (locationPath != "/" && locationPath.back() == '/')
+            locationPath = locationPath.substr(0, locationPath.length() - 1);
+
+        // Check if locationPath is a prefix of uri
+        if (uri.find(locationPath) == 0) {
+            // Ensure match is valid: 
+            // - If location is "/", always match.
+            // - If location is not "/", match only if uri follows the pattern "/locationPath/..." or matches exactly.
+            if (locationPath == "/" || uri == locationPath || uri[locationPath.length()] == '/') {
+                if (locationPath.length() > bestMatchLength) {
+                    bestMatch = *it;
+                    bestMatchLength = locationPath.length();
+                }
+            }
         }
     }
+
     return bestMatch;
 }
+
 
 
 static bool isValidRequestLine(const std::string& requestLine) {
@@ -194,6 +211,7 @@ void Request::parseQueryString() {
         uri.erase(queryPos, uri.size());
     }
 }
+
 
 
 void Request::parseRequestLine(const Socket &socket) {
@@ -237,10 +255,10 @@ void Request::prepareRequest()
             handleError("Content-Length missing on a POST request");
             return ;
         }
-        if (contentLength > 500000)
-        { 
-            return handleError("body size manually limited to 500000 in prepareRequest()");
-            }
+        // if (contentLength > 500000)
+        // { 
+        //     return handleError("body size manually limited to 500000 in prepareRequest()");
+        // }
     }
     if (headers.find("transfer-encoding") != headers.end())
         if (headers["transfer-encoding"] == "chunked")
@@ -499,6 +517,7 @@ void Request::printRequest()
     }
     if (body.size() < 2000)
 	    std::cout << "body: \n" << body << std::endl;
+    // printMultipartdata();
 	std::cout << "---------------------------------------------" << "\033[0m" << std::endl;
 }
 

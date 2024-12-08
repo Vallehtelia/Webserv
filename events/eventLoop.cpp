@@ -2,7 +2,6 @@
 #include "../epoll/epoll.hpp"
 #include "../request/Request.hpp"
 #include "../request/RequestHandler.hpp"
-#include "../cgi/cgi_request.hpp"
 #include "../response/Response.hpp"
 #include "../sockets/socket.hpp"
 
@@ -128,46 +127,15 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 			{
 				continue;
 			}
-			std::cout << "CONTINUING THE LOOP.." << std::endl;
 			if (req.getState() == State::COMPLETE || req.getState() == State::ERROR)
 			{
-				req.printRequest();
-				if (req.getState() != State::ERROR)
-				{
-					std::string path = req.getUri();
-					bool    cgi_req = (path.find("/cgi-bin/") != std::string::npos || (path.size() > 3 && path.substr(path.size() - 3) == ".py"));
-					if (cgi_req)
-					{
-						std::cout << "content type: " << req.getContentType() << std::endl;
-						std::cout << "THE IMAGE IS CGI" << std::endl;
-						std::string queryString = findQueryStr(req.getUri());
-						std::string directPath;
-						directPath = findPath(req.getUri());
-						std::cout << "DIRECT PATH: " << directPath << std::endl;
-						cgiRequest cgireg(directPath, req.getMethod(), queryString, req.getVersion(), req.getBody(), req.getContentType());
-						int execute_result = cgireg.execute(); // exit status so we need to give correct error page so current one is broken
-						if (execute_result == 0)
-							req.setPath("/cgi_output.html");
-						else
-						{
-							req.setPath(socket.getServer().getErrorPage(execute_result));
-							if (execute_result == 500)
-								req.setState(State::CGI_ERROR); //CGI_ERROR
-							else if (execute_result == 404)
-								req.setState(State::CGI_NOT_FOUND); //CGI_NOT_FOUND
-							else if (execute_result == 504)
-								req.setState(State::TIMEOUT); //TIMEOUT
-							else
-								req.setState(State::CGI_NOT_PERMITTED);
-						}
-					}
-				}
+				// req.printRequest();
 				//req.printRequest();
 				Response res;
-				std::cout << "URI FROM EVENT LOOP: " << req.getUri() << std::endl;
+				// std::cout << "URI FROM EVENT LOOP: " << req.getUri() << std::endl;
 				RequestHandler requestHandler;
 				requestHandler.handleRequest(req, res);
-				//res.printResponse();
+				// res.printResponse();
 				// Get the full HTTP response string from the Response class
 				std::string http_response = res.getResponseString();
 				// Send the response back to the client

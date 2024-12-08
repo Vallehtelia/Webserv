@@ -1,3 +1,6 @@
+#ifndef CGI_REQUEST_HPP
+# define CGI_REQUEST_HPP
+
 
 #include <iostream>
 #include <unistd.h>
@@ -8,6 +11,9 @@
 #include <wait.h>
 #include <fcntl.h>
 
+#include "../request/Request.hpp"
+
+
 class cgiRequest
 {
 	private:
@@ -17,8 +23,9 @@ class cgiRequest
 		std::string	httpProtocol;
 		std::map<std::string, std::string> env;
 		std::string	body_data;
+		std::map<std::string, std::string> queryParams;
 	public:
-		cgiRequest(const std::string &path, const std::string &method, const std::string &queryString, const std::string &protocol, const std::string &bodyData, const std::string &contentType);
+		cgiRequest(const Request &req, const std::string &path, const std::string &method, const std::string &queryString, const std::string &protocol, const std::string &bodyData, const std::string &contentType);
 		~cgiRequest();
 
 		void		setEnvironmentVariables(const std::string &contentType);
@@ -33,9 +40,13 @@ class cgiRequest
 		std::string	getQueryString();
 		std::string	getProtocol();
 		std::string	getBodyData();
+		
 		std::map<std::string, std::string>	getEnv();
 };
 
 std::string findQueryStr(const std::string &path);
 std::string findPath(const std::string &path);
 void		cleanEnv(char **envp);
+
+
+# endif

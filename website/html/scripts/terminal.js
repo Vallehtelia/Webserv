@@ -23,11 +23,11 @@ promptInput.addEventListener('keydown', function(event) {
 
 const sendRequest = async (script) => {
 	try {
-		const response = await fetch(`/cgi-bin/${script}`);
+		const response = await fetch(`/cgi/cgi-bin/${script}`);
 		if (response.ok) {
 			
 			// Fetch the CGI output HTML
-			const terminalOutput = await fetch('/cgi_output.html');
+			const terminalOutput = await fetch('/cgi/cgi_output.html');
 			
 			if (terminalOutput.ok) {
 				const bodyContent = await terminalOutput.text();

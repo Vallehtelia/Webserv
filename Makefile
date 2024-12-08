@@ -1,7 +1,7 @@
 NAME = socket
 
 REQUEST_DIR = ./request/
-REQUEST_FILES = RequestHandler.cpp Request.cpp
+REQUEST_FILES = RequestHandler.cpp Request.cpp cgi_request.cpp
 
 RESPONSE_DIR = ./response/
 RESPONSE_FILES = Response.cpp
@@ -21,8 +21,6 @@ EVENT_FILES = eventLoop.cpp
 PARSE_DIR = ./parsing/
 PARSE_FILES = ServerConfig.cpp LocationConfig.cpp parseConfFile.cpp ConfigValidator.cpp config.cpp
 
-CGI_DIR = ./cgi/
-CGI_FILES = cgi_request.cpp
 
 SRC += $(addprefix $(SRC_DIR), $(SRC_FILES))
 SRC += $(addprefix $(REQUEST_DIR), $(REQUEST_FILES))

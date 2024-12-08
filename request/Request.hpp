@@ -64,6 +64,7 @@ class Request {
         bool                                isMultiPart() const;
         void                                validateHeaders();
         LocationConfig                      getLocation() const;
+        std::map<std::string, std::string>  getQueryParams() const;
         Request &operator=(const Request &rhs);
 
     private:

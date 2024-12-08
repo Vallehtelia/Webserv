@@ -1,3 +1,7 @@
+import { directoryListing } from './directoryListing.js';
+import {createImageWindow, displayMedia} from './displayImage.js'
+
+
 document.addEventListener('DOMContentLoaded', () => {
     // Elements for the image upload form
     const imageUploadForm = document.getElementById('imageUploadForm');
@@ -9,7 +13,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageDiv = document.getElementById('showImageDiv');
     const imageWindow = document.getElementById('cgi-image-window');
     const computerScreen = document.getElementById('computer-screen');
+    const editedImage = document.getElementById('edited_image')
+    const uploadEditedImage = document.getElementById('upload-edited');
+    let selectedFilter = null;
+    let originalImageUrl = null;
+    let originalImageName = null;
 
+    let formData;
+
+    
+    console.log("COMPUTER SCREEN SCRIPTS.JS: ", computerScreen)
+    directoryListing(computerScreen)
     // Monitor file selection
     fileInput.addEventListener('change', () => {
         if (fileInput.files.length > 0) {
@@ -22,143 +36,213 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Handle POST request for image upload and processing
-    submitPostRequestButton.addEventListener('click', async () => {
-        const formData = new FormData(imageUploadForm);
 
-        // Clear previous response
-        postResponseDiv.innerHTML = '';
+        
 
-        // Debug: Log form data before sending
-        console.log('Form data before sending:');
+    
+
+    const changeFilter = (newSrc, filter) => {
+        selectedFilter = filter;
+        console.log("set filter to: ", filter)
+        if (filter == "none")
+            editedImage.src = originalImageUrl
+        else
+            editedImage.src = newSrc;
+    }
+
+    const createFilterElement = (filter, imageUrl) => {
+        const li = document.createElement('li')
+        li.classList.add("cgi-filter")
+
+        const img = document.createElement("img")
+        img.classList.add("image-filter-preview")
+        if (filter == "none")
+            imageUrl = originalImageUrl
+        img.src = imageUrl
+        console.log("image src  is: ", img.src)
+        const p = document.createElement("p")
+        p.classList.add("filter-name")
+        p.innerHTML = filter.split('.')[0];
+        li.appendChild(img)
+        li.appendChild(p)
+        li.addEventListener('click', () => {
+            changeFilter(img.src, filter);
+        })
+        return li
+    }
+
+
+
+    async function fetchPreviewImage(filter, formData) {
+        console.log("fetching: ", filter);
+        formData.append('preview', 'true');
+        printFormData(formData)
+        try {
+            const response = await fetch(`/cgi/cgi-bin/${filter}`, {
+                method: 'POST',
+                body: formData,
+            });
+            if (response.ok) {
+                const jsonResponse = await response.json(); // Await the JSON response
+                const imageUrl = jsonResponse.path; // Get the path from the response
+                console.log(imageUrl);
+                return imageUrl; // Return the image URL
+            } else {
+                console.log("error in response:");
+                throw new Error("Failed to fetch preview image.");
+            }
+        } catch (error) {
+            console.error('Error fetching preview image:', error);
+        }
+    }
+    
+   
+    const showFilters = async (formData) => {
+        const filters = ['none', 'bw.py', 'sepia.py'];
+        const filterList = document.getElementById("cgi_filter-list");
+        const filterListContainer = document.getElementById("cgi-filter-list-container")
+        
+        for (const filter of filters) {
+            console.log("creating element for :", filter)
+            let imageUrl;
+            if (filter != "none")
+                imageUrl = await fetchPreviewImage(filter, formData)
+            else
+                imageUrl = originalImageUrl
+            console.log(imageUrl)
+            const li = createFilterElement(filter, imageUrl);
+            console.log(li, filterList)
+            filterList.appendChild(li);
+            // console.log(filterList)
+        }
+        filterListContainer.style.visibility = "visible"
+    }
+
+
+    const printFormData = (formData) => {
+        console.log('Form data:');
         formData.forEach((value, key) => {
             console.log(key, value);
         });
+    }
+
+    submitPostRequestButton.addEventListener('click', async () => {
+        formData = new FormData(imageUploadForm);
+        console.log("hola")
+        // Clear previous response
+        postResponseDiv.innerHTML = '';
+
+
+        printFormData(formData);
 
         try {
-            const response = await fetch('/cgi-bin/edit_image.py', {
+            const response = await fetch('/temp', {
                 method: 'POST',
                 body: formData
             });
-
             if (response.ok) {
-                const resultHtml = await response.text();
-                postResponseDiv.innerHTML = resultHtml; // Display server response
+                console.log("upload ok")
+                const jsonResponse = await response.json();
+                console.log(jsonResponse)
+                originalImageUrl = jsonResponse.uploadedFiles[0].fileurl
+                const filename = jsonResponse.uploadedFiles[0].filename
+                originalImageName = filename
+                await showFilters(formData);
+                editedImage.src = originalImageUrl;
+
             } else {
-                // postResponseDiv.innerHTML = '<p style="color:red;">Failed to upload image</p>';
-				const resultHtml = await response.text();
-                const textContainer = document.createElement("div");
-                textContainer.innerHTML = resultHtml;
-                textContainer.classList.add("text-container")
-                const imageWindow = createImageWindow();
-				imageWindow.appendChild(textContainer);
+
+				// const resultHtml = await response.text();
+                // const textContainer = document.createElement("div");
+                // textContainer.innerHTML = resultHtml;
+                // textContainer.classList.add("text-container")
+                // const imageWindow = createImageWindow();
+				// imageWindow.appendChild(textContainer);
                 console.error('Server responded with status:', response.status);
             }
         } catch (error) {
-            console.error('Error:', error);
+            console.error('submit Error:', error);
+            console.log(response)
             postResponseDiv.innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
         }
     });
 
 
-    // <div id="computer-screen" class="computer-screen-class cgi-computer-screen">
-    // <div id="cgi-image-window" class="cgi-image-window" style="visibility: hidden;">
-    //     <div class="cgi-output-window-header">
-    //         <div class="cgi-header-button-container">
-    //             <button class="cgi-header button">X</button>
-    //         </div>
-    //     </div>
-    //     <div id="showImageDiv" class="cgi-output-container">
-    //     </div>
-    //     <div id="postResponse">
-    //     </div>
-    // </div>
-
-    function createImageWindow() {
-        computerScreen.innerHTML = "";
-        const imageWindow = document.createElement('div');
-        imageWindow.classList.add('cgi-image-window');
-        imageWindow.style.visibility = 'hidden'; // Initially hidden
-    
-        const header = document.createElement('div');
-        header.classList.add('cgi-output-window-header');
-    
-        const headerButtonContainer = document.createElement('div');
-        headerButtonContainer.classList.add('cgi-header-button-container');
-    
-        const closeButton = document.createElement('button');
-        closeButton.classList.add('cgi-header', 'button');
-        closeButton.textContent = 'X';
-    
-        // Attach the close button to the header
-        headerButtonContainer.appendChild(closeButton);
-        header.appendChild(headerButtonContainer);
-    
-        // Create the output container
-        const outputContainer = document.createElement('div');
-        outputContainer.classList.add('cgi-output-container');
-    
-        const showImageDiv = document.createElement('div');
-        showImageDiv.classList.add('show-image-div');
-        outputContainer.appendChild(showImageDiv);
-    
-        // Create a div for post-response
-        const postResponse = document.createElement('div');
-        postResponse.id = 'postResponse';
-        outputContainer.appendChild(postResponse);
-    
-        // Append the header and output container to the image window
-        imageWindow.appendChild(header);
-        imageWindow.appendChild(outputContainer);
-    
-        // Append the image window to the container
-        document.getElementById('computer-screen').appendChild(imageWindow);
-    
-        // Add event listener to close button
-        closeButton.addEventListener('click', function () {
-            imageWindow.remove();  // Hide the image window when close button is clicked
-        });
-    
-
-        imageWindow.style.visibility = 'visible';
-        return imageWindow;
-    }
-
-
-function displayImage(file, container) {
-    // Create an image element and set the source to the uploaded file
-    console.log(file)
-    const image = document.createElement('img');
-    image.classList.add('cgi-output-image');
-    image.src = file; // Create a URL for the file
-    image.alt = 'Processed image';
-    container.appendChild(image);
-}
-
-    // Handle GET request for image display
-    showImageButton.addEventListener('click', async () => {
-        // Clear previous image
-        imageDiv.innerHTML = '';
+    const clearTempFolder = async () => {
         try {
-            const response = await fetch('/cgi-bin/show_image.py');
+            const response = await fetch(`/cgi/cgi-bin/clear_temp.sh`, {
+                method: 'DELETE',
+            });
+    
+            // Check if the response is successful (status 200)
             if (response.ok) {
-                const imageBlob = await response.blob();
-                const imageUrl = URL.createObjectURL(imageBlob);
-                console.log(imageUrl)
-                computerScreen.innerHTML = "";
-                const imageWindow = createImageWindow();
-                console.log(imageWindow)
-                displayImage(imageUrl, imageWindow);
-                // imageDiv.innerHTML += `<img class="cgi-output-image" src="${imageUrl}" alt="Processed image">`;
-                // imageWindow.style.visibility = 'visible';
+                const jsonResponse = await response.json();
+                console.log('Success:', jsonResponse);
             } else {
-                imageDiv.innerHTML = '<p style="color:red;">Failed to load image.</p>';
-                console.error('Server responded with status:', response.status);
+                console.log('Failed to clear temp folder', response.status);
             }
         } catch (error) {
             console.error('Error:', error);
-            imageDiv.innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
         }
+    }
+
+    const uploadFilteredImage = async () => {
+        const filterListContainer = document.getElementById("cgi-filter-list-container")
+
+        formData.append('preview', 'false');
+        printFormData(formData)
+
+        try {
+            let response;
+            if (selectedFilter == "none")
+            {
+                response = await fetch('uploads/', {
+                    method: 'POST',
+                    body: formData,
+                });
+            }
+            else
+            {
+
+                response = await fetch(`cgi/cgi-bin/${selectedFilter}`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+            }
+            if (response.ok) {
+                console.log(response)
+                const jsonResponse = await response.json();
+                if (!jsonResponse.ok)
+                    console.log("json errooor")
+                console.log("json response: ", jsonResponse);
+                filterListContainer.style.visibility = "hidden";
+                document.getElementById("cgi_filter-list").innerHTML = "";
+                console.log("clearing temp")
+                clearTempFolder();
+                selectedFilter = null;
+                originalImageName = null;
+                originalImageUrl = null;
+                directoryListing(computerScreen);
+                imageUploadForm.reset();
+
+            } else {
+                console.log("Error uploading filtered image.");
+            }
+        } catch (error) {
+            console.error("Error during upload:", error);
+        }
+    };
+
+    uploadEditedImage.addEventListener('click', async (formData) => {
+        uploadFilteredImage(formData);
     });
+
 });
+
+
+
+
+
+
 

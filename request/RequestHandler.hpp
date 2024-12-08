@@ -10,6 +10,7 @@
 #include <fstream>
 #include <unordered_map>
 #include <filesystem>
+#include "cgi_request.hpp"
 
 #include "../parsing/LocationConfig.hpp"
 
@@ -34,6 +35,8 @@ private:
 	void handleMultipartRequest(const Request &req, Response &res);
 	bool validFile(const std::string& filePath);
 	std::string getFilepath(std::string filepath);
+	std::string generateDirectoryListing(const std::string& directoryPath);
+	void handleCgi(Request &req);
 	std::string				_body;
     std::string				_statusLine;
     std::string				_headers;
@@ -41,8 +44,10 @@ private:
 	std::string				_uri;
 	std::string				_method;
 	std::string				_contentType;
+	std::string				_uploadPath;
 	int						_statusCode;
 	LocationConfig 			_location;
+	std::string				_responseFileUrl;
 };
 
 #endif

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/venv/bin/python3
 import os
 import sys
 import re
@@ -48,7 +48,6 @@ def main():
     boundary = content_type.split("boundary=")[-1]
     content_length = int(os.environ.get("CONTENT_LENGTH", 0))
     data = sys.stdin.buffer.read(content_length)
-
     parts = data.split(f"--{boundary}".encode())
 
 	#infinite loop test
