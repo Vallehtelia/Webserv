@@ -1,12 +1,9 @@
-# This is the best dockerfile!!! It is the best dockerfile in the world!!!
-#
-# run this using 	docker build --no-cache -t cpp-webserver . 2>&1 | tee build.log
-# or just 			docker build -t cpp-webserver .
-# then 				docker run -d -p 8002:8002 --name webserverc cpp-webserver
-# or without name 	docker ps
-# then				docker stop <id from ps> or webserverc
-# Use a lightweight Linux distribution like Ubuntu
-FROM ubuntu
+# DO NOT DELETE OR MODIFY THIS FILE!!! SAVE IT WITH A DIFFERENT NAME!!!
+# THEN USE ANOTHER DOCKERFILE IF NECESSARY
+# Use a lightweight Linux distribution
+FROM ubuntu:20.04
+
+ARG DEBIAN_FRONTEND=noninteractive
 
 # Update package list and install necessary tools
 ARG CACHE_BUSTER=1
@@ -30,11 +27,16 @@ RUN pip install --no-cache-dir Pillow
 # Set the working directory
 WORKDIR /app
 
-# Copy your C++ server code to the container
+# Copy your server code to the container
 COPY . /app
+
+# Ensure correct permissions
+RUN chmod -R 755 /app
+
+#RUN chmod +r /app/main.cpp
 RUN echo HELLO
 RUN ls -l /app
-# RUN make fclean && make
+RUN make fclean && make
 
 # Expose the server port
 EXPOSE 8002
@@ -45,3 +47,6 @@ EXPOSE 8002
 
 # Alternatively, if running Python, you can use:
 # CMD ["/venv/bin/python3", "/app/cgi-bin/edit_image.py"]
+
+# Set the default command to run the server
+CMD ["./socket", "configuration/default.conf"]
