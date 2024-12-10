@@ -1,4 +1,4 @@
-#!/venv/bin/python3
+#!/usr/bin/env python3
 from PIL import Image
 import os
 import sys
@@ -6,8 +6,8 @@ import json
 import tempfile
 import io
 
-UPLOAD_FOLDER = '/app/website/uploads/'
-TEMP_FOLDER = '/app/website/temp/'
+UPLOAD_FOLDER = './website/uploads/'
+TEMP_FOLDER = './website/temp/'
 
 def parse_multipart_data():
     """ Parse raw multipart form data from stdin """
@@ -116,6 +116,7 @@ def main():
         result = convert_to_bw(form_data)
 
         # Return a JSON response
+        print("Content-Type: application/json\r\n")
         print(json.dumps(result))
     
     except Exception as e:

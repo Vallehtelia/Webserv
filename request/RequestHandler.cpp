@@ -66,19 +66,51 @@ void RequestHandler::handleRequest( Request& req, Response& res)
     }
 }
 
+void RequestHandler::readCgiOutputFile() {
+    
+    std::ifstream inputFile(_filePath);
+
+    if (!inputFile.is_open()) {
+        std::cerr << "Error: Could not open file for reading." << std::endl;
+        return ;
+    }
+    std::string contentType;
+    std::string line;
+    std::stringstream body;
+
+    std::getline(inputFile, contentType);
+
+    if (contentType == "Content-Type: application/json\r\n") {
+        std::cout << "Content-Type: " << contentType << std::endl;
+    } else {
+        std::cout << "The first line is not 'Content-Type: application/json\r\n'" << std::endl;
+        inputFile.close();
+        return ;
+    }
+
+    while (std::getline(inputFile, line)) {
+        body << line << "\n";
+    }
+
+    _body = body.str();
+    inputFile.close();
+}
+
 void RequestHandler::handleCgi(Request &req)
 {
 	std::cout << "content type: " << req.getContentType() << std::endl;
 	std::cout << "THE REQUEST IS CGI" << std::endl;
 	std::string queryString = findQueryStr(req.getUri());
 	std::string directPath;
-
 	directPath = _filePath;
 	std::cout << "DIRECT PATH: " << directPath << std::endl;
 	cgiRequest cgireg(req, directPath, req.getMethod(), queryString, req.getVersion(), req.getBody(), req.getContentType());
 	int execute_result = cgireg.execute();
 	if (execute_result == 0)
+    {
         _filePath = getFilepath("/cgi/tmp/cgi_output.html");
+    }
+
 }
 
 std::string RequestHandler::getContentType(const std::string& path) const {
