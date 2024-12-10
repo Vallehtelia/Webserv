@@ -16,7 +16,6 @@ cgiRequest::cgiRequest(const Request &req, const std::string &path, const std::s
 		query_str = "";
 	setEnvironmentVariables(contentType);
 }
-
 cgiRequest::~cgiRequest()
 {
 	std::cout << "cgi request deconstructor" << std::endl;
@@ -342,14 +341,14 @@ void	handleCgiRequest(Request &req, const Socket &socket)
 	std::string	queryString = findQueryStr(req.getUri());
 	std::string	directPath = findPath(req.getUri());
 	std::cout << "DIRECTPATH: " << directPath << std::endl;
-	cgiRequest	cgireq(directPath, req.getMethod(), queryString, req.getVersion(), req.getBody(), req.getContentType());
+	cgiRequest	cgireq(req, directPath, req.getMethod(), queryString, req.getVersion(), req.getBody(), req.getContentType());
 	int			executeResult = cgireq.execute();
 	if (executeResult != 0)
 		req.setPath(socket.getServer().getErrorPage(executeResult));
 	switch (executeResult)
 	{
 	case 0:
-		req.setPath("/cgi_output.html");
+		req.setPath("/cgi/tmp/cgi_output.html");
 		break;
 	case 404:
 		req.setState(State::CGI_NOT_FOUND);

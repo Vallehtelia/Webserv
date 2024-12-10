@@ -190,10 +190,10 @@ static int	checkRecievedData(int &fd, int bytesRead, std::unordered_map<int, std
 * @param path Path of the request
 * @return true if the request is a CGI request, false otherwise
 */
-static bool	isCgi(const std::string &path)
-{
-	return (path.find("/cgi-bin/") != std::string::npos || (path.size() > 3 && path.substr(path.size() - 3) == ".py"));
-}
+// static bool	isCgi(const std::string &path)
+// {
+// 	return (path.find("/cgi-bin/") != std::string::npos || (path.size() > 3 && path.substr(path.size() - 3) == ".py"));
+// }
 
 /*
 * @brief Handles the client data and sends the response back to the client
@@ -225,13 +225,13 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 			req.parseRequest(rawRequest, socket);
 			if (req.getState() == State::INCOMPLETE)
 				continue;
-			}
+			
 			if (req.getState() == State::COMPLETE || req.getState() == State::ERROR)
 			{
 				req.printRequest();
 				if (req.getState() != State::ERROR)
 				{
-					if (isCgi(req.getUri()))
+					if (req.getLocation().getLocation() == "/cgi")
 						handleCgiRequest(req, socket);
 				}
 				//req.printRequest();

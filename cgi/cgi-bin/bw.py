@@ -116,7 +116,7 @@ def main():
         result = convert_to_bw(form_data)
 
         # Return a JSON response
-        print("Content-Type: application/json\r\n")
+        # print("Content-Type: application/json\r\n")
         print(json.dumps(result))
     
     except Exception as e:
