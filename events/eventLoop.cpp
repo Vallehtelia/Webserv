@@ -29,6 +29,13 @@
 	return 0;
 }*/
 
+/*
+* @brief Accept new connection
+*
+* @param fd File descriptor of the server socket
+* @param epoll_fd File descriptor for epoll
+* @return File descriptor of the new client socket
+*/
 int acceptConnection(int fd, int epoll_fd)
 {
     struct sockaddr_in client_addr;
@@ -71,7 +78,9 @@ int acceptConnection(int fd, int epoll_fd)
     return client_fd;
 }
 
-
+/*
+* @brief Remove temporary cgi files
+*/
 void cleanupTempFiles()
 {
 	std::string tempInFilePath = "./html/tmp/cgi_output.html";
@@ -88,8 +97,114 @@ void cleanupTempFiles()
 	}
 }
 
+/*
+* @brief Close file descriptor if open
+*
+* @param fd File descriptor to close
+*/
+static void	closeOnce(int &fd)
+{
+	if (fd != -1)
+	{
+		close(fd);
+		fd = -1;
+	}
+}
 
+/*
+* @brief Send data to the client and handle timeouts
+*
+* @param httpRespose HTTP response to send
+* @param event epoll_event object
+*/
+static void	sendData(std::string httpRespose, epoll_event &event)
+{
+	size_t		totalSent = 0;
+	size_t		messageLength = httpRespose.length();
+	const char	*messagePtr = httpRespose.c_str();
+	int			maxRetries = 10; // testissa vaan ettei jaa infinite looppiin lahettamaan vaan aiheuttaa sitten timeoutin.
+	int			retries = 0;
+	while (totalSent < messageLength)
+	{
+		size_t	bytesSent = send(event.data.fd, messagePtr + totalSent, messageLength - totalSent, 0);
+		if (bytesSent < 0)
+		{
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+			{
+				if (++retries >= maxRetries)
+				{
+					std::cerr << RED << "Send timed out after multiple retries" << DEFAULT << std::endl;
+					closeOnce(event.data.fd);
+					return ;
+				}
+				continue ;
+			}
+			else
+			{
+				std::cerr << RED << "Send to client failed" << DEFAULT << std::endl;
+				closeOnce(event.data.fd);
+				break ;
+			}
+		}
+		totalSent += bytesSent;
+		retries = 0;
+	}
+}
 
+/*
+* @brief Check if the received data is valid or end of file
+*
+* @param fd File descriptor of the client socket
+* @param bytesRead Number of bytes read
+* @param clientData Map of client file descriptors to data
+* @return 1 if the data is invalid or end of file, 0 otherwise
+*/
+static int	checkRecievedData(int &fd, int bytesRead, std::unordered_map<int, std::vector<char>> &clientData)
+{
+	if (bytesRead != 0)
+	{
+		if (errno == EAGAIN || errno == EWOULDBLOCK)
+		{
+			std::cerr << "Socket temporarily unavailable (EAGAIN/EWOULDBLOCK, fd: " << fd << ")\n";
+			return 0;
+		}
+		else
+		{
+			std::cerr << RED << "Recv failed with errno: " << errno << DEFAULT << std::endl;
+			closeOnce(fd);
+			clientData.erase(fd);
+			return 1;
+		}
+	}
+	else
+	{
+		closeOnce(fd);
+		clientData.erase(fd);
+		return 1;
+	}
+}
+
+/*
+* @brief Check if the request is a CGI request
+*
+* @param path Path of the request
+* @return true if the request is a CGI request, false otherwise
+*/
+static bool	isCgi(const std::string &path)
+{
+	return (path.find("/cgi-bin/") != std::string::npos || (path.size() > 3 && path.substr(path.size() - 3) == ".py"));
+}
+
+/*
+* @brief Handles the client data and sends the response back to the client
+*
+* @param fd File descriptor of the client socket
+* @param req Request object
+* @param event epoll_event object
+* @param client_data Map of client file descriptors to data
+* @param socket Server socket
+* @return int 0 on success, -1 on failure
+*/
 int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unordered_map<int, std::vector<char>> &client_data, const Socket &socket)
 {
     std::cout << "RECEIVING DATA FROM FD: " << fd << std::endl; // debug
@@ -97,39 +212,28 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 	{
 		char buffer[4000] = {0};
 		int bytes_read = recv(fd, buffer, sizeof(buffer) - 1, 0);
-		if (bytes_read < 0)
+		if (bytes_read <= 0)
 		{
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
-			{
-				std::cerr << "errno EAGAIN or EWOULDBLOCK\n";
-				break;
-			}
-			else
-			{
-				perror("recv");
-				// Close connection if read fails or end of data
-				close(fd);
-				client_data.erase(fd);
+			if (checkRecievedData(fd, bytes_read, client_data))
 				return -1;
-			}
-		}
-		else if (bytes_read == 0)
-		{
-			close(fd);
-			client_data.erase(fd);
-			return -1;
+			else
+				break;
 		}
 		else
 		{
 			std::string rawRequest(buffer, bytes_read);
 			req.parseRequest(rawRequest, socket);
 			if (req.getState() == State::INCOMPLETE)
-			{
 				continue;
 			}
 			if (req.getState() == State::COMPLETE || req.getState() == State::ERROR)
 			{
-				// req.printRequest();
+				req.printRequest();
+				if (req.getState() != State::ERROR)
+				{
+					if (isCgi(req.getUri()))
+						handleCgiRequest(req, socket);
+				}
 				//req.printRequest();
 				Response res;
 				// std::cout << "URI FROM EVENT LOOP: " << req.getUri() << std::endl;
@@ -142,28 +246,10 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 
 				// std::cout << http_response.length() << "lenght here!!!\n";
 				// res.printResponse();
-				size_t total_sent = 0;
-				size_t message_length = http_response.length();
-				const char *message_ptr = http_response.c_str();
-				while (total_sent < message_length)
-				{
-					ssize_t bytes_sent = send(event.data.fd, message_ptr + total_sent, message_length - total_sent, 0);
-					if (bytes_sent < 0)
-					{
-						if (errno == EAGAIN || errno == EWOULDBLOCK) {
-							// Socket is not ready, could add a delay or handle as needed
-							continue;
-						} else {
-							perror("send");
-							close(event.data.fd);
-							break;
-						}
-					}
-					total_sent += bytes_sent;
-				}
+				sendData(http_response, event);
 				std::cout << "RESPONSE SENT" << std::endl;
 				req.reset();
-				close(event.data.fd);
+				closeOnce(event.data.fd);
 				break;
 			}
 			cleanupTempFiles();
@@ -172,6 +258,57 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 	return 0;
 }
 
+/*
+* @brief Add new file descriptor to client_to_server_map
+*
+* @param client_to_server_map Map of client to server file descriptors that are connected
+* @param fd File descriptor of the server socket
+* @param new_fd File descriptor of the new client socket
+* @param requests Map of client file descriptors to Request objects
+* @param client_data Map of client file descriptors to data
+*/
+static void	addNewFd(std::unordered_map<int, int> &client_to_server_map,
+						const int &fd,
+						const int &new_fd,
+						std::unordered_map<int, Request> &requests,
+						std::unordered_map<int, std::vector<char>> &client_data)
+{
+	if (client_to_server_map.find(new_fd) == client_to_server_map.end())
+		client_to_server_map[new_fd] = fd;
+	else
+		std::cerr << RED << "client_fd: " << new_fd << " already exists in map" << DEFAULT << std::endl;
+	requests[new_fd] = Request();
+	client_data[new_fd] = std::vector<char>();
+}
+
+/*
+* @brief Cleanup client connection
+*
+* @param fd File descriptor to close
+* @param epoll_fd File descriptor for epoll
+* @param client_to_server_map Map of client to server file descriptors
+* @param requests Map of client file descriptors to Request objects
+* @param client_data Map of client file descriptors to data
+*/
+static void	cleanupClientConnection(int fd,
+									int epoll_fd,
+									std::unordered_map<int, int> &client_to_server_map,
+									std::unordered_map<int, Request> &requests,
+									std::unordered_map<int, std::vector<char>> &client_data)
+{
+	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
+	closeOnce(fd);
+	client_to_server_map.erase(fd);
+	requests.erase(fd);
+	client_data.erase(fd);
+}
+
+/*
+* @brief Event loop for handling incoming connections and data
+*
+* @param sockets Vector of server sockets
+* @param epoll_fd File descriptor for epoll
+*/
 void event_loop(const std::vector<Socket> &sockets, int epoll_fd)
 {
     struct epoll_event events[MAX_EVENTS];
@@ -190,7 +327,6 @@ void event_loop(const std::vector<Socket> &sockets, int epoll_fd)
 
         for (int i = 0; i < num_events; ++i)
         {
-			std::cout << "i = " << i << std::endl;
             int fd = events[i].data.fd;
 
             // 1. Tarkista, onko fd server-socket
@@ -201,25 +337,7 @@ void event_loop(const std::vector<Socket> &sockets, int epoll_fd)
             {
                 int new_fd = acceptConnection(fd, epoll_fd);
                 if (new_fd > 0)
-				{
-					std::cout << "ACCEPTED CONNECTION ON PORT " << it->getPort() << std::endl;
-
-					// Tallenna asiakas-socketin ja server-socketin välinen yhteys
-					if (client_to_server_map.find(new_fd) == client_to_server_map.end())
-					{
-						client_to_server_map[new_fd] = fd;
-						std::cout << "Mapped client_fd: " << new_fd << " to server_fd: " << fd << std::endl;
-					}
-					else
-					{
-						std::cerr << "client_fd: " << new_fd << " already exists in map." << std::endl;
-					}
-
-					// Lisää uusi fd requests- ja client_data-karttoihin
-					requests[new_fd] = Request();
-                    std::cout << " CREATED A NEW REQUEST OBJECT" << std::endl;
-					client_data[new_fd] = std::vector<char>();
-				}
+					addNewFd(client_to_server_map, fd, new_fd, requests, client_data);
                 continue;
             }
 
@@ -242,60 +360,24 @@ void event_loop(const std::vector<Socket> &sockets, int epoll_fd)
                     {
                         const Socket &socket = *server_socket_it;
                         handleClientData(fd, requests[fd], events[i], client_data, socket);
+						client_to_server_map.erase(fd);
                     }
                     else
                     {
                         std::cerr << "Failed to find server socket for client_fd: " << fd << std::endl;
+						cleanupClientConnection(fd, epoll_fd, client_to_server_map, requests, client_data);
                     }
                 }
                 else
 				{
-					std::cerr << "Unknown client_fd: " << fd << " - closing connection." << std::endl;
+					std::cerr << RED << "Unknown client_fd: " << fd << " - closing connection." << DEFAULT << std::endl;
 					for (const auto &entry : client_to_server_map)
 					{
 						std::cout << "client_fd: " << entry.first << ", server_fd: " << entry.second << std::endl;
 					}
-					epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
-					close(fd);
-					requests.erase(fd);
-					client_data.erase(fd);
+					cleanupClientConnection(fd, epoll_fd, client_to_server_map, requests, client_data);
 				}
             }
         }
     }
 }
-
-/*void	event_loop(const std::vector<Socket> &sockets, int epoll_fd)
-{
-	struct epoll_event events[MAX_EVENTS];
-	std::unordered_map<int, Request> requests;
-	std::unordered_map<int, std::vector<char>> client_data;
-
-	while (true)
-	{
-		int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-        if (num_events == -1)
-		{
-            std::cerr << RED << "epoll_wait failed" << DEFAULT << std::endl;
-            break;
-        }
-		for (int i = 0; i < num_events; ++i)
-		{
-			int fd = events[i].data.fd;
-			Request &req = requests[fd];
-
-			auto it = std::find_if(sockets.begin(), sockets.end(),
-						[fd](const Socket &sock) { return sock.getSocketFd() == fd; });
-			if (it != sockets.end())
-			{
-				if (acceptConnection(fd, epoll_fd) == 0)
-					std::cout << "ACCEPTED CONNECTION ON PORT " << it->getPort() << std::endl;
-				continue;
-			}
-			else if (events[i].events & EPOLLIN)
-			{
-				handleClientData(fd, req, events[i], client_data);
-			}
-		}
-	}
-}*/
