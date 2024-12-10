@@ -94,6 +94,10 @@ void RequestHandler::readCgiOutputFile() {
 
     _body = body.str();
     inputFile.close();
+    _contentType = contentType;
+    std::cout << "----- CGI RESPONSE -----" << std::endl;
+    std::cout << "content-type: " << _contentType << std::endl;
+    std::cout << "body: " << _body << std::endl;
 }
 
 void RequestHandler::handleCgi(Request &req)
