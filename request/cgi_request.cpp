@@ -1,10 +1,12 @@
 
+
 #include <iostream>
 #include <filesystem>
 #include "cgi_request.hpp"
 
-cgiRequest::cgiRequest(const std::string &path, const std::string &method, const std::string &queryString, const std::string &protocol, const std::string &bodyData, const std::string &contentType) : script_path(path), request_method(method), httpProtocol(protocol), body_data(bodyData)
+cgiRequest::cgiRequest(const Request &req, const std::string &path, const std::string &method, const std::string &queryString, const std::string &protocol, const std::string &bodyData, const std::string &contentType) : script_path(path), request_method(method), httpProtocol(protocol), body_data(bodyData)
 {
+	queryParams = req.getQueryParams();
 	std::cout << "cgi request constructor" << std::endl;
 	if (!queryString.empty())
 	{
@@ -14,7 +16,6 @@ cgiRequest::cgiRequest(const std::string &path, const std::string &method, const
 		query_str = "";
 	setEnvironmentVariables(contentType);
 }
-
 cgiRequest::~cgiRequest()
 {
 	std::cout << "cgi request deconstructor" << std::endl;
@@ -32,6 +33,11 @@ void	cgiRequest::setEnvironmentVariables(const std::string &contentType)
 	env["QUERY_STRING"] = query_str;
 	env["HTTP_PROTOCOL"] = httpProtocol;
 
+    for (const auto& param : queryParams) {
+        std::string envKey = "QUERY_PARAM_" + param.first;  // For example, QUERY_PARAM_KEY
+        env[envKey] = param.second;  // The value associated with the parameter
+		std::cout << param.first << param.second << std::endl;
+    }
 	if (request_method == "POST")
 	{
 		if (!contentType.empty())
@@ -193,6 +199,8 @@ static bool	ensureFolderExists(const std::string &folderPath)
 	return true;
 }
 
+
+
 /*
 * @brief Execute the CGI script
 *
@@ -203,9 +211,9 @@ int	cgiRequest::execute()
 	int status = 0;
 	if ((status = isValidCgi()) == 0)
 	{
-		if (!ensureFolderExists("./html"))
+		if (!ensureFolderExists("./cgi"))
 			return 500;
-		if (!ensureFolderExists("./html/tmp"))
+		if (!ensureFolderExists("./cgi/tmp"))
 			return 500;
 		pid_t pid = fork();
 		if (pid == -1)
@@ -215,7 +223,7 @@ int	cgiRequest::execute()
 		}
 		else if (pid == 0)
 		{
-			std::string	outputPath = "./html/tmp/cgi_output.html";
+			std::string	outputPath = "./cgi/tmp/cgi_output.html";
 			int	outputFile = open(outputPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
 			if (outputFile == -1)
 			{
@@ -226,7 +234,7 @@ int	cgiRequest::execute()
 			close(outputFile);
 			if (request_method == "POST" && !body_data.empty())
 			{
-				std::string	tmpFilePath = "./html/tmp/cgi_input.html";
+				std::string	tmpFilePath = "./cgi/tmp/cgi_input.html";
 				std::ofstream	tmpFile(tmpFilePath);
 				if (!tmpFile)
 				{
@@ -247,7 +255,7 @@ int	cgiRequest::execute()
 			}
 			char	*args[] = {const_cast<char *>(script_path.c_str()), nullptr};
 			char	**envp = buildEnv();
-			// std::cerr << "running execve script: " << script_path.c_str() << std::endl; // debugging
+			std::cerr << "running execve script: " << script_path.c_str() << std::endl; // debugging
 			execve(script_path.c_str(), args, envp);
 			perror("execve"); // Lisää tämä rivi, jotta näet tarkemman virheen syyn
 			std::cerr << "Execve failed!" << std::endl;
@@ -333,14 +341,14 @@ void	handleCgiRequest(Request &req, const Socket &socket)
 	std::string	queryString = findQueryStr(req.getUri());
 	std::string	directPath = findPath(req.getUri());
 	std::cout << "DIRECTPATH: " << directPath << std::endl;
-	cgiRequest	cgireq(directPath, req.getMethod(), queryString, req.getVersion(), req.getBody(), req.getContentType());
+	cgiRequest	cgireq(req, directPath, req.getMethod(), queryString, req.getVersion(), req.getBody(), req.getContentType());
 	int			executeResult = cgireq.execute();
 	if (executeResult != 0)
 		req.setPath(socket.getServer().getErrorPage(executeResult));
 	switch (executeResult)
 	{
 	case 0:
-		req.setPath("/cgi_output.html");
+		req.setPath("/cgi/tmp/cgi_output.html");
 		break;
 	case 404:
 		req.setState(State::CGI_NOT_FOUND);

@@ -2,7 +2,9 @@
 <html>
 <head>
     <title>Dynamic Server</title>
-    <script src="./scripts/script.js" defer></script>
+    <script type="module" src="./scripts/directoryListing.js" defer></script>
+    <script type="module" src="./scripts/script.js" defer></script>
+    <script type="module" src="./scripts/displayImage.js" defer></script>
     <link rel="stylesheet" href="./styles/styles.css">
     <link rel="stylesheet" href="./styles/orbit.css">
 </head>
@@ -36,25 +38,31 @@
                         <input type="file" id="image" name="image" accept="image/*">
                         <span id="file-name">No image chosen</span>
                     </div>
-                    <div>
-                        <h4>Add Text to Image</h4>
-                        <label for="name">Text:</label>
-                        <input type="text" id="name" name="name" placeholder="Add text to image">
-                        <small>You can add text that will be embedded on the processed image.</small>
-                    </div>
                 </div>
                 <div>
-                    <button type="button" id="submitPostRequest">Submit Image for Processing</button>
-                    <button type="button" id="showImageRequest">Show Image</button>
+                    <button type="button" id="submitPostRequest">Upload</button>
                 </div>
             </form>
         </div>
 
         <!-- Processed Image Display -->
+         <div id="cgi-filter-list-container"
+            style="visibility:hidden;">
+            <div id="edited-image-container">
+                <img id="edited_image"></img>
+            </div>
+            <h1>choose filter:</h1>
+             <ul id="cgi_filter-list">
+             </ul>
+             <form id="upload-edited">
+                <button type="button" id="upload-edited" class="submit-button">done</button>
+             </form>
+         </div>
         <div class="cgi-image-container form-container">
             <div id="computer-screen" class="computer-screen-class cgi-computer-screen">
                 <div id="cgi-image-window" class="cgi-image-window" style="visibility: hidden;">
                     <div class="cgi-output-window-header">
+
                         <div class="cgi-header-button-container">
                             <button class="cgi-header button">X</button>
                         </div>

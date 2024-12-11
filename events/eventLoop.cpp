@@ -2,7 +2,6 @@
 #include "../epoll/epoll.hpp"
 #include "../request/Request.hpp"
 #include "../request/RequestHandler.hpp"
-#include "../cgi/cgi_request.hpp"
 #include "../response/Response.hpp"
 #include "../sockets/socket.hpp"
 
@@ -191,10 +190,10 @@ static int	checkRecievedData(int &fd, int bytesRead, std::unordered_map<int, std
 * @param path Path of the request
 * @return true if the request is a CGI request, false otherwise
 */
-static bool	isCgi(const std::string &path)
-{
-	return (path.find("/cgi-bin/") != std::string::npos || (path.size() > 3 && path.substr(path.size() - 3) == ".py"));
-}
+// static bool	isCgi(const std::string &path)
+// {
+// 	return (path.find("/cgi-bin/") != std::string::npos || (path.size() > 3 && path.substr(path.size() - 3) == ".py"));
+// }
 
 /*
 * @brief Handles the client data and sends the response back to the client
@@ -226,22 +225,21 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 			req.parseRequest(rawRequest, socket);
 			if (req.getState() == State::INCOMPLETE)
 				continue;
-
-			std::cout << "CONTINUING THE LOOP.." << std::endl; // debug
+			
 			if (req.getState() == State::COMPLETE || req.getState() == State::ERROR)
 			{
 				req.printRequest();
 				if (req.getState() != State::ERROR)
 				{
-					if (isCgi(req.getUri()))
+					if (req.getLocation().getLocation() == "/cgi")
 						handleCgiRequest(req, socket);
 				}
 				//req.printRequest();
 				Response res;
-				std::cout << "URI FROM EVENT LOOP: " << req.getUri() << std::endl;
+				// std::cout << "URI FROM EVENT LOOP: " << req.getUri() << std::endl;
 				RequestHandler requestHandler;
 				requestHandler.handleRequest(req, res);
-				//res.printResponse();
+				// res.printResponse();
 				// Get the full HTTP response string from the Response class
 				std::string http_response = res.getResponseString();
 				// Send the response back to the client
