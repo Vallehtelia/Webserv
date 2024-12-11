@@ -67,7 +67,7 @@ void RequestHandler::handleRequest( Request& req, Response& res)
 }
 
 // void RequestHandler::readCgiOutputFile() {
-    
+
 //     std::ifstream inputFile(_filePath);
 
 //     if (!inputFile.is_open()) {
@@ -213,7 +213,7 @@ std::string RequestHandler::getFilepath(std::string filepath)
     std::cout << "LOCATION ROOT: " << locationRoot << std::endl;
 
     std::cout << _location.getLocation() << std::endl;
-     
+
     // std::cout << "FILEPATH: " << filepath << std::endl;
     removePrefix(filepath, _location.getLocation());
     // std::cout << "FILEPATH AFTER REMOVE PREFIX: " << filepath << std::endl;
@@ -250,7 +250,7 @@ bool RequestHandler::validFile(const std::string& filePath) {
 
         // std::cout << "Canonical Directory Path: " << dirPath << std::endl;
 
-        
+
         if (std::filesystem::relative(fullPath, dirPath).string().find("..") == 0) {
             std::cerr << "Error: Access outside base directory is prohibited." << std::endl;
 			_statusCode = 403;
@@ -372,6 +372,7 @@ void RequestHandler::handleGetRequest(Response& res) {
             std::string directoryListing = generateDirectoryListing(_filePath);
             res.setResponse(200, "text/html", directoryListing);
         } else {
+			// _body = readFileContent()
             res.setResponse(403, "text/html", "Auto-indexing is disabled for this directory.");
         }
     }
@@ -398,18 +399,18 @@ void RequestHandler::handleDeleteRequest(Response& res)
     {
         if (remove(_filePath.c_str()) == 0)
         {
-            res.setResponse(200, "application/json", 
+            res.setResponse(200, "application/json",
                 R"({"status":"success","message":"File deleted successfully","filePath":")" + _filePath + R"("})");
         }
         else
         {
-            res.setResponse(500, "application/json", 
+            res.setResponse(500, "application/json",
                 R"({"status":"error","message":"Failed to delete the file","filePath":")" + _filePath + R"("})");
         }
     }
     else
     {
-        res.setResponse(404, "application/json", 
+        res.setResponse(404, "application/json",
             R"({"status":"error","message":"File not found","filePath":")" + _filePath + R"("})");
     }
 }

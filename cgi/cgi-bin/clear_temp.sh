@@ -6,7 +6,7 @@ if [ "$REQUEST_METHOD" != "DELETE" ]; then
 fi
 
 # Try to remove files in the temp folder
-TEMP_FOLDER="/app/website/temp/"
+TEMP_FOLDER="./website/temp/"
 
 if rm -rf "${TEMP_FOLDER}"*; then
     echo '{"status": "success", "message": "Temporary files cleared."}'
