@@ -4,7 +4,7 @@
 #include <map>
 #include "../request/Request.hpp"
 
-Response::Response() {}
+Response::Response(const Socket &socket) : _socket(socket)  {}
 Response::~Response() {}
 
 
@@ -18,8 +18,6 @@ void Response::printResponse()
     std::cout << std::endl;
     std::cout << "RESPONSE:" << "\033[32m" << std::endl;
     std::cout << getResponseString() << std::endl;
-    std::cout << _body.size() << std::endl;
-    std::cout << _contentLength << std::endl;
     std::cout << "\033[0m" << std::endl;
 }
 
@@ -73,7 +71,7 @@ void Response::setStatusLine()
             _statusLine = "HTTP/1.1 201 Created\r\n";
             break;
         case 400:
-            _statusLine = "HTTP/1.1 400 Bad Request";
+            _statusLine = "HTTP/1.1 400 Bad Request\r\n";
             break;
         case 403:
             _statusLine = "HTTP/1.1 403 Forbidden\r\n";
@@ -119,7 +117,7 @@ std::string Response::getErrorPage() const
 
 void    Response::setError()
 {
-    std::string errorPage = getErrorPage();
+    std::string errorPage =  _socket.getServer().getErrorPage(_statusCode);
     std::cout << "fetching error page: " << errorPage << std::endl;
 	_body = readFileContent(errorPage);
 }

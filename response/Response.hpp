@@ -5,10 +5,12 @@
 #include <cstdio>
 #include "../request/Request.hpp"
 
+#include "../sockets/socket.hpp"
+
 
 class Response {
 public:
-    Response();
+    Response(const Socket &socket);
     ~Response();
 
     void        printResponse();
@@ -31,6 +33,7 @@ private:
     void        setError();
     std::string getErrorPage() const;
     std::string readFileContent(std::string& filePath);
+    Socket      _socket;
 };
 
 #endif
