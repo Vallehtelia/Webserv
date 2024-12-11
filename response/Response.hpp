@@ -20,6 +20,7 @@ public:
     void        setHeaders(std::string &headers);
     void        setUri(std::string &URI);
     std::string getResponseString() const;
+	Socket		getSocket() const;
 private:
     int         _statusCode;
     int         _contentLength;

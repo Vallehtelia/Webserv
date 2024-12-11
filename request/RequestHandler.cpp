@@ -362,8 +362,9 @@ void RequestHandler::handleGetRequest(Response& res) {
             std::string directoryListing = generateDirectoryListing(_filePath);
             res.setResponse(200, "text/html", directoryListing);
         } else {
-			// _body = readFileContent()
-            res.setResponse(403, "text/html", "Auto-indexing is disabled for this directory.");
+			std::string	tmp = res.getSocket().getServer().getIndex();
+			_body = readFileContent(tmp);
+            res.setResponse(200, "text/html", _body);
         }
     }
     else if (validFile(_filePath)) {

@@ -122,7 +122,10 @@ void    Response::setError()
 	_body = readFileContent(errorPage);
 }
 
-
+Socket		Response::getSocket() const
+{
+	return (this->_socket);
+}
 
 std::string Response::readFileContent(std::string& filePath)
 {
