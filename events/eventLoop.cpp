@@ -5,37 +5,6 @@
 #include "../response/Response.hpp"
 #include "../sockets/socket.hpp"
 
-/*int	acceptConnection(int fd, int epoll_fd)
-{
-	struct sockaddr_in client_addr;
-	socklen_t client_len = sizeof(client_addr);
-	int client_fd = accept(fd, (struct sockaddr*)&client_addr, &client_len);
-	if (client_fd < 0)
-	{
-		std::cerr << RED << "Failed to accept connection: " << strerror(errno) << DEFAULT << "\n";
-		return 1;
-	}
-
-	set_non_blocking(client_fd);
-	struct epoll_event event;
-	event.events = EPOLLIN;
-	event.data.fd = client_fd;
-	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) == -1)
-	{
-		std::cerr << RED << "Failed to add client to epoll: " << strerror(errno) << DEFAULT << "\n";
-		close(client_fd);
-		return 1;
-	}
-	return 0;
-}*/
-
-/*
-* @brief Accept new connection
-*
-* @param fd File descriptor of the server socket
-* @param epoll_fd File descriptor for epoll
-* @return File descriptor of the new client socket
-*/
 int acceptConnection(int fd, int epoll_fd)
 {
     struct sockaddr_in client_addr;
