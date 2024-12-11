@@ -69,6 +69,7 @@ class Request {
 
     private:
         Request(const Request &other);
+        size_t                            maxBodySize;
         bool                                received;
         bool                                chunked;
         bool                                _isMultiPart;

@@ -235,11 +235,11 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 						handleCgiRequest(req, socket);
 				}
 				//req.printRequest();
-				Response res;
+				Response res(socket);
 				// std::cout << "URI FROM EVENT LOOP: " << req.getUri() << std::endl;
 				RequestHandler requestHandler;
 				requestHandler.handleRequest(req, res);
-				// res.printResponse();
+				//res.printResponse();
 				// Get the full HTTP response string from the Response class
 				std::string http_response = res.getResponseString();
 				// Send the response back to the client
