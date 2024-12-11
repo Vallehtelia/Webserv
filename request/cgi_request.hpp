@@ -10,6 +10,8 @@
 #include <fstream>
 #include <wait.h>
 #include <fcntl.h>
+#include "../sockets/socket.hpp"
+#include "../request/Request.hpp"
 
 #include "../request/Request.hpp"
 
@@ -44,6 +46,7 @@ class cgiRequest
 		std::map<std::string, std::string>	getEnv();
 };
 
+void	handleCgiRequest(Request &req, const Socket &socket);
 std::string findQueryStr(const std::string &path);
 std::string findPath(const std::string &path);
 void		cleanEnv(char **envp);

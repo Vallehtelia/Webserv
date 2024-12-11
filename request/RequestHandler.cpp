@@ -11,10 +11,10 @@ void RequestHandler::handleRequest( Request& req, Response& res)
     _location = req.getLocation();
 
     prepareHandler(req);
-    if (_location.getLocation() == "/cgi")
-    {
-        handleCgi(req);
-    }
+    // if (_location.getLocation() == "/cgi")
+    // {
+    //     handleCgiRequest(req, );
+    // }
 	if (req.getUri() == "/")
 		req.setPath("/index.html");
 	if (req.getState() == State::CGI_ERROR) // Naa johonki siistimmin
@@ -66,20 +66,56 @@ void RequestHandler::handleRequest( Request& req, Response& res)
     }
 }
 
-void RequestHandler::handleCgi(Request &req)
-{
-	std::cout << "content type: " << req.getContentType() << std::endl;
-	std::cout << "THE REQUEST IS CGI" << std::endl;
-	std::string queryString = findQueryStr(req.getUri());
-	std::string directPath;
+// void RequestHandler::readCgiOutputFile() {
+    
+//     std::ifstream inputFile(_filePath);
 
-	directPath = _filePath;
-	std::cout << "DIRECT PATH: " << directPath << std::endl;
-	cgiRequest cgireg(req, directPath, req.getMethod(), queryString, req.getVersion(), req.getBody(), req.getContentType());
-	int execute_result = cgireg.execute();
-	if (execute_result == 0)
-        _filePath = getFilepath("/cgi/tmp/cgi_output.html");
-}
+//     if (!inputFile.is_open()) {
+//         std::cerr << "Error: Could not open file for reading." << std::endl;
+//         return ;
+//     }
+//     std::string contentType;
+//     std::string line;
+//     std::stringstream body;
+
+//     std::getline(inputFile, contentType);
+
+//     if (contentType == "Content-Type: application/json\r\n") {
+//         std::cout << "Content-Type: " << contentType << std::endl;
+//     } else {
+//         std::cout << "The first line is not 'Content-Type: application/json\r\n'" << std::endl;
+//         inputFile.close();
+//         return ;
+//     }
+
+//     while (std::getline(inputFile, line)) {
+//         body << line << "\n";
+//     }
+
+//     _body = body.str();
+//     inputFile.close();
+//     _contentType = contentType;
+//     std::cout << "----- CGI RESPONSE -----" << std::endl;
+//     std::cout << "content-type: " << _contentType << std::endl;
+//     std::cout << "body: " << _body << std::endl;
+// }
+
+// void RequestHandler::handleCgi(Request &req)
+// {
+// 	std::cout << "content type: " << req.getContentType() << std::endl;
+// 	std::cout << "THE REQUEST IS CGI" << std::endl;
+// 	std::string queryString = findQueryStr(req.getUri());
+// 	std::string directPath;
+// 	directPath = _filePath;
+// 	std::cout << "DIRECT PATH: " << directPath << std::endl;
+// 	cgiRequest cgireg(req, directPath, req.getMethod(), queryString, req.getVersion(), req.getBody(), req.getContentType());
+// 	int execute_result = cgireg.execute();
+// 	if (execute_result == 0)
+//     {
+//         _filePath = getFilepath("/cgi/tmp/cgi_output.html");
+//     }
+
+// }
 
 std::string RequestHandler::getContentType(const std::string& path) const {
     std::map<std::string, std::string> mime_types = {

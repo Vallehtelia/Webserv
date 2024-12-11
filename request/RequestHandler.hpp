@@ -36,6 +36,7 @@ private:
 	bool validFile(const std::string& filePath);
 	std::string getFilepath(std::string filepath);
 	std::string generateDirectoryListing(const std::string& directoryPath);
+	void readCgiOutputFile();
 	void handleCgi(Request &req);
 	std::string				_body;
     std::string				_statusLine;
