@@ -9,6 +9,7 @@
 		"stdexcept": "cpp",
 		"cstring": "cpp",
 		"vector": "cpp",
-		"string": "cpp"
+		"string": "cpp",
+		"variant": "cpp"
 	}
 }

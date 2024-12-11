@@ -238,7 +238,7 @@ void Request::prepareRequest()
             return ;
         }
         if (contentLength > 500000)
-        { 
+        {
             return handleError("body size manually limited to 500000 in prepareRequest()");
             }
     }
@@ -289,7 +289,7 @@ bool Request::isValidHeaderValue(const std::string& key, const std::string& valu
 }
 
 void Request::validateHeaders() {
-    
+
     for (auto& pair : headers) {
         std::string key = pair.first;
         std::string value = pair.second;
