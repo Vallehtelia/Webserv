@@ -34,6 +34,8 @@ int acceptConnection(int fd, int epoll_fd)
     // Lisää uusi client_fd epollin valvontaan
     struct epoll_event event;
     event.events = EPOLLIN | EPOLLET; // Lisää mahdollisesti EPOLLET (edge-triggered)
+	// Caution: In edge-triggered mode, you must process all pending data
+	// until recv() or send() returns EAGAIN. Onks meilla nain?
     event.data.fd = client_fd;
 
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) == -1)
@@ -94,7 +96,7 @@ static void	sendData(std::string httpRespose, epoll_event &event)
 	int			maxRetries = 10; // testissa vaan ettei jaa infinite looppiin lahettamaan vaan aiheuttaa sitten timeoutin.
 	int			retries = 0;
 	
-	while (totalSent < messageLength)
+	while (totalSent < messageLength) // tankin pitais toimii edgetriggered modessa
 	{
 		size_t	bytesSent = send(event.data.fd, messagePtr + totalSent, messageLength - totalSent, 0);
 		
@@ -176,8 +178,8 @@ static int	checkReceivedData(int &fd, int bytesRead, std::unordered_map<int, std
 */
 int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unordered_map<int, std::vector<char>> &client_data, const Socket &socket)
 {
-    std::cout << "RECEIVING DATA FROM FD: " << fd << std::endl; // debug
-	while (true)
+    std::cout << "RECEIVING DATA FROM FD: " << fd << std::endl;
+	while (true) // should work with edge-triggered mode, since we read all data until recv() returns -1
 	{
 		char buffer[4000] = {0};
 		int bytes_read = recv(fd, buffer, sizeof(buffer) - 1, 0);
@@ -290,7 +292,7 @@ void event_loop(const std::vector<Socket> &sockets, int epoll_fd)
         int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
         if (num_events == -1)
         {
-            std::cerr << RED << "epoll_wait failed" << DEFAULT << std::endl;
+            std::cerr << RED << "Error: epoll_wait failed" << DEFAULT << std::endl;
             break;
         }
 

@@ -58,10 +58,12 @@ class Request {
         std::string                         getVersion() const;
         std::string                         getBody() const;
         std::map<std::string, std::string>  getHeaders() const;
+		std::map<std::string, std::string> 	getCookies() const;
         const std::vector<MultipartData>    &getMultipartData() const { return multipartData; };
         State                               getState();
         std::string                         getContentType() const;
         bool                                isMultiPart() const;
+		bool								hasHeader(const std::string& headerName) const;
         void                                validateHeaders();
         LocationConfig                      getLocation() const;
         std::map<std::string, std::string>  getQueryParams() const;

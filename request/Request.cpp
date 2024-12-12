@@ -51,7 +51,6 @@ std::string Request::getVersion() const {
     return version;
 }
 
-
 std::string Request::getBody() const {
     return body;
 }
@@ -61,13 +60,19 @@ void Request::setReceived(bool state)
     received = state;
 }
 
-std::map<std::string, std::string> Request::getHeaders() const {
+std::map<std::string, std::string> Request::getHeaders() const 
+{
     return headers;
 }
 
 bool Request::isMultiPart() const
 {
     return _isMultiPart;
+}    
+
+bool Request::hasHeader(const std::string& headerName) const 
+{
+    return headers.find(headerName) != headers.end();
 }
 
 std::string Request::getContentType() const
@@ -339,6 +344,41 @@ void Request::parseHeaders() {
     validateHeaders();
     prepareRequest();
 }
+
+std::map<std::string, std::string> Request::getCookies() const {
+    std::map<std::string, std::string> cookies;
+    auto it = headers.find("cookie");
+    if (it == headers.end()) {
+        return cookies; // No cookies present
+    }
+
+    std::string cookieHeader = it->second;
+    size_t pos = 0;
+
+    while (pos < cookieHeader.size()) {
+        size_t eqPos = cookieHeader.find('=', pos);
+        if (eqPos == std::string::npos) break;
+
+        size_t semicolonPos = cookieHeader.find(';', eqPos);
+        if (semicolonPos == std::string::npos) semicolonPos = cookieHeader.size();
+
+        std::string key = cookieHeader.substr(pos, eqPos - pos);
+        std::string value = cookieHeader.substr(eqPos + 1, semicolonPos - eqPos - 1);
+
+        // Trim whitespace
+        key.erase(0, key.find_first_not_of(" \t"));
+        key.erase(key.find_last_not_of(" \t") + 1);
+        value.erase(0, value.find_first_not_of(" \t"));
+        value.erase(value.find_last_not_of(" \t") + 1);
+
+        cookies[key] = value;
+
+        pos = semicolonPos + 1; // Move to the next cookie
+    }
+
+    return cookies;
+}
+
 
 void Request::parseChunks()
 {
