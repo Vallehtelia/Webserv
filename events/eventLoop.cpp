@@ -14,19 +14,21 @@ int acceptConnection(int fd, int epoll_fd)
     int client_fd = accept(fd, (struct sockaddr *)&client_addr, &client_len);
     if (client_fd < 0)
     {
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
+        // if (errno == EAGAIN || errno == EWOULDBLOCK)
+		// Handle common non-critical error cases without errno
+        if (client_fd == -1) // -1 is returned for errors
         {
             // Ei uusia yhteyksiä juuri nyt, tämä ei ole kriittinen virhe
             return -1;
         }
-        std::cerr << RED << "Failed to accept connection: " << strerror(errno) << DEFAULT << "\n";
+        std::cerr << RED << "Failed to accept connection." << DEFAULT << "\n";
         return -1;
     }
 
     // Aseta uusi client_fd ei-blokkaavaksi
     if (!set_non_blocking(client_fd))
     {
-        std::cerr << RED << "Failed to set client_fd non-blocking: " << strerror(errno) << DEFAULT << "\n";
+        std::cerr << RED << "Failed to set client_fd non-blocking: " << client_fd << DEFAULT << "\n";
         close(client_fd);
         return -1;
     }
@@ -38,7 +40,7 @@ int acceptConnection(int fd, int epoll_fd)
 
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) == -1)
     {
-        std::cerr << RED << "Failed to add client to epoll: " << strerror(errno) << DEFAULT << "\n";
+        std::cerr << RED << "Failed to add client to epoll: " << client_fd << DEFAULT << "\n";
         close(client_fd);
         return -1;
     }
