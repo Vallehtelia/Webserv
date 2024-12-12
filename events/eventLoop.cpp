@@ -14,9 +14,7 @@ int acceptConnection(int fd, int epoll_fd)
     int client_fd = accept(fd, (struct sockaddr *)&client_addr, &client_len);
     if (client_fd < 0)
     {
-        // if (errno == EAGAIN || errno == EWOULDBLOCK)
-		// Handle common non-critical error cases without errno
-        if (client_fd == -1) // -1 is returned for errors
+    	if (errno == EAGAIN || errno == EWOULDBLOCK)
         {
             // Ei uusia yhteyksiä juuri nyt, tämä ei ole kriittinen virhe
             return -1;
@@ -59,12 +57,12 @@ void cleanupTempFiles()
 	if (std::ifstream(tempInFilePath))
 	{
 		if (std::remove(tempInFilePath.c_str()) != 0)
-			std::cerr << "Failed to delete temp file: " << strerror(errno) << "\n";
+			std::cerr << "Failed to delete temp file: " << tempInFilePath << std::endl;
 	}
 	if (std::ifstream(tempOutFilePath))
 	{
 		if (std::remove(tempOutFilePath.c_str()) != 0)
-			std::cerr << "Failed to delete temp file: " << strerror(errno) << "\n";
+			std::cerr << "Failed to delete temp file: " << tempOutFilePath << "\n";
 	}
 }
 
@@ -95,9 +93,11 @@ static void	sendData(std::string httpRespose, epoll_event &event)
 	const char	*messagePtr = httpRespose.c_str();
 	int			maxRetries = 10; // testissa vaan ettei jaa infinite looppiin lahettamaan vaan aiheuttaa sitten timeoutin.
 	int			retries = 0;
+	
 	while (totalSent < messageLength)
 	{
 		size_t	bytesSent = send(event.data.fd, messagePtr + totalSent, messageLength - totalSent, 0);
+		
 		if (bytesSent < 0)
 		{
 			if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -116,6 +116,9 @@ static void	sendData(std::string httpRespose, epoll_event &event)
 				closeOnce(event.data.fd);
 				break ;
 			}
+			// Simulate a delay or yield to avoid tight looping
+			for (volatile int i = 0; i < 1000000; ++i);
+			continue;
 		}
 		totalSent += bytesSent;
 		retries = 0;
@@ -130,25 +133,20 @@ static void	sendData(std::string httpRespose, epoll_event &event)
 * @param clientData Map of client file descriptors to data
 * @return 1 if the data is invalid or end of file, 0 otherwise
 */
-static int	checkRecievedData(int &fd, int bytesRead, std::unordered_map<int, std::vector<char>> &clientData)
+static int	checkReceivedData(int &fd, int bytesRead, std::unordered_map<int, std::vector<char>> &clientData)
 {
-	if (bytesRead != 0)
+	if (bytesRead == 0)
 	{
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
-		{
-			std::cerr << "Socket temporarily unavailable (EAGAIN/EWOULDBLOCK, fd: " << fd << ")\n";
-			return 0;
-		}
-		else
-		{
-			std::cerr << RED << "Recv failed with errno: " << errno << DEFAULT << std::endl;
-			closeOnce(fd);
-			clientData.erase(fd);
-			return 1;
-		}
+		// Connection closed by the client
+		std::cerr << "Connection closed by client (fd: " << fd << ")\n";
+		closeOnce(fd);
+		clientData.erase(fd);
+		return 1;
 	}
 	else
 	{
+		// Generic failure case, handle as an unspecified error
+		std::cerr << RED << "Recv failed for fd: " << fd << DEFAULT << std::endl;
 		closeOnce(fd);
 		clientData.erase(fd);
 		return 1;
@@ -185,7 +183,7 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 		int bytes_read = recv(fd, buffer, sizeof(buffer) - 1, 0);
 		if (bytes_read <= 0)
 		{
-			if (checkRecievedData(fd, bytes_read, client_data))
+			if (checkReceivedData(fd, bytes_read, client_data))
 				return -1;
 			else
 				break;
