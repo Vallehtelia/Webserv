@@ -124,13 +124,14 @@ void Request::handleError(const std::string& errorMsg) {
 }
 
 void Request::parseRequest(std::string &rawRequest,const Socket &socket) {
+    maxBodySize = static_cast<size_t>(socket.getServer().getBodySize());
     requestStream.str(rawRequest);
     if (currentState == State::INCOMPLETE)
         currentState = State::BODY;
     if (chunked)
         currentState = State::UNCHUNK;
     while (currentState != State::COMPLETE && currentState != State::ERROR && currentState != State::INCOMPLETE) {
-        // std::cout << "REQUEST PARSING: " << stateToString(currentState) << std::endl;
+        std::cout << "REQUEST PARSING: " << stateToString(currentState) << std::endl;
         switch (currentState) {
             case State::REQUEST_LINE:
                 parseRequestLine(socket);
@@ -255,10 +256,10 @@ void Request::prepareRequest()
             handleError("Content-Length missing on a POST request");
             return ;
         }
-        // if (contentLength > 500000)
-        // { 
-        //     return handleError("body size manually limited to 500000 in prepareRequest()");
-        // }
+        if (contentLength > maxBodySize)
+        { 
+            return handleError("Content-Length exceeds client max body size");
+        }
     }
     if (headers.find("transfer-encoding") != headers.end())
         if (headers["transfer-encoding"] == "chunked")

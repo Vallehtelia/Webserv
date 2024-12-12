@@ -117,7 +117,7 @@ bool	initSocket(std::vector<ServerConfig> &server, std::vector<Socket> &sockets)
 			return false;
 		}
 
-		if (listen(sock.getSocketFd(), 10) < 0)
+		if (listen(sock.getSocketFd(), SOMAXCONN) < 0)
 		{
 			std::cerr << RED << "Failed to listen: " << strerror(errno) << DEFAULT << "\n";
 			close(sock.getSocketFd());

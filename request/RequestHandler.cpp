@@ -52,17 +52,13 @@ void RequestHandler::handleRequest( Request& req, Response& res)
 	{
         handlePostRequest(req, res);
     }
-	else if (_method == "PUT")
-	{
-        handlePutRequest(req, res);
-    }
 	else if (_method == "DELETE")
 	{
         handleDeleteRequest(res);
     }
 	else
 	{
-        res.setResponse(405, "text/html", "");
+        res.setResponse(400, "text/html", "");
     }
 }
 
@@ -232,7 +228,6 @@ std::string RequestHandler::getFilepath(std::string filepath)
     // else
     path = baseDirStr + locationRoot + filepath;
     std::cout << "FILEPATH CREATED: " << path << std::endl;
-
     return path;
 }
 
@@ -270,7 +265,7 @@ bool RequestHandler::validFile(const std::string& filePath) {
 			_statusCode = 200;
             return true;
         }
-        else if (_method == "POST" || _method == "PUT") {
+        else if (_method == "POST") {
             std::filesystem::path dir = fullPath.parent_path();
             if (!std::filesystem::exists(dir)) {
                 std::cerr << "Error: Directory does not exist." << std::endl;
@@ -282,11 +277,6 @@ bool RequestHandler::validFile(const std::string& filePath) {
 				_statusCode = 403;
                 return false;
             }
-            // if (_method == "POST" && std::filesystem::exists(fullPath)) {
-            //     std::cerr << "Error: File already exists, cannot overwrite in POST request." << std::endl;
-			// 	_statusCode = 409;
-            //     return false;
-            // }
             const auto freeSpace = std::filesystem::space(dir).available;
             const size_t maxUploadSize = 50 * 1024 * 1024;  // 50 MB limit
             if (freeSpace < maxUploadSize) {
@@ -426,29 +416,11 @@ void RequestHandler::handlePostRequest(const Request& req, Response& res)
     else if (req.getContentType() == "application/json") {
         handleJsonData(req, res);
     }
-    // else if (req.getContentType() == "text/plain") {
-    //     handlePlainText(req, res);
-    // }
     else {
         res.setResponse(400, "text/html", "Bad Request: Unsupported Content Type");
     }
 }
 
-void RequestHandler::handlePutRequest(const Request& req, Response& res)
-{
-    std::cout << "HANDLING PUT REQUEST" << std::endl;
-
-    if (req.isMultiPart()) {
-        handleMultipartRequest(req, res);
-    }
-    else if (req.getContentType() == "application/json") {
-		std::cout << "Processing JSON Data for PUT" << std::endl;
-        handleJsonData(req, res);
-    }
-    else {
-        res.setResponse(400, "text/html", "Bad Request: Unsupported Content Type");
-    }
-}
 
 void RequestHandler::handleJsonData(const Request &req, Response &res)
 {
