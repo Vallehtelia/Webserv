@@ -131,7 +131,7 @@ void Request::parseRequest(std::string &rawRequest,const Socket &socket) {
     if (chunked)
         currentState = State::UNCHUNK;
     while (currentState != State::COMPLETE && currentState != State::ERROR && currentState != State::INCOMPLETE) {
-        // std::cout << "REQUEST PARSING: " << stateToString(currentState) << std::endl;
+        std::cout << "REQUEST PARSING: " << stateToString(currentState) << std::endl;
         switch (currentState) {
             case State::REQUEST_LINE:
                 parseRequestLine(socket);

@@ -98,31 +98,30 @@ static void	sendData(std::string httpRespose, epoll_event &event)
 	{
 		size_t	bytesSent = send(event.data.fd, messagePtr + totalSent, messageLength - totalSent, 0);
 		
-		if (bytesSent < 0)
+		if (bytesSent > 0)
 		{
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
-			{
-				if (++retries >= maxRetries)
-				{
-					std::cerr << RED << "Send timed out after multiple retries" << DEFAULT << std::endl;
-					closeOnce(event.data.fd);
-					return ;
-				}
-				continue ;
-			}
-			else
-			{
-				std::cerr << RED << "Send to client failed" << DEFAULT << std::endl;
-				closeOnce(event.data.fd);
-				break ;
-			}
-			// Simulate a delay or yield to avoid tight looping
-			for (volatile int i = 0; i < 1000000; ++i);
-			continue;
+			// Successfully sent some bytes
+			totalSent += bytesSent;
+			retries = 0; // Reset retries on successful send
 		}
-		totalSent += bytesSent;
-		retries = 0;
+		else if (bytesSent == 0)
+		{
+			// No data was sent; retry until the maximum retries are reached
+			if (++retries >= maxRetries)
+			{
+				std::cerr << RED << "Send timed out after multiple retries" << DEFAULT << std::endl;
+				closeOnce(event.data.fd);
+				return;
+			}
+		}
+		else // bytesSent < 0
+		{
+			// Treat all failures as temporary; let epoll retry
+			std::cerr << YELLOW << "Temporary send failure, deferring to EPOLLOUT event." << DEFAULT << std::endl;
+			return; // Exit and wait for the next EPOLLOUT
+		}
 	}
+	std::cout << "Response successfully sent to client." << std::endl;
 }
 
 /*
@@ -137,18 +136,19 @@ static int	checkReceivedData(int &fd, int bytesRead, std::unordered_map<int, std
 {
 	if (bytesRead == 0)
 	{
+		// You don't really need to check the errno here
 		// Connection closed by the client
-		std::cerr << "Connection closed by client (fd: " << fd << ")\n";
+		std::cerr << "Connection closed by client (fd: " << fd << ")" << std::endl;;
 		closeOnce(fd);
 		clientData.erase(fd);
 		return 1;
 	}
-	else
+	else // bytesRead < 0
 	{
-		// Generic failure case, handle as an unspecified error
+		// Generic failure case, handle as an unspecified error and wait for EPOLLIN to trigger again
 		std::cerr << RED << "Recv failed for fd: " << fd << DEFAULT << std::endl;
-		closeOnce(fd);
-		clientData.erase(fd);
+		// closeOnce(fd);
+		// clientData.erase(fd);
 		return 1;
 	}
 }
@@ -183,15 +183,16 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 		int bytes_read = recv(fd, buffer, sizeof(buffer) - 1, 0);
 		if (bytes_read <= 0)
 		{
-			if (checkReceivedData(fd, bytes_read, client_data))
-				return -1;
-			else
-				break;
+			checkReceivedData(fd, bytes_read, client_data);
+			return -1;
+			// temp errors not checked, just close the connection
+			// let epoll retry the recv
 		}
 		else
 		{
 			std::string rawRequest(buffer, bytes_read);
 			req.parseRequest(rawRequest, socket);
+
 			if (req.getState() == State::INCOMPLETE)
 				continue;
 			
@@ -212,7 +213,6 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 				// Get the full HTTP response string from the Response class
 				std::string http_response = res.getResponseString();
 				// Send the response back to the client
-
 				// std::cout << http_response.length() << "lenght here!!!\n";
 				// res.printResponse();
 				sendData(http_response, event);
