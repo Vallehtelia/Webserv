@@ -6,12 +6,12 @@ bool set_non_blocking(int sockfd)
 {
     int flags = fcntl(sockfd, F_GETFL, 0);
     if (flags == -1) {
-        std::cerr << RED << "Error: fcntl 1" << DEFAULT << std::endl;
+        std::cerr << RED << "Error: receiving fcntl flags, fd: " << sockfd << DEFAULT << std::endl;
         return false;
     }
     if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) == -1)
 	{
-        std::cerr << RED << "Error: fcntl 2" << DEFAULT << std::endl;
+        std::cerr << RED << "Error: setting fcntl flags, fd: " << sockfd << DEFAULT << std::endl;
         return false;
     }
 	return true;

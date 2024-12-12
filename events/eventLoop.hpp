@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <vector>
 
-#define MAX_EVENTS 10
+#define MAX_EVENTS 1024
 
 class Request;
 class Socket;

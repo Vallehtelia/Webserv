@@ -34,6 +34,8 @@ int acceptConnection(int fd, int epoll_fd)
     // Lisää uusi client_fd epollin valvontaan
     struct epoll_event event;
     event.events = EPOLLIN | EPOLLET; // Lisää mahdollisesti EPOLLET (edge-triggered)
+	// Caution: In edge-triggered mode, you must process all pending data
+	// until recv() or send() returns EAGAIN. Onks meilla nain?
     event.data.fd = client_fd;
 
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) == -1)
@@ -290,7 +292,7 @@ void event_loop(const std::vector<Socket> &sockets, int epoll_fd)
         int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
         if (num_events == -1)
         {
-            std::cerr << RED << "epoll_wait failed" << DEFAULT << std::endl;
+            std::cerr << RED << "Error: epoll_wait failed" << DEFAULT << std::endl;
             break;
         }
 
