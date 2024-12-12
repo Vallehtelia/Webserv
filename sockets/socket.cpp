@@ -117,7 +117,7 @@ bool	initSocket(std::vector<ServerConfig> &server, std::vector<Socket> &sockets)
 			return false;
 		}
 
-		//std::cout << "SOMAXCONN: " << SOMAXCONN << std::endl;
+		// std::cout << "SOMAXCONN: " << SOMAXCONN << std::endl;
 		if (listen(sock.getSocketFd(), SOMAXCONN) < 0) // SOMAXCONN is the system defined maximum for the backlog
 		{
 			std::cerr << RED << "Failed to listen: " << strerror(errno) << DEFAULT << "\n";

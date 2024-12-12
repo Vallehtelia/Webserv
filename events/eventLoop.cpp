@@ -96,7 +96,7 @@ static void	sendData(std::string httpRespose, epoll_event &event)
 	int			maxRetries = 10; // testissa vaan ettei jaa infinite looppiin lahettamaan vaan aiheuttaa sitten timeoutin.
 	int			retries = 0;
 	
-	while (totalSent < messageLength)
+	while (totalSent < messageLength) // tankin pitais toimii edgetriggered modessa
 	{
 		size_t	bytesSent = send(event.data.fd, messagePtr + totalSent, messageLength - totalSent, 0);
 		
@@ -178,8 +178,8 @@ static int	checkReceivedData(int &fd, int bytesRead, std::unordered_map<int, std
 */
 int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unordered_map<int, std::vector<char>> &client_data, const Socket &socket)
 {
-    std::cout << "RECEIVING DATA FROM FD: " << fd << std::endl; // debug
-	while (true)
+    std::cout << "RECEIVING DATA FROM FD: " << fd << std::endl;
+	while (true) // should work with edge-triggered mode, since we read all data until recv() returns -1
 	{
 		char buffer[4000] = {0};
 		int bytes_read = recv(fd, buffer, sizeof(buffer) - 1, 0);
