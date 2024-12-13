@@ -83,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData,
             });
             if (response.ok) {
+                console.log(response.body);
                 const jsonResponse = await response.json(); // Await the JSON response
                 const imageUrl = jsonResponse.path; // Get the path from the response
                 console.log(imageUrl);
