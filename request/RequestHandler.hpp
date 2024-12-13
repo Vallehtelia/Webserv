@@ -2,7 +2,6 @@
 #ifndef REQUESTHANDLER_HPP
 # define REQUESTHANDLER_HPP
 
-
 #include <string>
 #include <cstdio>
 #include "../response/Response.hpp"
@@ -11,9 +10,8 @@
 #include <unordered_map>
 #include <filesystem>
 #include "cgi_request.hpp"
-
 #include "../parsing/LocationConfig.hpp"
-
+#include "./SessionManager.hpp"
 
 class RequestHandler {
 public:
@@ -40,8 +38,10 @@ private:
 	void handleCgi(Request &req);
 	std::string				_body;
     std::string				_statusLine;
-    std::string				_headers;
-    std::string	_filePath;
+    std::map<std::string, std::string>				_headers;
+	std::map<std::string, std::string>				_cookies;
+	std::vector<std::string> 						_responseCookies;
+    std::string				_filePath;
 	std::string				_uri;
 	std::string				_method;
 	std::string				_contentType;
@@ -49,6 +49,7 @@ private:
 	int						_statusCode;
 	LocationConfig 			_location;
 	std::string				_responseFileUrl;
+	std::string 			_sessionId;
 };
 
 #endif

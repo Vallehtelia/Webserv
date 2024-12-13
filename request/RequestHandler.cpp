@@ -39,9 +39,9 @@ void RequestHandler::handleRequest( Request& req, Response& res)
 	}
     if (req.getState() == State::ERROR)
     {
-        std::cout << "it gets here!" << std::endl;
+        // std::cout << "it gets here!" << std::endl;
         res.setResponse(400, "text/html", "");
-        std::cout << "but not here" << std::endl;
+        // std::cout << "but not here" << std::endl;
         return ;
     }
     if (_method == "GET")
@@ -141,12 +141,46 @@ std::string RequestHandler::getContentType(const std::string& path) const {
 
 void RequestHandler::prepareHandler(const Request &req)
 {
-    std::string _headers;
+	auto& sessionManager = SessionManager::getInstance();
 	_uri = req.getUri();
 	_method = req.getMethod();
 	_contentType = getContentType(_uri);
     _filePath = getFilepath(_uri);
     _responseFileUrl = _uri;
+	_headers = req.getHeaders();
+	_cookies = req.getCookies();
+
+	std::cout << "Cookies received in request: ";
+    for (const auto& [key, value] : _cookies) {
+        std::cout << key << "=" << value << "; ";
+    }
+    std::cout << std::endl;
+
+    // Session management
+    if (_cookies.find("session_id") != _cookies.end()) {
+        std::string sessionId = _cookies["session_id"];
+        if (sessionManager.isValidSession(sessionId)) {
+            _sessionId = sessionId;
+            std::cout << "Using existing session: " << sessionId << std::endl;
+        } else {
+            std::cout << "Invalid session: " << sessionId << std::endl;
+            _sessionId = sessionManager.createSession();
+        }
+    } else {
+        std::cout << "No session_id found, creating a new session." << std::endl;
+        _sessionId = sessionManager.createSession();
+		_responseCookies.push_back("session_id=" + _sessionId + "; Path=/; HttpOnly; Secure");
+    }
+
+	// test singleton:
+	auto& sessionManager1 = SessionManager::getInstance();
+    auto& sessionManager2 = SessionManager::getInstance();
+
+    if (&sessionManager1 == &sessionManager2) {
+        std::cout << "Singleton confirmed: Both instances are the same." << std::endl;
+    } else {
+        std::cout << "Singleton error: Instances are different!" << std::endl;
+    }
 }
 
 static std::string urlDecode(const std::string& src) {
@@ -353,9 +387,44 @@ std::string RequestHandler::generateDirectoryListing(const std::string& director
 }
 
 
-void RequestHandler::handleGetRequest(Response& res) {
+	/*
+    if (_request.hasHeader("Cookie")) {
+        std::string cookieHeader = _request.getHeader("Cookie"); // Assuming _request has methods for headers
+        std::unordered_map<std::string, std::string> cookies = parseCookies(cookieHeader);
 
-    std::cout << "HANDLE GET" << std::endl;
+        // Example: Log cookies for debugging
+        for (const auto& [key, value] : cookies) {
+            std::cout << "Cookie: " << key << " = " << value << std::endl;
+        }
+	}
+	*/
+
+void RequestHandler::handleGetRequest(Response& res) {
+	std::cout << "HANDLE GET" << std::endl;
+
+    // Example: Log cookies for debugging
+    for (const auto& [key, value] : _cookies) {
+        std::cout << "Cookie: " << key << " = " << value << std::endl;
+    }
+    // Example: Use a specific cookie
+    if (_cookies.find("session_id") != _cookies.end()) {
+        std::cout << "Session ID: " << _cookies["session_id"] << std::endl;
+    }
+    // Example: Use session data
+	auto& sessionManager = SessionManager::getInstance();
+    auto& sessionData = sessionManager.getSession(_sessionId);
+    if (sessionData.find("last_visited") == sessionData.end()) {
+        sessionData["last_visited"] = _uri;
+    } else {
+        std::cout << "Last visited: " << sessionData["last_visited"] << std::endl;
+        sessionData["last_visited"] = _uri; // Update last visited page
+    }
+
+	// Example: Log session data for debugging
+	for (const auto& [key, value] : sessionData) {
+		std::cout << "Session data: " << key << " = " << value << std::endl;
+	}
+
     std::cout << "Is directory: " << std::filesystem::is_directory(_filePath) << std::endl;
     if (std::filesystem::is_directory(_filePath)){
         if (_location.isAutoindex()) { // Assuming there's a method to check if auto-index is enabled
@@ -370,14 +439,12 @@ void RequestHandler::handleGetRequest(Response& res) {
     else if (validFile(_filePath)) {
         std::cout << "FILE IS LEGIT" << std::endl;
        	_body = readFileContent(_filePath);
-        res.setResponse(200, getContentType(_filePath), _body);
+        res.setResponse(200, getContentType(_filePath), _body, _responseCookies);
     } else {
         std::cout << "FILE IS NOT FOUND" << std::endl;
         res.setResponse(404, "text/html", _body);
     }
 }
-
-
 
 void RequestHandler::handleDeleteRequest(Response& res)
 {

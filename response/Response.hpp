@@ -14,7 +14,8 @@ public:
     ~Response();
 
     void        printResponse();
-    void        setResponse(int code, const std::string& contentType, const std::string &body);
+    void        setResponse(int statusCode, const std::string& contentType, 
+					const std::string &body, const std::vector<std::string>& cookies = {});
     void        setStatusLine(std::string &statusline);
     void        setBody(std::string &body);
     void        setHeaders(std::string &headers);
