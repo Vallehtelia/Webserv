@@ -1,7 +1,7 @@
 NAME = socket
 
 REQUEST_DIR = ./request/
-REQUEST_FILES = RequestHandler.cpp Request.cpp cgi_request.cpp
+REQUEST_FILES = RequestHandler.cpp Request.cpp cgi_request.cpp SessionManager.cpp
 
 RESPONSE_DIR = ./response/
 RESPONSE_FILES = Response.cpp

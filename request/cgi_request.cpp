@@ -257,14 +257,13 @@ int	cgiRequest::execute()
 			char	**envp = buildEnv();
 			std::cerr << "running execve script: " << script_path.c_str() << std::endl; // debugging
 			execve(script_path.c_str(), args, envp);
-			perror("execve"); // Lisää tämä rivi, jotta näet tarkemman virheen syyn
-			std::cerr << "Execve failed!" << std::endl;
+			std::cerr << RED << "Error: execve failed!" << DEFAULT << std::endl;
 			cleanEnv(envp);
 			exit(500);
 		}
 		else
 		{
-			const int	timeout = 5;
+			const int	timeout = 10;
 			int			status = 0;
 
 			pid_t		result = waitpid(pid, &status, WNOHANG);

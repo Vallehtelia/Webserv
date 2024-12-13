@@ -5,37 +5,6 @@
 #include "../response/Response.hpp"
 #include "../sockets/socket.hpp"
 
-/*int	acceptConnection(int fd, int epoll_fd)
-{
-	struct sockaddr_in client_addr;
-	socklen_t client_len = sizeof(client_addr);
-	int client_fd = accept(fd, (struct sockaddr*)&client_addr, &client_len);
-	if (client_fd < 0)
-	{
-		std::cerr << RED << "Failed to accept connection: " << strerror(errno) << DEFAULT << "\n";
-		return 1;
-	}
-
-	set_non_blocking(client_fd);
-	struct epoll_event event;
-	event.events = EPOLLIN;
-	event.data.fd = client_fd;
-	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) == -1)
-	{
-		std::cerr << RED << "Failed to add client to epoll: " << strerror(errno) << DEFAULT << "\n";
-		close(client_fd);
-		return 1;
-	}
-	return 0;
-}*/
-
-/*
-* @brief Accept new connection
-*
-* @param fd File descriptor of the server socket
-* @param epoll_fd File descriptor for epoll
-* @return File descriptor of the new client socket
-*/
 int acceptConnection(int fd, int epoll_fd)
 {
     struct sockaddr_in client_addr;
@@ -45,19 +14,19 @@ int acceptConnection(int fd, int epoll_fd)
     int client_fd = accept(fd, (struct sockaddr *)&client_addr, &client_len);
     if (client_fd < 0)
     {
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
+    	if (errno == EAGAIN || errno == EWOULDBLOCK)
         {
             // Ei uusia yhteyksiä juuri nyt, tämä ei ole kriittinen virhe
             return -1;
         }
-        std::cerr << RED << "Failed to accept connection: " << strerror(errno) << DEFAULT << "\n";
+        std::cerr << RED << "Failed to accept connection." << DEFAULT << "\n";
         return -1;
     }
 
     // Aseta uusi client_fd ei-blokkaavaksi
     if (!set_non_blocking(client_fd))
     {
-        std::cerr << RED << "Failed to set client_fd non-blocking: " << strerror(errno) << DEFAULT << "\n";
+        std::cerr << RED << "Failed to set client_fd non-blocking: " << client_fd << DEFAULT << "\n";
         close(client_fd);
         return -1;
     }
@@ -65,11 +34,13 @@ int acceptConnection(int fd, int epoll_fd)
     // Lisää uusi client_fd epollin valvontaan
     struct epoll_event event;
     event.events = EPOLLIN | EPOLLET; // Lisää mahdollisesti EPOLLET (edge-triggered)
+	// Caution: In edge-triggered mode, you must process all pending data
+	// until recv() or send() returns EAGAIN. Onks meilla nain?
     event.data.fd = client_fd;
 
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) == -1)
     {
-        std::cerr << RED << "Failed to add client to epoll: " << strerror(errno) << DEFAULT << "\n";
+        std::cerr << RED << "Failed to add client to epoll: " << client_fd << DEFAULT << "\n";
         close(client_fd);
         return -1;
     }
@@ -88,12 +59,12 @@ void cleanupTempFiles()
 	if (std::ifstream(tempInFilePath))
 	{
 		if (std::remove(tempInFilePath.c_str()) != 0)
-			std::cerr << "Failed to delete temp file: " << strerror(errno) << "\n";
+			std::cerr << "Failed to delete temp file: " << tempInFilePath << std::endl;
 	}
 	if (std::ifstream(tempOutFilePath))
 	{
 		if (std::remove(tempOutFilePath.c_str()) != 0)
-			std::cerr << "Failed to delete temp file: " << strerror(errno) << "\n";
+			std::cerr << "Failed to delete temp file: " << tempOutFilePath << "\n";
 	}
 }
 
@@ -124,31 +95,35 @@ static void	sendData(std::string httpRespose, epoll_event &event)
 	const char	*messagePtr = httpRespose.c_str();
 	int			maxRetries = 10; // testissa vaan ettei jaa infinite looppiin lahettamaan vaan aiheuttaa sitten timeoutin.
 	int			retries = 0;
-	while (totalSent < messageLength)
+	
+	while (totalSent < messageLength) // tankin pitais toimii edgetriggered modessa
 	{
 		size_t	bytesSent = send(event.data.fd, messagePtr + totalSent, messageLength - totalSent, 0);
-		if (bytesSent < 0)
+		
+		if (bytesSent > 0)
 		{
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
+			// Successfully sent some bytes
+			totalSent += bytesSent;
+			retries = 0; // Reset retries on successful send
+		}
+		else if (bytesSent == 0)
+		{
+			// No data was sent; retry until the maximum retries are reached
+			if (++retries >= maxRetries)
 			{
-				if (++retries >= maxRetries)
-				{
-					std::cerr << RED << "Send timed out after multiple retries" << DEFAULT << std::endl;
-					closeOnce(event.data.fd);
-					return ;
-				}
-				continue ;
-			}
-			else
-			{
-				std::cerr << RED << "Send to client failed" << DEFAULT << std::endl;
+				std::cerr << RED << "Send timed out after multiple retries" << DEFAULT << std::endl;
 				closeOnce(event.data.fd);
-				break ;
+				return;
 			}
 		}
-		totalSent += bytesSent;
-		retries = 0;
+		else // bytesSent < 0
+		{
+			// Treat all failures as temporary; let epoll retry
+			std::cerr << YELLOW << "Temporary send failure, deferring to EPOLLOUT event." << DEFAULT << std::endl;
+			return; // Exit and wait for the next EPOLLOUT
+		}
 	}
+	std::cout << "Response successfully sent to client." << std::endl;
 }
 
 /*
@@ -159,27 +134,23 @@ static void	sendData(std::string httpRespose, epoll_event &event)
 * @param clientData Map of client file descriptors to data
 * @return 1 if the data is invalid or end of file, 0 otherwise
 */
-static int	checkRecievedData(int &fd, int bytesRead, std::unordered_map<int, std::vector<char>> &clientData)
+static int	checkReceivedData(int &fd, int bytesRead, std::unordered_map<int, std::vector<char>> &clientData)
 {
-	if (bytesRead != 0)
+	if (bytesRead == 0)
 	{
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
-		{
-			std::cerr << "Socket temporarily unavailable (EAGAIN/EWOULDBLOCK, fd: " << fd << ")\n";
-			return 0;
-		}
-		else
-		{
-			std::cerr << RED << "Recv failed with errno: " << errno << DEFAULT << std::endl;
-			closeOnce(fd);
-			clientData.erase(fd);
-			return 1;
-		}
-	}
-	else
-	{
+		// You don't really need to check the errno here
+		// Connection closed by the client
+		std::cerr << "Connection closed by client (fd: " << fd << ")" << std::endl;;
 		closeOnce(fd);
 		clientData.erase(fd);
+		return 1;
+	}
+	else // bytesRead < 0
+	{
+		// Generic failure case, handle as an unspecified error and wait for EPOLLIN to trigger again
+		std::cerr << RED << "Recv failed for fd: " << fd << DEFAULT << std::endl;
+		// closeOnce(fd);
+		// clientData.erase(fd);
 		return 1;
 	}
 }
@@ -207,22 +178,23 @@ static int	checkRecievedData(int &fd, int bytesRead, std::unordered_map<int, std
 */
 int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unordered_map<int, std::vector<char>> &client_data, const Socket &socket)
 {
-    std::cout << "RECEIVING DATA FROM FD: " << fd << std::endl; // debug
-	while (true)
+    std::cout << "RECEIVING DATA FROM FD: " << fd << std::endl;
+	while (true) // should work with edge-triggered mode, since we read all data until recv() returns -1
 	{
 		char buffer[4000] = {0};
 		int bytes_read = recv(fd, buffer, sizeof(buffer) - 1, 0);
 		if (bytes_read <= 0)
 		{
-			if (checkRecievedData(fd, bytes_read, client_data))
-				return -1;
-			else
-				break;
+			checkReceivedData(fd, bytes_read, client_data);
+			return -1;
+			// temp errors not checked, just close the connection
+			// let epoll retry the recv
 		}
 		else
 		{
 			std::string rawRequest(buffer, bytes_read);
 			req.parseRequest(rawRequest, socket);
+
 			if (req.getState() == State::INCOMPLETE)
 				continue;
 			
@@ -236,6 +208,7 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 				}
 				//req.printRequest();
 				Response res(socket);
+				Response res(socket);
 				// std::cout << "URI FROM EVENT LOOP: " << req.getUri() << std::endl;
 				RequestHandler requestHandler;
 				requestHandler.handleRequest(req, res);
@@ -243,7 +216,6 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 				// Get the full HTTP response string from the Response class
 				std::string http_response = res.getResponseString();
 				// Send the response back to the client
-
 				// std::cout << http_response.length() << "lenght here!!!\n";
 				// res.printResponse();
 				sendData(http_response, event);
@@ -321,7 +293,7 @@ void event_loop(const std::vector<Socket> &sockets, int epoll_fd)
         int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
         if (num_events == -1)
         {
-            std::cerr << RED << "epoll_wait failed" << DEFAULT << std::endl;
+            std::cerr << RED << "Error: epoll_wait failed" << DEFAULT << std::endl;
             break;
         }
 
