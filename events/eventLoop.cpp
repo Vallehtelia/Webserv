@@ -5,6 +5,8 @@
 #include "../response/Response.hpp"
 #include "../sockets/socket.hpp"
 
+static std::unordered_map<int, int> failureCount;
+
 int acceptConnection(int fd, int epoll_fd)
 {
     struct sockaddr_in client_addr;
@@ -95,11 +97,11 @@ static void	sendData(std::string httpRespose, epoll_event &event)
 	const char	*messagePtr = httpRespose.c_str();
 	int			maxRetries = 10; // testissa vaan ettei jaa infinite looppiin lahettamaan vaan aiheuttaa sitten timeoutin.
 	int			retries = 0;
-	
+
 	while (totalSent < messageLength) // tankin pitais toimii edgetriggered modessa
 	{
 		size_t	bytesSent = send(event.data.fd, messagePtr + totalSent, messageLength - totalSent, 0);
-		
+
 		if (bytesSent > 0)
 		{
 			// Successfully sent some bytes
@@ -138,33 +140,29 @@ static int	checkReceivedData(int &fd, int bytesRead, std::unordered_map<int, std
 {
 	if (bytesRead == 0)
 	{
-		// You don't really need to check the errno here
-		// Connection closed by the client
 		std::cerr << "Connection closed by client (fd: " << fd << ")" << std::endl;;
 		closeOnce(fd);
 		clientData.erase(fd);
+		failureCount.erase(fd);
 		return 1;
 	}
-	else // bytesRead < 0
+	else if (bytesRead < 0)
 	{
-		// Generic failure case, handle as an unspecified error and wait for EPOLLIN to trigger again
-		std::cerr << RED << "Recv failed for fd: " << fd << DEFAULT << std::endl;
-		// closeOnce(fd);
-		// clientData.erase(fd);
+		failureCount[fd]++;
+		std::cerr << RED << "Recv failed for fd: " << fd << ", failure count: " << failureCount[fd] << DEFAULT << std::endl;
+		const int maxFailures = 10;
+		if (failureCount[fd] >= maxFailures)
+		{
+			std::cerr << RED << "Too many recv failures for fd: " << fd << ", closing connection." << DEFAULT << std::endl;
+			closeOnce(fd);
+			clientData.erase(fd);
+			failureCount.erase(fd);
+			return 1;
+		}
 		return 1;
 	}
+	return 0;
 }
-
-/*
-* @brief Check if the request is a CGI request
-*
-* @param path Path of the request
-* @return true if the request is a CGI request, false otherwise
-*/
-// static bool	isCgi(const std::string &path)
-// {
-// 	return (path.find("/cgi-bin/") != std::string::npos || (path.size() > 3 && path.substr(path.size() - 3) == ".py"));
-// }
 
 /*
 * @brief Handles the client data and sends the response back to the client
@@ -185,8 +183,10 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 		int bytes_read = recv(fd, buffer, sizeof(buffer) - 1, 0);
 		if (bytes_read <= 0)
 		{
-			checkReceivedData(fd, bytes_read, client_data);
-			return -1;
+			if (checkReceivedData(fd, bytes_read, client_data))
+				return -1;
+			else
+				break;
 			// temp errors not checked, just close the connection
 			// let epoll retry the recv
 		}
@@ -197,7 +197,7 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 
 			if (req.getState() == State::INCOMPLETE)
 				continue;
-			
+
 			if (req.getState() == State::COMPLETE || req.getState() == State::ERROR)
 			{
 				req.printRequest();
@@ -206,17 +206,10 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 					if (req.getLocation().getLocation() == "/cgi")
 						handleCgiRequest(req, socket);
 				}
-				//req.printRequest();
 				Response res(socket);
-				// std::cout << "URI FROM EVENT LOOP: " << req.getUri() << std::endl;
 				RequestHandler requestHandler;
 				requestHandler.handleRequest(req, res);
-				//res.printResponse();
-				// Get the full HTTP response string from the Response class
 				std::string http_response = res.getResponseString();
-				// Send the response back to the client
-				// std::cout << http_response.length() << "lenght here!!!\n";
-				// res.printResponse();
 				sendData(http_response, event);
 				std::cout << "RESPONSE SENT" << std::endl;
 				req.reset();
