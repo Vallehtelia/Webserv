@@ -263,7 +263,7 @@ int	cgiRequest::execute()
 		}
 		else
 		{
-			const int	timeout = 5;
+			const int	timeout = 10;
 			int			status = 0;
 
 			pid_t		result = waitpid(pid, &status, WNOHANG);

@@ -11,12 +11,6 @@ void RequestHandler::handleRequest( Request& req, Response& res)
     _location = req.getLocation();
 
     prepareHandler(req);
-    // if (_location.getLocation() == "/cgi")
-    // {
-    //     handleCgiRequest(req, );
-    // }
-	if (req.getUri() == "/")
-		req.setPath("/index.html");
 	if (req.getState() == State::CGI_ERROR) // Naa johonki siistimmin
 	{
 		res.setResponse(500, "text/html", "");
@@ -44,6 +38,12 @@ void RequestHandler::handleRequest( Request& req, Response& res)
         // std::cout << "but not here" << std::endl;
         return ;
     }
+    if (_location.getLocation() == "/cgi")
+    {
+        readCgiOutputFile();
+    }
+	if (req.getUri() == "/")
+		req.setPath("/index.html");
     if (_method == "GET")
 	{
         handleGetRequest(res);
@@ -62,56 +62,38 @@ void RequestHandler::handleRequest( Request& req, Response& res)
     }
 }
 
-// void RequestHandler::readCgiOutputFile() {
-    
-//     std::ifstream inputFile(_filePath);
+void RequestHandler::readCgiOutputFile() {
+    std::ifstream inputFile(_filePath);
 
-//     if (!inputFile.is_open()) {
-//         std::cerr << "Error: Could not open file for reading." << std::endl;
-//         return ;
-//     }
-//     std::string contentType;
-//     std::string line;
-//     std::stringstream body;
+    if (!inputFile.is_open()) {
+        std::cerr << "Error: Could not open file for reading." << std::endl;
+        return;
+    }
 
-//     std::getline(inputFile, contentType);
+    std::string contentType;
+    std::string line;
+    std::stringstream body;
 
-//     if (contentType == "Content-Type: application/json\r\n") {
-//         std::cout << "Content-Type: " << contentType << std::endl;
-//     } else {
-//         std::cout << "The first line is not 'Content-Type: application/json\r\n'" << std::endl;
-//         inputFile.close();
-//         return ;
-//     }
+    std::getline(inputFile, contentType);
 
-//     while (std::getline(inputFile, line)) {
-//         body << line << "\n";
-//     }
+    std::size_t colonPos = contentType.find(':');
+    if (colonPos != std::string::npos) {
+        _contentType = contentType.substr(colonPos + 1);
+        _contentType.erase(0, _contentType.find_first_not_of(" \t\r\n"));
+    }
 
-//     _body = body.str();
-//     inputFile.close();
-//     _contentType = contentType;
-//     std::cout << "----- CGI RESPONSE -----" << std::endl;
-//     std::cout << "content-type: " << _contentType << std::endl;
-//     std::cout << "body: " << _body << std::endl;
-// }
+    while (std::getline(inputFile, line)) {
+        body << line;
+    }
 
-// void RequestHandler::handleCgi(Request &req)
-// {
-// 	std::cout << "content type: " << req.getContentType() << std::endl;
-// 	std::cout << "THE REQUEST IS CGI" << std::endl;
-// 	std::string queryString = findQueryStr(req.getUri());
-// 	std::string directPath;
-// 	directPath = _filePath;
-// 	std::cout << "DIRECT PATH: " << directPath << std::endl;
-// 	cgiRequest cgireg(req, directPath, req.getMethod(), queryString, req.getVersion(), req.getBody(), req.getContentType());
-// 	int execute_result = cgireg.execute();
-// 	if (execute_result == 0)
-//     {
-//         _filePath = getFilepath("/cgi/tmp/cgi_output.html");
-//     }
+    _body = body.str();
+    inputFile.close();
 
-// }
+    std::cout << "----- CGI RESPONSE -----" << std::endl;
+    std::cout << "content-type: " << _contentType << std::endl;
+    std::cout << "body: \n" << _body << std::endl;
+}
+
 
 std::string RequestHandler::getContentType(const std::string& path) const {
     std::map<std::string, std::string> mime_types = {
@@ -436,8 +418,13 @@ void RequestHandler::handleGetRequest(Response& res) {
     }
     else if (validFile(_filePath)) {
         std::cout << "FILE IS LEGIT" << std::endl;
-       	_body = readFileContent(_filePath);
-        res.setResponse(200, getContentType(_filePath), _body, _responseCookies);
+        if (_location.getLocation() == "/cgi")
+            res.setResponse(200, _contentType, _body, _responseCookies);
+        else
+        {
+       	    _body = readFileContent(_filePath);
+            res.setResponse(200, getContentType(_filePath), _body, _responseCookies);
+        }
     } else {
         std::cout << "FILE IS NOT FOUND" << std::endl;
         res.setResponse(404, "text/html", _body);
@@ -448,8 +435,7 @@ void RequestHandler::handleDeleteRequest(Response& res)
 {
     if (_location.getLocation() == "/cgi")
     {
-            std::string response_body = readFileContent(_filePath);
-            res.setResponse(200, getContentType(_filePath), response_body);
+            res.setResponse(200, _contentType, _body);
     }
     else if (validFile(_filePath))
     {
@@ -524,9 +510,8 @@ void RequestHandler::handleMultipartRequest(const Request &req, Response &res) {
             continue ;
         }
         else if (req.getUri().find("cgi") != std::string::npos) {
-            // edited file uploaded to tmp folder
-            std::string response_body = readFileContent(_filePath);
-            res.setResponse(200, getContentType(_filePath), response_body);
+            readCgiOutputFile();
+            res.setResponse(200, _contentType, _body);
             isCgi = true;
         }
         else {
