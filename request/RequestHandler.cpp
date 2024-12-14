@@ -21,7 +21,6 @@ void RequestHandler::handleRequest( Request& req, Response& res)
     {
         readCgiOutputFile();
     }
-
     if (_method == "GET")
 	{
         handleGetRequest(res);
@@ -58,7 +57,7 @@ void RequestHandler::handleError(Request &req, Response &res)
 		res.setResponse(403, "text/html", "");
 		break ;
 	default:
-		res.setResponse(500, "text/html", "");
+		res.setResponse(400, "text/html", "");
 		break ;
 	}
 }
