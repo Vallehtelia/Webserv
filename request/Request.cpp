@@ -136,7 +136,6 @@ void Request::parseRequest(std::string &rawRequest,const Socket &socket) {
     if (chunked)
         currentState = State::UNCHUNK;
     while (currentState != State::COMPLETE && currentState != State::ERROR && currentState != State::INCOMPLETE) {
-        std::cout << "REQUEST PARSING: " << stateToString(currentState) << std::endl;
         switch (currentState) {
             case State::REQUEST_LINE:
                 parseRequestLine(socket);
@@ -166,23 +165,20 @@ void Request::parseRequest(std::string &rawRequest,const Socket &socket) {
     }
 }
 
+
+
 LocationConfig Request::findLocation(const std::string &uri, const Socket &socket) {
-    LocationConfig bestMatch; // Default location config to return if no match
-    size_t bestMatchLength = 0; // Track the length of the best match
+    LocationConfig bestMatch;
+    size_t bestMatchLength = 0;
     std::vector<LocationConfig> locations = socket.getServer().getLocations();
 
     for (std::vector<LocationConfig>::iterator it = locations.begin(); it != locations.end(); ++it) {
         std::string locationPath = it->getLocation();
 
-        // Ensure no trailing slash in location unless it’s "/"
         if (locationPath != "/" && locationPath.back() == '/')
             locationPath = locationPath.substr(0, locationPath.length() - 1);
 
-        // Check if locationPath is a prefix of uri
         if (uri.find(locationPath) == 0) {
-            // Ensure match is valid: 
-            // - If location is "/", always match.
-            // - If location is not "/", match only if uri follows the pattern "/locationPath/..." or matches exactly.
             if (locationPath == "/" || uri == locationPath || uri[locationPath.length()] == '/') {
                 if (locationPath.length() > bestMatchLength) {
                     bestMatch = *it;
@@ -197,7 +193,7 @@ LocationConfig Request::findLocation(const std::string &uri, const Socket &socke
 
 
 
-static bool isValidRequestLine(const std::string& requestLine) {
+bool Request::isValidRequestLine(const std::string& requestLine) {
     std::regex requestLinePattern(R"(^[A-Z]+ [^\s]+ HTTP/1\.1$)");
     return std::regex_match(requestLine, requestLinePattern);
 }
@@ -243,7 +239,7 @@ void Request::parseRequestLine(const Socket &socket) {
     }
 }
 
-bool isMethodAllowed(const std::vector<std::string>& allowedMethods, const std::string& method) {
+bool Request::isMethodAllowed(const std::vector<std::string>& allowedMethods, const std::string& method) {
     return std::find(allowedMethods.begin(), allowedMethods.end(), method) != allowedMethods.end();
 }
 
@@ -253,7 +249,7 @@ void Request::prepareRequest()
     {
         return handleError("METHOD not allowed in" + location.getLocation());
     }
-    if ((method == "POST" || method == "PUT"))
+    if (method == "POST")
     {
         if (headers.find("content-length") != headers.end()) {
             contentLength = std::stoi(headers["content-length"]);
@@ -271,7 +267,7 @@ void Request::prepareRequest()
             chunked = true;
     if (headers.find("content-type") != headers.end())
         contentType = headers["content-type"];
-    if ((method == "POST" || method == "PUT") && headers["content-type"].find("multipart/form-data") != std::string::npos)
+    if (method == "POST" && headers["content-type"].find("multipart/form-data") != std::string::npos)
     {
         size_t boundaryPos = headers["content-type"].find("boundary=");
         if (boundaryPos != std::string::npos)
@@ -385,7 +381,6 @@ void Request::parseChunks()
     static bool inChunk = false;
     static size_t chunkSize = 0;
 
-    std::cout << "PARSING CHUNKS" << std::endl;
     std::vector<char> buffer(std::istreambuf_iterator<char>(requestStream), {});
     std::string chunkBuffer(buffer.begin(), buffer.end());
     rawChunkedData.append(std::string(buffer.begin(), buffer.end()));
@@ -402,7 +397,6 @@ void Request::parseChunks()
         if (chunkSize == 0) {
             currentState = State::BODY;
             chunked = false;
-            std::cout << "CHUNKS PARSED" << std::endl;
             contentLength = body.size();
             checkline(body);
             return;
@@ -430,7 +424,6 @@ void Request::parseBody()
     if (body.size() > contentLength)
     {
         handleError("body size and content length dont match");
-        std::cout << "\033[33m" << "body size: " << body.size() << " contentLength: " << contentLength << "\033[0m" << std::endl;
         return ;
     }
     else if ((body.size() == contentLength))
@@ -442,7 +435,6 @@ void Request::parseBody()
         else
         {
             currentState = State::COMPLETE;
-            std::cout << "REQUEST PARSING COMPLETE" << std::endl;
         }
     }
     else

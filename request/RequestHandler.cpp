@@ -8,42 +8,20 @@ RequestHandler::~RequestHandler() {}
 
 void RequestHandler::handleRequest( Request& req, Response& res)
 {
-    _location = req.getLocation();
-
-    prepareHandler(req);
-	if (req.getState() == State::CGI_ERROR) // Naa johonki siistimmin
-	{
-		res.setResponse(500, "text/html", "");
-		return ;
-	}
-	if (req.getState() == State::TIMEOUT)
-	{
-		res.setResponse(504, "text/html", "");
-		return ;
-	}
-	if (req.getState() == State::CGI_NOT_FOUND)
-	{
-		res.setResponse(404, "text/html", "");
-		return ;
-	}
-	if (req.getState() == State::CGI_NOT_PERMITTED)
-	{
-		res.setResponse(403, "text/html", "");
-		return ;
-	}
-    if (req.getState() == State::ERROR)
+    
+    if (req.getState() != State::COMPLETE)
     {
-        // std::cout << "it gets here!" << std::endl;
-        res.setResponse(400, "text/html", "");
-        // std::cout << "but not here" << std::endl;
+        handleError(req, res);
         return ;
     }
+
+    prepareHandler(req);
+
     if (_location.getLocation() == "/cgi")
     {
         readCgiOutputFile();
     }
-	if (req.getUri() == "/")
-		req.setPath("/index.html");
+
     if (_method == "GET")
 	{
         handleGetRequest(res);
@@ -60,6 +38,29 @@ void RequestHandler::handleRequest( Request& req, Response& res)
 	{
         res.setResponse(400, "text/html", "");
     }
+}
+
+
+void RequestHandler::handleError(Request &req, Response &res)
+{
+	switch (req.getState())
+	{
+	case State::CGI_ERROR:
+		res.setResponse(500, "text/html", "");
+		break ;
+	case State::TIMEOUT:
+		res.setResponse(504, "text/html", "");
+		break ;
+	case State::CGI_NOT_FOUND:
+		res.setResponse(404, "text/html", "");
+		break ;
+	case State::CGI_NOT_PERMITTED:
+		res.setResponse(403, "text/html", "");
+		break ;
+	default:
+		res.setResponse(500, "text/html", "");
+		break ;
+	}
 }
 
 void RequestHandler::readCgiOutputFile() {
@@ -124,6 +125,7 @@ std::string RequestHandler::getContentType(const std::string& path) const {
 void RequestHandler::prepareHandler(const Request &req)
 {
 	auto& sessionManager = SessionManager::getInstance();
+    _location = req.getLocation();
 	_uri = req.getUri();
 	_method = req.getMethod();
 	_contentType = getContentType(_uri);
@@ -194,56 +196,28 @@ std::string trimSlashes(const std::string& str) {
 }
 
 void removePrefix(std::string& str, const std::string& prefix) {
-    // std::cout << "Original string: " << str << "\nPrefix to remove: " << prefix << std::endl;
-
-    // Normalize prefix by removing trailing slashes
     std::string normalizedPrefix = prefix;
     if (!prefix.empty() && prefix.back() == '/') {
         normalizedPrefix.pop_back();
     }
-
-    // If the string starts with the normalized prefix, remove it
     if (str.rfind(normalizedPrefix, 0) == 0) {
         str.erase(0, normalizedPrefix.length());
-        // std::cout << "After removing prefix: " << str << std::endl;
-    } else {
-        // std::cout << "Prefix not found at the start of the string.\n";
     }
 }
 
 std::string RequestHandler::getFilepath(std::string filepath)
 {
-    filepath = urlDecode(filepath);  // Assuming urlDecode() is defined elsewhere
-
-    // Remove the root path (from location data) from the file path
-    std::string tmp = _location.getLocation(); // This should be "/uploads"
+    filepath = urlDecode(filepath);
+    std::string tmp = _location.getLocation();
     removePrefix(tmp, _location.getLocation());
-    std::cout << "LOCATION NAME: " << tmp << std::endl;
-
-    std::string locationRoot = _location.getRoot(); // Assume this returns something like "/website/html/uploads"
+    std::string locationRoot = _location.getRoot();
     removePrefix(locationRoot, "/");
-    std::cout << "LOCATION ROOT: " << locationRoot << std::endl;
-
     std::cout << _location.getLocation() << std::endl;
-     
-    // std::cout << "FILEPATH: " << filepath << std::endl;
     removePrefix(filepath, _location.getLocation());
-    // std::cout << "FILEPATH AFTER REMOVE PREFIX: " << filepath << std::endl;
     std::filesystem::path baseDir = std::filesystem::current_path();
-    // std::cout << "BASE DIRECTORY: " << baseDir << std::endl;
-
     std::string baseDirStr = baseDir.string();
-    // std::cout << "baseDirStr: " << baseDirStr << std::endl;
     std::string path;
-    checkline(_location.getLocation());
-    // if (_location.getLocation() == "/cgi")
-    // {
-    //     path = baseDirStr + locationRoot + "tmp" + filepath;
-    //     std::cout << "CGI PATH CREATED" << std::endl;
-    // }
-    // else
     path = baseDirStr + locationRoot + filepath;
-    std::cout << "FILEPATH CREATED: " << path << std::endl;
     return path;
 }
 
@@ -254,14 +228,8 @@ bool RequestHandler::validFile(const std::string& filePath) {
     try {
         std::filesystem::path fullPath = std::filesystem::path(filePath);
         const std::filesystem::path baseDir = std::filesystem::current_path();
-        // std::cout << "Full Path: " << fullPath << std::endl;
-        // std::cout << "Base Directory: " << baseDir << std::endl;
-
         std::filesystem::path dirPath = std::filesystem::canonical(baseDir);
 
-        // std::cout << "Canonical Directory Path: " << dirPath << std::endl;
-
-        
         if (std::filesystem::relative(fullPath, dirPath).string().find("..") == 0) {
             std::cerr << "Error: Access outside base directory is prohibited." << std::endl;
 			_statusCode = 403;
@@ -355,7 +323,7 @@ std::string RequestHandler::generateDirectoryListing(const std::string& director
         }
 
         if (!isFirstEntry) {
-            jsonStream << "\n"; // Add newline after the last entry
+            jsonStream << "\n";
         }
     } catch (const std::filesystem::filesystem_error& e) {
         std::cerr << "Error accessing directory: " << e.what() << std::endl;
@@ -364,22 +332,10 @@ std::string RequestHandler::generateDirectoryListing(const std::string& director
     jsonStream << "\t]\n}";
 
     std::string result = jsonStream.str();
-    // std::cout << result << std::endl;
     return result;
 }
 
 
-	/*
-    if (_request.hasHeader("Cookie")) {
-        std::string cookieHeader = _request.getHeader("Cookie"); // Assuming _request has methods for headers
-        std::unordered_map<std::string, std::string> cookies = parseCookies(cookieHeader);
-
-        // Example: Log cookies for debugging
-        for (const auto& [key, value] : cookies) {
-            std::cout << "Cookie: " << key << " = " << value << std::endl;
-        }
-	}
-	*/
 
 void RequestHandler::handleGetRequest(Response& res) {
 	std::cout << "HANDLE GET" << std::endl;
@@ -417,7 +373,6 @@ void RequestHandler::handleGetRequest(Response& res) {
         }
     }
     else if (validFile(_filePath)) {
-        std::cout << "FILE IS LEGIT" << std::endl;
         if (_location.getLocation() == "/cgi")
             res.setResponse(200, _contentType, _body, _responseCookies);
         else
@@ -426,7 +381,6 @@ void RequestHandler::handleGetRequest(Response& res) {
             res.setResponse(200, getContentType(_filePath), _body, _responseCookies);
         }
     } else {
-        std::cout << "FILE IS NOT FOUND" << std::endl;
         res.setResponse(404, "text/html", _body);
     }
 }
@@ -461,8 +415,6 @@ void RequestHandler::handleDeleteRequest(Response& res)
 
 void RequestHandler::handlePostRequest(const Request& req, Response& res)
 {
-    std::cout << "HANDLING POST REQUEST" << std::endl;
-	std::cout << "CONTENT TYPE: " << req.getContentType() << std::endl;
     if (req.isMultiPart()) {
         handleMultipartRequest(req, res);
     }
@@ -477,7 +429,6 @@ void RequestHandler::handlePostRequest(const Request& req, Response& res)
 
 void RequestHandler::handleJsonData(const Request &req, Response &res)
 {
-	std::cout << "HANDLE JSON DATA" << std::endl;
 	if (validFile(_filePath))
 	{
         std::ofstream file(_filePath, std::ios::out | std::ios::trunc | std::ios::binary);
@@ -498,15 +449,12 @@ void RequestHandler::handleJsonData(const Request &req, Response &res)
 
 
 void RequestHandler::handleMultipartRequest(const Request &req, Response &res) {
-	std::cout << "HANDLE MULTIPART REQUEST" << std::endl;
     const auto& multipartData = req.getMultipartData();
     std::vector<std::string> uploadedFiles;
     bool isCgi = false;
 
-    _body = "{\n\t\"uploadedFiles\": [\n";
     for (const auto& part : multipartData) {
         if (part.filename.empty()) {
-            // handleFormField(part, formData);
             continue ;
         }
         else if (req.getUri().find("cgi") != std::string::npos) {
@@ -522,7 +470,6 @@ void RequestHandler::handleMultipartRequest(const Request &req, Response &res) {
             }
 			if (_statusCode != 200 && _statusCode != 201)
 			{
-				//res.setResponse(_statusCode, "text/html", "error");
 				return ;
 			}
         }
@@ -546,7 +493,6 @@ void RequestHandler::handleFileUpload(const MultipartData& part, Response& res)
     	std::ofstream file(_uploadPath, std::ios::binary);
 		if (file)
 		{
-			std::cout << "WRITING TO FILE" << _uploadPath << std::endl;
         	file.write(part.data.data(), part.data.size());
         	file.close();
 			_statusCode = 200;
@@ -557,15 +503,6 @@ void RequestHandler::handleFileUpload(const MultipartData& part, Response& res)
     }
 }
 
-void RequestHandler::handleFormField(const MultipartData& part) {
-    if (part.filename.empty()) {
-        // textToBody += part.name;
-        // std::string fieldValue(part.data.begin(), part.data.end());
-        // formData[fieldName] = fieldValue;
-        // std::cout << "Form field received - " << fieldName << ": " << fieldValue << std::endl;
-        return ;
-    }
-}
 
 
 std::string RequestHandler::createJsonResponse(const std::vector<std::string> uploadedFiles) {

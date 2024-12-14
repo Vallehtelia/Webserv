@@ -208,7 +208,6 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 				}
 				//req.printRequest();
 				Response res(socket);
-				Response res(socket);
 				// std::cout << "URI FROM EVENT LOOP: " << req.getUri() << std::endl;
 				RequestHandler requestHandler;
 				requestHandler.handleRequest(req, res);

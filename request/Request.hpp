@@ -108,6 +108,8 @@ class Request {
         bool                                isValidHeaderValue(const std::string& key, const std::string& value);
         MultipartData                       createData(std::string &rawData);
         LocationConfig                      findLocation(const std::string &uri, const Socket &socket);
+        bool                                isMethodAllowed(const std::vector<std::string>& allowedMethods, const std::string& method);
+        bool                                isValidRequestLine(const std::string& requestLine);
 } ;
 
 # endif
