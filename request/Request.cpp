@@ -203,7 +203,6 @@ LocationConfig Request::findLocation(const std::string &uri, const Socket &socke
             }
         }
     }
-
     return bestMatch;
 }
 

@@ -50,7 +50,6 @@ void RequestHandler::readCgiOutputFile() {
 
     std::string contentType;
     std::string line;
-    std::stringstream body;
 
     std::getline(inputFile, contentType);
 
@@ -60,11 +59,10 @@ void RequestHandler::readCgiOutputFile() {
         _contentType.erase(0, _contentType.find_first_not_of(" \t\r\n"));
     }
 
-    while (std::getline(inputFile, line)) {
-        body << line;
-    }
+    std::string bodyContent((std::istreambuf_iterator<char>(inputFile)),
+                             std::istreambuf_iterator<char>());
 
-    _body = body.str();
+    _body = bodyContent;
     inputFile.close();
 
     std::cout << "----- CGI RESPONSE -----" << std::endl;
