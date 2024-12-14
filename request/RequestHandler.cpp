@@ -9,9 +9,9 @@ RequestHandler::~RequestHandler() {}
 void RequestHandler::handleRequest( Request& req, Response& res)
 {
     
-    if (req.getState() != State::COMPLETE)
+    if (req.getState() == State::ERROR)
     {
-        handleError(req, res);
+        res.setResponse(req.getErrorCode(), "text/html", "");
         return ;
     }
 
@@ -35,32 +35,10 @@ void RequestHandler::handleRequest( Request& req, Response& res)
     }
 	else
 	{
-        res.setResponse(400, "text/html", "");
+        res.setResponse(405, "text/html", "");
     }
 }
 
-
-void RequestHandler::handleError(Request &req, Response &res)
-{
-	switch (req.getState())
-	{
-	case State::CGI_ERROR:
-		res.setResponse(500, "text/html", "");
-		break ;
-	case State::TIMEOUT:
-		res.setResponse(504, "text/html", "");
-		break ;
-	case State::CGI_NOT_FOUND:
-		res.setResponse(404, "text/html", "");
-		break ;
-	case State::CGI_NOT_PERMITTED:
-		res.setResponse(403, "text/html", "");
-		break ;
-	default:
-		res.setResponse(400, "text/html", "");
-		break ;
-	}
-}
 
 void RequestHandler::readCgiOutputFile() {
     std::ifstream inputFile(_filePath);

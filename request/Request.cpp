@@ -5,6 +5,8 @@ Request::Request() : currentState(State::REQUEST_LINE), contentLength(0), body("
     chunked = false;
     received = false;
     _isMultiPart = false;
+    body_size = 0;
+    errorCode = 0;
 }
 
 Request::Request(const std::string& rawRequest) : currentState(State::REQUEST_LINE), contentLength(0), requestStream(rawRequest)  {
@@ -28,6 +30,7 @@ Request &Request::operator=(const Request &rhs) {
         boundary = rhs.boundary;
         multipartData = rhs.multipartData;
         location = rhs.location;
+        errorCode = rhs.errorCode;
     }
     return *this;
 }
@@ -99,6 +102,17 @@ std::map<std::string, std::string>  Request::getQueryParams() const
     return queryParams;
 }
 
+int     Request::getErrorCode() const
+{
+    return errorCode;
+}
+
+void    Request::setErrorCode(const int code)
+{
+    errorCode = code;
+    currentState = State::ERROR;
+}
+
 void Request::reset()
 {
     currentState = State::REQUEST_LINE;
@@ -120,12 +134,14 @@ void Request::reset()
     multipartData.clear();
     queryParams.clear();
     location = LocationConfig();
+    errorCode = 0;
 }
 
 
-void Request::handleError(const std::string& errorMsg) {
+void Request::handleError(int code, const std::string& errorMsg) {
     std::cerr << "\033[31m" << "Error: " << errorMsg << "\033[0m" << std::endl;
     currentState = State::ERROR;
+    errorCode = code;
 }
 
 void Request::parseRequest(std::string &rawRequest,const Socket &socket) {
@@ -222,7 +238,7 @@ void Request::parseRequestLine(const Socket &socket) {
         removeCarriageReturn(requestLine);
         if (!isValidRequestLine(requestLine))
         {
-            handleError("Invalid characters in request line.");
+            handleError(400, "Invalid characters in request line.");
             return ;
         }
         std::istringstream lineStream(requestLine);
@@ -232,10 +248,10 @@ void Request::parseRequestLine(const Socket &socket) {
             location = findLocation(uri, socket);
             currentState = State::HEADERS;
         } else {
-            handleError("Invalid request line format.");
+            handleError(400, "Invalid request line format.");
         }
     } else {
-        handleError("Request line missing.");
+        handleError(400, "Request line missing.");
     }
 }
 
@@ -247,19 +263,19 @@ void Request::prepareRequest()
 {
     if (!isMethodAllowed(location.getAllowMethods(), method))
     {
-        return handleError("METHOD not allowed in" + location.getLocation());
+        return handleError(405, "METHOD not allowed in" + location.getLocation());
     }
     if (method == "POST")
     {
         if (headers.find("content-length") != headers.end()) {
             contentLength = std::stoi(headers["content-length"]);
         } else {
-            handleError("Content-Length missing on a POST request");
+            handleError(400, "Content-Length missing on a POST request");
             return ;
         }
         if (contentLength > maxBodySize)
         { 
-            return handleError("Content-Length exceeds client max body size");
+            return handleError(400, "Content-Length exceeds client max body size");
         }
     }
     if (headers.find("transfer-encoding") != headers.end())
@@ -284,7 +300,7 @@ void Request::prepareRequest()
     {
         if (method == "GET")
         {
-            handleError("body in a GET request");
+            handleError(400, "body in a GET request");
             return ;
         }
         else
@@ -314,11 +330,11 @@ void Request::validateHeaders() {
         std::string key = pair.first;
         std::string value = pair.second;
         if (!isValidHeaderKey(key)) {
-            handleError("Invalid header key format: " + key);
+            handleError(400, "Invalid header key format: " + key);
             return;
         }
         if (!isValidHeaderValue(key, value)) {
-            handleError("Invalid header value format for " + key + ": " + value);
+            handleError(400, "Invalid header value format for " + key + ": " + value);
             return;
         }
     }
@@ -423,7 +439,7 @@ void Request::parseBody()
     body.append(std::string(buffer.begin(), buffer.end()));
     if (body.size() > contentLength)
     {
-        handleError("body size and content length dont match");
+        handleError(400, "body size and content length dont match");
         return ;
     }
     else if ((body.size() == contentLength))

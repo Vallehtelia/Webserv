@@ -24,11 +24,7 @@ enum class State {
     MULTIPARTDATA,
     COMPLETE,
     ERROR,
-    INCOMPLETE,
-	CGI_ERROR,
-	TIMEOUT,
-	CGI_NOT_FOUND,
-	CGI_NOT_PERMITTED
+    INCOMPLETE
 };
 
 struct MultipartData
@@ -67,6 +63,8 @@ class Request {
         void                                validateHeaders();
         LocationConfig                      getLocation() const;
         std::map<std::string, std::string>  getQueryParams() const;
+        int                                 getErrorCode() const;
+        void                                setErrorCode(const int code);
         Request &operator=(const Request &rhs);
 
     private:
@@ -77,7 +75,8 @@ class Request {
         bool                                _isMultiPart;
         State                               currentState;
         size_t                              contentLength;
-        size_t                              body_size = 0;
+        size_t                              body_size;
+        int                                 errorCode;
         std::string                         requestBuffer;
         std::string                         rawRequest;
         std::string                         body;
@@ -97,7 +96,7 @@ class Request {
         void                                parseMultipartData();
         void                                parseHeaders();
         void                                parseBody();
-        void                                handleError(const std::string& errorMsg);
+        void                                handleError(int code, const std::string& errorMsg);
         void                                parseRequestLine(const Socket &socket);
         void                                parseQueryString();
         void                                printMultipartdata();
