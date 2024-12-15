@@ -25,26 +25,16 @@ const sendRequest = async (script) => {
 	try {
 		const response = await fetch(`/cgi/cgi-bin/${script}`);
 		if (response.ok) {
-			
-			// Fetch the CGI output HTML
-			const terminalOutput = await fetch('/cgi/cgi_output.html');
-			
-			if (terminalOutput.ok) {
-				const bodyContent = await terminalOutput.text();
-				const lines = bodyContent.split('\n');
-				let i = 0;
-				for (let line of lines) {
-					const lineElement = document.createElement('p');
-					lineElement.innerHTML = line;
-					terminalBody.insertBefore(lineElement, terminalBody.children[1]);
-					//console.log(line);  // You can process each line here
-					i++;
-				}
-			} else {
-				const errorMessage = document.createElement('p');
-				errorMessage.classList.add('error-message');
-				errorMessage.innerHTML = 'Failed to fetch CGI output, status:' + response.status;
-				terminalBody.insertBefore(errorMessage, terminalBody.children[1]);
+			const bodyContent = await response.text();
+			console.log(bodyContent);
+
+			const lines = bodyContent.split('\n');
+			let i = 0;
+			for (let line of lines) {
+				const lineElement = document.createElement('p');
+				lineElement.innerText = line;
+				terminalBody.insertBefore(lineElement, terminalBody.children[1]);
+				i++;
 			}
 		} else {
 			const errorMessage = document.createElement('p');
@@ -54,8 +44,13 @@ const sendRequest = async (script) => {
 		}
 	} catch (error) {
 		console.error('Error fetching data:', error);
+		const errorMessage = document.createElement('p');
+		errorMessage.classList.add('error-message');
+		errorMessage.innerHTML = 'An error occurred while fetching the data.';
+		terminalBody.insertBefore(errorMessage, terminalBody.children[1]);
 	}
-}
+};
+
 
 function submitInput(inputValue) {
     console.log('Input submitted:', inputValue);

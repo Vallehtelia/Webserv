@@ -46,6 +46,8 @@ int	main(int ac, char **av)
 {
 	signal(SIGINT, sig_handler);
     std::vector<ServerConfig>	server; // Taa sisaltaa kaiken tiedon, Server name, port, host, root, client bodysize, index path, error pages in a map, locations in vector.
+    auto& sessionManager = SessionManager::getInstance();
+    sessionManager.clearSessions();
 
     if (ac != 2)
 	{
