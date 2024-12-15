@@ -12,6 +12,7 @@
 #define YELLOW "\033[1;33m"
 #define CYAN "\033[1;36m"
 #define DEFAULT "\033[0m"
+#define CLEAR_TERMINAL "\033[2J\033[1;1H"
 
 #ifndef SERVERCONFIG_HPP
 #define SERVERCONFIG_HPP

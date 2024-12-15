@@ -44,6 +44,8 @@ void	sig_handler(int signum)
 
 int	main(int ac, char **av)
 {
+	// clear terminal
+	std::cout << CLEAR_TERMINAL;
 	signal(SIGINT, sig_handler);
     std::vector<ServerConfig>	server; // Taa sisaltaa kaiken tiedon, Server name, port, host, root, client bodysize, index path, error pages in a map, locations in vector.
 

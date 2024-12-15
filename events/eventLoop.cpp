@@ -152,7 +152,7 @@ static int	checkReceivedData(int &fd, int bytesRead, std::unordered_map<int, std
 			failureCount.erase(fd);
 			return 1;
 		}
-		return 1;
+		return 0;
 	}
 	return 0;
 }
@@ -178,7 +178,7 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 			if (checkReceivedData(fd, bytes_read, client_data))
 				return -1;
 			else
-				break;
+				continue;
 		}
 		else
 		{
