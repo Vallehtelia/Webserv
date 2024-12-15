@@ -79,8 +79,6 @@ bool ConfigValidator::validateLocationBlock(std::istream &input) {
         trim(line);
         if (line.empty() || line[0] == '#') continue;
 
-		// Are all these needed/allowed inside a location block
-		// To be reviewed
         if (line.find("allow_methods") == 0) {
             if (!validateAllowMethods(line)) {
                 std::cerr << "Invalid allow_methods directive: " << line << std::endl;
@@ -146,7 +144,7 @@ bool ConfigValidator::validateServerBlock(std::istream &input) {
                 return false;
             }
         } else if (line == "}") {
-            break; // End of server block
+            break;
         } else {
             std::cerr << "Invalid directive in server block: \"" << line << "\"" << std::endl;
             return false;
@@ -166,7 +164,7 @@ bool ConfigValidator::validateConfigFile(const std::string &filename) {
     std::string line;
     while (std::getline(file, line)) {
         trim(line);
-        if (line.empty() || line[0] == '#') continue; // taa odottaa et kommentti alkaa ensimmaisest indexitsta
+        if (line.empty() || line[0] == '#') continue;
 
 		if (line == "server") {
 			if (!std::getline(file, line)) {
