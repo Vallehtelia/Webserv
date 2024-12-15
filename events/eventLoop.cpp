@@ -73,7 +73,8 @@ void cleanupTempFiles()
 *
 * @param fd File descriptor to close
 */
-// mun koneella ei toimi referenssilla, int on ok copy
+// On Docker/mac complains about reference, using copy is ok I think (no thread safety issues)
+
 static void	closeOnce(int fd)
 {
 	if (fd != -1)
@@ -187,7 +188,7 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 		if (bytes_read <= 0)
 		{
 			checkReceivedData(fd, bytes_read, client_data);
-			return -1;
+			return -1; // WE SHOULD CHECK 0 AND <0 SEPARATELY HERE!!!!
 			// temp errors not checked, just close the connection
 			// let epoll retry the recv
 		}
@@ -212,7 +213,7 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 				// std::cout << "URI FROM EVENT LOOP: " << req.getUri() << std::endl;
 				RequestHandler requestHandler;
 				requestHandler.handleRequest(req, res);
-				res.printResponse();
+				//res.printResponse();
 				// Get the full HTTP response string from the Response class
 				std::string http_response = res.getResponseString();
 				// Send the response back to the client

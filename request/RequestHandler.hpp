@@ -36,6 +36,7 @@ private:
 	std::string generateDirectoryListing(const std::string& directoryPath);
 	void readCgiOutputFile();
 	void handleCgi(Request &req);
+	void handleError(Request &req, Response &res);
 	std::string				_body;
     std::string				_statusLine;
     std::map<std::string, std::string>				_headers;
