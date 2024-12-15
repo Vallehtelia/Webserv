@@ -130,8 +130,8 @@ void RequestHandler::prepareHandler(const Request &req)
             std::cout << "Using existing session: " << sessionId << std::endl;
         } else {
             std::cout << "Invalid session: " << sessionId << std::endl;
-			std::cout << "Creating a new session with ID: " << _sessionId << std::endl;
             _sessionId = sessionManager.createDummySession();
+			std::cout << "Creating a new session with ID: " << _sessionId << std::endl;
 			_responseCookies.push_back("session_id=" + _sessionId + "; Path=/; HttpOnly"); //; Secure");
         }
     } else {
@@ -139,18 +139,6 @@ void RequestHandler::prepareHandler(const Request &req)
 		std::cout << "No session_id found, creating a new session with ID: " << _sessionId << std::endl;
 		_responseCookies.push_back("session_id=" + _sessionId + "; Path=/; HttpOnly"); //; Secure");
     }
-
-	/*
-	// test singleton:
-	auto& sessionManager1 = SessionManager::getInstance();
-    auto& sessionManager2 = SessionManager::getInstance();
-
-    if (&sessionManager1 == &sessionManager2) {
-        std::cout << "Singleton confirmed: Both instances are the same." << std::endl;
-    } else {
-        std::cout << "Singleton error: Instances are different!" << std::endl;
-    }
-	*/
 }
 
 static std::string urlDecode(const std::string& src) {
@@ -336,7 +324,7 @@ void logSessionData(const std::string& sessionId, const SessionData& sessionData
     }
     std::time_t expirationTimeT = std::chrono::system_clock::to_time_t(
         std::chrono::system_clock::now() +
-        (sessionData.expirationTime - std::chrono::steady_clock::now()));
+        (sessionData.expirationTime - std::chrono::system_clock::now()));
     std::cout << "  Expiration Time: "
               << std::put_time(std::localtime(&expirationTimeT), "%Y-%m-%d %H:%M:%S") << std::endl;
 }

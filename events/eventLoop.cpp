@@ -73,7 +73,8 @@ void cleanupTempFiles()
 *
 * @param fd File descriptor to close
 */
-static void	closeOnce(int &fd)
+// On Docker/mac complains about reference, using copy is ok I think (no thread safety issues)
+static void	closeOnce(int fd)
 {
 	if (fd != -1)
 	{
