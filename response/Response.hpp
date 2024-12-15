@@ -21,6 +21,7 @@ public:
     void        setHeaders(std::string &headers);
     void        setUri(std::string &URI);
     std::string getResponseString() const;
+	std::string printResponseString() const;
 private:
     int         _statusCode;
     int         _contentLength;
