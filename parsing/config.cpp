@@ -9,14 +9,14 @@ bool	initConfig(const std::string &configFile, std::vector<ServerConfig> &server
 	std::cout << GREEN << "Validating file: " << configFile << DEFAULT << std::endl;
 	if (!ConfigValidator::validateConfigFile(configFile))
 	{
-		std::cout << "Warning: invalid configuration file" << std::endl;
+		std::cerr << RED << "Warning: invalid configuration file" << DEFAULT << std::endl;
 		return false;
 	}
 
 	std::cout << GREEN << "Parsing file: " << configFile << DEFAULT << std::endl;
 	parseData(configFile, server);
 
-	for (auto it = begin(server); it != end(server); it++)
-		it->printConfig();
+	// for (auto it = begin(server); it != end(server); it++)
+	// 	it->printConfig();
 	return true;
 }

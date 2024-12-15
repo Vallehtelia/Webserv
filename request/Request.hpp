@@ -74,10 +74,12 @@ class Request {
         size_t                            maxBodySize;
         bool                                received;
         bool                                chunked;
+		bool                                inChunk;
         bool                                _isMultiPart;
         State                               currentState;
         size_t                              contentLength;
         size_t                              body_size = 0;
+		size_t                              chunkSize = 0;
         std::string                         requestBuffer;
         std::string                         rawRequest;
         std::string                         body;

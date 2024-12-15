@@ -3,6 +3,7 @@
 
 Request::Request() : currentState(State::REQUEST_LINE), contentLength(0), body(""), method(""), uri(""), version("") {
     chunked = false;
+	inChunk = false;
     received = false;
     _isMultiPart = false;
 }
@@ -17,11 +18,13 @@ Request &Request::operator=(const Request &rhs) {
         body = rhs.body;
         rawRequest = rhs.rawRequest;
         body_size = rhs.body_size;
+		chunkSize = rhs.chunkSize;
         headers = rhs.headers;
         method = rhs.method;
         uri = rhs.uri;
         version = rhs.version;
         chunked = rhs.chunked;
+		inChunk = rhs.inChunk;
         received = rhs.received;
         _isMultiPart = rhs._isMultiPart;
         rawChunkedData = rhs.rawChunkedData;
@@ -103,6 +106,7 @@ void Request::reset()
 {
     currentState = State::REQUEST_LINE;
     chunked = false;
+	inChunk = false;
     received = false;
     _isMultiPart = false;
     rawRequest.clear();
@@ -115,6 +119,7 @@ void Request::reset()
     version.clear();
     contentLength = 0;
     body_size = 0;
+	chunkSize = 0;
     headers.clear();
     body.clear();
     multipartData.clear();
@@ -131,12 +136,11 @@ void Request::handleError(const std::string& errorMsg) {
 void Request::parseRequest(std::string &rawRequest,const Socket &socket) {
     maxBodySize = static_cast<size_t>(socket.getServer().getBodySize());
     requestStream.str(rawRequest);
-    if (currentState == State::INCOMPLETE)
-        currentState = State::BODY;
-    if (chunked)
+    if (currentState == State::INCOMPLETE && chunked)
         currentState = State::UNCHUNK;
+    else if (currentState == State::INCOMPLETE)
+        currentState = State::BODY;
     while (currentState != State::COMPLETE && currentState != State::ERROR && currentState != State::INCOMPLETE) {
-        std::cout << "REQUEST PARSING: " << stateToString(currentState) << std::endl;
         switch (currentState) {
             case State::REQUEST_LINE:
                 parseRequestLine(socket);
@@ -249,53 +253,55 @@ bool isMethodAllowed(const std::vector<std::string>& allowedMethods, const std::
 
 void Request::prepareRequest()
 {
-    if (!isMethodAllowed(location.getAllowMethods(), method))
-    {
-        return handleError("METHOD not allowed in" + location.getLocation());
+    if (!isMethodAllowed(location.getAllowMethods(), method)) {
+        return handleError("METHOD not allowed in " + location.getLocation());
     }
-    if ((method == "POST" || method == "PUT"))
-    {
-        if (headers.find("content-length") != headers.end()) {
-            contentLength = std::stoi(headers["content-length"]);
-        } else {
-            handleError("Content-Length missing on a POST request");
-            return ;
-        }
-        if (contentLength > maxBodySize)
-        {
-            return handleError("Content-Length exceeds client max body size");
-        }
+
+    if (headers.find("transfer-encoding") != headers.end() && headers["transfer-encoding"] == "chunked") {
+        chunked = true;
+    } else if (headers.find("content-length") != headers.end()) {
+        contentLength = std::stoi(headers["content-length"]);
+    } else if (method == "POST" || method == "PUT") {
+        handleError("Content-Length or Transfer-Encoding missing on a POST/PUT request");
+        return;
     }
-    if (headers.find("transfer-encoding") != headers.end())
-        if (headers["transfer-encoding"] == "chunked")
-            chunked = true;
-    if (headers.find("content-type") != headers.end())
+
+    if (contentLength > maxBodySize) {
+        return handleError("Content-Length exceeds client max body size");
+    }
+
+    if (headers.find("content-type") != headers.end()) {
         contentType = headers["content-type"];
-    if ((method == "POST" || method == "PUT") && headers["content-type"].find("multipart/form-data") != std::string::npos)
-    {
-        size_t boundaryPos = headers["content-type"].find("boundary=");
-        if (boundaryPos != std::string::npos)
-        {
-            boundary = headers["content-type"].substr(boundaryPos + 9);
-            boundary =  "--" + boundary;
-            boundary.erase(boundary.find_last_not_of("\r") + 1);
-            _isMultiPart = true;
+        if (contentType.find("multipart/form-data") != std::string::npos) {
+            size_t boundaryPos = contentType.find("boundary=");
+            if (boundaryPos != std::string::npos) {
+                boundary = contentType.substr(boundaryPos + 9);
+                boundary = "--" + boundary;
+                boundary.erase(boundary.find_last_not_of("\r") + 1);
+                _isMultiPart = true;
+            } else {
+                handleError("Boundary missing in multipart/form-data");
+                return;
+            }
         }
     }
-    if (chunked == true)
+
+    if (chunked) {
+        if (_isMultiPart && boundary.empty()) {
+            handleError("Boundary missing for multipart chunked request");
+            return;
+        }
         currentState = State::UNCHUNK;
-    else if (contentLength > 0)
-    {
-        if (method == "GET")
-        {
-            handleError("body in a GET request");
-            return ;
-        }
-        else
+    } else if (contentLength > 0) {
+        if (method == "GET") {
+            handleError("Body in a GET request");
+            return;
+        } else {
             currentState = State::BODY;
-    }
-    else
+        }
+    } else {
         currentState = State::COMPLETE;
+    }
 }
 
 bool Request::isValidHeaderKey(const std::string& key) {
@@ -379,45 +385,79 @@ std::map<std::string, std::string> Request::getCookies() const {
     return cookies;
 }
 
-
 void Request::parseChunks()
 {
-    static bool inChunk = false;
-    static size_t chunkSize = 0;
-
-    std::cout << "PARSING CHUNKS" << std::endl;
+    // Read available data from the request stream
     std::vector<char> buffer(std::istreambuf_iterator<char>(requestStream), {});
     std::string chunkBuffer(buffer.begin(), buffer.end());
-    rawChunkedData.append(std::string(buffer.begin(), buffer.end()));
-    checkline(rawChunkedData);
-    if (!inChunk) {
-        size_t pos = rawChunkedData.find("\r\n");
-        if (pos == std::string::npos) {
-            currentState = State::INCOMPLETE;
-            return;
+    rawChunkedData.append(chunkBuffer);
+
+    while (true) {
+        if (!inChunk) {
+            // Parse the chunk size
+            size_t pos = rawChunkedData.find("\r\n");
+            if (pos == std::string::npos) {
+                currentState = State::INCOMPLETE;
+                return; // Wait for more data
+            }
+
+            // Extract chunk size
+            std::string chunkSizeStr = rawChunkedData.substr(0, pos);
+            try {
+                if (chunkSizeStr.empty() || !std::all_of(chunkSizeStr.begin(), chunkSizeStr.end(), ::isxdigit)) {
+                    handleError("Invalid chunk size");
+                    return;
+                }
+                chunkSize = std::stoul(chunkSizeStr, nullptr, 16);
+            } catch (const std::exception &e) {
+                handleError("Error parsing chunk size: " + std::string(e.what()));
+                return;
+            }
+            rawChunkedData.erase(0, pos + 2);
+
+            if (chunkSize == 0) {
+				if (rawChunkedData == "\r\n") {
+					rawChunkedData.clear();
+					currentState = State::BODY;
+					inChunk = false;
+					chunked = false;
+					contentLength = body.size();
+					return;
+				}
+                // Handle the end of chunked data
+                size_t endOfHeaders = rawChunkedData.find("\r\n\r\n");
+                if (endOfHeaders == std::string::npos) {
+                    currentState = State::INCOMPLETE;
+                    return; // Wait for more data
+                }
+                rawChunkedData.erase(0, endOfHeaders + 4); // Remove trailing headers
+                currentState = State::BODY;
+                inChunk = false;
+				chunked = false;
+                contentLength = body.size();
+                return;
+            }
+            inChunk = true;
         }
-        std::string chunkSizeStr = rawChunkedData.substr(0, pos);
-        chunkSize = std::stoul(chunkSizeStr, nullptr, 16);
-        rawChunkedData.erase(0, pos + 2);
-        if (chunkSize == 0) {
-            currentState = State::BODY;
-            chunked = false;
-            std::cout << "CHUNKS PARSED" << std::endl;
-            contentLength = body.size();
-            checkline(body);
-            return;
+
+        if (inChunk) {
+            if (rawChunkedData.length() < chunkSize + 2) {
+                currentState = State::INCOMPLETE;
+                return; // Wait for more data
+            }
+
+            std::string chunkData = rawChunkedData.substr(0, chunkSize);
+            body.append(chunkData);
+
+            // Validate and remove the chunk trailer (\r\n)
+            if (rawChunkedData.substr(chunkSize, 2) != "\r\n") {
+                handleError("Invalid or missing chunk trailer");
+                return;
+            }
+
+            rawChunkedData.erase(0, chunkSize + 2);
+            inChunk = false;
         }
-        inChunk = true;
-    }
-    if (inChunk) {
-        if (rawChunkedData.length() < chunkSize) {
-            currentState = State::INCOMPLETE;
-            return;
-        }
-        std::string chunkData = rawChunkedData.substr(0, chunkSize);
-        body.append(chunkData);
-        rawChunkedData.erase(0, chunkSize + 2);
-        inChunk = false;
     }
 }
 
@@ -430,7 +470,6 @@ void Request::parseBody()
     if (body.size() > contentLength)
     {
         handleError("body size and content length dont match");
-        std::cout << "\033[33m" << "body size: " << body.size() << " contentLength: " << contentLength << "\033[0m" << std::endl;
         return ;
     }
     else if ((body.size() == contentLength))
@@ -442,7 +481,6 @@ void Request::parseBody()
         else
         {
             currentState = State::COMPLETE;
-            std::cout << "REQUEST PARSING COMPLETE" << std::endl;
         }
     }
     else

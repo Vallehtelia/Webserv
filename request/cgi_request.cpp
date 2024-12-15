@@ -255,7 +255,6 @@ int	cgiRequest::execute()
 			}
 			char	*args[] = {const_cast<char *>(script_path.c_str()), nullptr};
 			char	**envp = buildEnv();
-			std::cerr << "running execve script: " << script_path.c_str() << std::endl; // debugging
 			execve(script_path.c_str(), args, envp);
 			std::cerr << RED << "Error: execve failed!" << DEFAULT << std::endl;
 			cleanEnv(envp);

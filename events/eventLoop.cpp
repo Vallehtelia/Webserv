@@ -5,6 +5,8 @@
 #include "../response/Response.hpp"
 #include "../sockets/socket.hpp"
 
+extern bool running;
+
 static std::unordered_map<int, int> failureCount;
 
 int acceptConnection(int fd, int epoll_fd)
@@ -12,20 +14,17 @@ int acceptConnection(int fd, int epoll_fd)
     struct sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
 
-    // Yritä hyväksyä uusi yhteys
     int client_fd = accept(fd, (struct sockaddr *)&client_addr, &client_len);
     if (client_fd < 0)
     {
     	if (errno == EAGAIN || errno == EWOULDBLOCK)
         {
-            // Ei uusia yhteyksiä juuri nyt, tämä ei ole kriittinen virhe
             return -1;
         }
         std::cerr << RED << "Failed to accept connection." << DEFAULT << "\n";
         return -1;
     }
 
-    // Aseta uusi client_fd ei-blokkaavaksi
     if (!set_non_blocking(client_fd))
     {
         std::cerr << RED << "Failed to set client_fd non-blocking: " << client_fd << DEFAULT << "\n";
@@ -33,11 +32,8 @@ int acceptConnection(int fd, int epoll_fd)
         return -1;
     }
 
-    // Lisää uusi client_fd epollin valvontaan
     struct epoll_event event;
-    event.events = EPOLLIN | EPOLLET; // Lisää mahdollisesti EPOLLET (edge-triggered)
-	// Caution: In edge-triggered mode, you must process all pending data
-	// until recv() or send() returns EAGAIN. Onks meilla nain?
+    event.events = EPOLLIN | EPOLLET;
     event.data.fd = client_fd;
 
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) == -1)
@@ -56,8 +52,8 @@ int acceptConnection(int fd, int epoll_fd)
 */
 void cleanupTempFiles()
 {
-	std::string tempInFilePath = "./html/tmp/cgi_output.html";
-	std::string tempOutFilePath = "./html/tmp/cgi_input.html";
+	std::string tempInFilePath = "./cgi/tmp/cgi_output.html";
+	std::string tempOutFilePath = "./cgi/tmp/cgi_input.html";
 	if (std::ifstream(tempInFilePath))
 	{
 		if (std::remove(tempInFilePath.c_str()) != 0)
@@ -95,22 +91,20 @@ static void	sendData(std::string httpRespose, epoll_event &event)
 	size_t		totalSent = 0;
 	size_t		messageLength = httpRespose.length();
 	const char	*messagePtr = httpRespose.c_str();
-	int			maxRetries = 10; // testissa vaan ettei jaa infinite looppiin lahettamaan vaan aiheuttaa sitten timeoutin.
+	int			maxRetries = 10;
 	int			retries = 0;
 
-	while (totalSent < messageLength) // tankin pitais toimii edgetriggered modessa
+	while (totalSent < messageLength)
 	{
 		size_t	bytesSent = send(event.data.fd, messagePtr + totalSent, messageLength - totalSent, 0);
 
 		if (bytesSent > 0)
 		{
-			// Successfully sent some bytes
 			totalSent += bytesSent;
-			retries = 0; // Reset retries on successful send
+			retries = 0;
 		}
 		else if (bytesSent == 0)
 		{
-			// No data was sent; retry until the maximum retries are reached
 			if (++retries >= maxRetries)
 			{
 				std::cerr << RED << "Send timed out after multiple retries" << DEFAULT << std::endl;
@@ -118,11 +112,10 @@ static void	sendData(std::string httpRespose, epoll_event &event)
 				return;
 			}
 		}
-		else // bytesSent < 0
+		else
 		{
-			// Treat all failures as temporary; let epoll retry
 			std::cerr << YELLOW << "Temporary send failure, deferring to EPOLLOUT event." << DEFAULT << std::endl;
-			return; // Exit and wait for the next EPOLLOUT
+			return;
 		}
 	}
 	std::cout << "Response successfully sent to client." << std::endl;
@@ -176,8 +169,7 @@ static int	checkReceivedData(int &fd, int bytesRead, std::unordered_map<int, std
 */
 int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unordered_map<int, std::vector<char>> &client_data, const Socket &socket)
 {
-    std::cout << "RECEIVING DATA FROM FD: " << fd << std::endl;
-	while (true) // should work with edge-triggered mode, since we read all data until recv() returns -1
+	while (true)
 	{
 		char buffer[4000] = {0};
 		int bytes_read = recv(fd, buffer, sizeof(buffer) - 1, 0);
@@ -187,8 +179,6 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 				return -1;
 			else
 				break;
-			// temp errors not checked, just close the connection
-			// let epoll retry the recv
 		}
 		else
 		{
@@ -211,12 +201,11 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 				requestHandler.handleRequest(req, res);
 				std::string http_response = res.getResponseString();
 				sendData(http_response, event);
-				std::cout << "RESPONSE SENT" << std::endl;
 				req.reset();
 				closeOnce(event.data.fd);
+				cleanupTempFiles();
 				break;
 			}
-			cleanupTempFiles();
 		}
 	}
 	return 0;
@@ -278,14 +267,15 @@ void event_loop(const std::vector<Socket> &sockets, int epoll_fd)
     struct epoll_event events[MAX_EVENTS];
     std::unordered_map<int, Request> requests;
     std::unordered_map<int, std::vector<char>> client_data;
-    std::unordered_map<int, int> client_to_server_map; // Asiakas-socket -> Server-socket
+    std::unordered_map<int, int> client_to_server_map;
 
     while (true)
     {
         int num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
         if (num_events == -1)
         {
-            std::cerr << RED << "Error: epoll_wait failed" << DEFAULT << std::endl;
+			if (running)
+            	std::cerr << RED << "Error: epoll_wait failed" << DEFAULT << std::endl;
             break;
         }
 
@@ -293,11 +283,10 @@ void event_loop(const std::vector<Socket> &sockets, int epoll_fd)
         {
             int fd = events[i].data.fd;
 
-            // 1. Tarkista, onko fd server-socket
             auto it = std::find_if(sockets.begin(), sockets.end(),
                                    [fd](const Socket &sock) { return sock.getSocketFd() == fd; });
 
-            if (it != sockets.end()) // Löytyikö server-socket
+            if (it != sockets.end())
             {
                 int new_fd = acceptConnection(fd, epoll_fd);
                 if (new_fd > 0)
@@ -305,22 +294,19 @@ void event_loop(const std::vector<Socket> &sockets, int epoll_fd)
                 continue;
             }
 
-            // 2. EPOLLIN-tapahtuma: Käsittele asiakasdataa
             if (events[i].events & EPOLLIN)
             {
-                // Etsi asiakassocketin hyväksynyt server-socket
                 auto server_fd_it = client_to_server_map.find(fd);
                 if (server_fd_it != client_to_server_map.end())
                 {
                     int server_fd = server_fd_it->second;
 
-                    // Etsi oikea server-socket
                     auto server_socket_it = std::find_if(sockets.begin(), sockets.end(),
                                                          [server_fd](const Socket &sock) {
                                                              return sock.getSocketFd() == server_fd;
                                                          });
 
-                    if (server_socket_it != sockets.end()) // Löytyi oikea server-socket
+                    if (server_socket_it != sockets.end())
                     {
                         const Socket &socket = *server_socket_it;
                         handleClientData(fd, requests[fd], events[i], client_data, socket);
@@ -335,10 +321,6 @@ void event_loop(const std::vector<Socket> &sockets, int epoll_fd)
                 else
 				{
 					std::cerr << RED << "Unknown client_fd: " << fd << " - closing connection." << DEFAULT << std::endl;
-					for (const auto &entry : client_to_server_map)
-					{
-						std::cout << "client_fd: " << entry.first << ", server_fd: " << entry.second << std::endl;
-					}
 					cleanupClientConnection(fd, epoll_fd, client_to_server_map, requests, client_data);
 				}
             }

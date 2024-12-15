@@ -42,9 +42,8 @@ void Response::setUri(std::string &URI)
 }
 
 // works with or without cookies
-void Response::setResponse(int statusCode, const std::string& contentType, 
+void Response::setResponse(int statusCode, const std::string& contentType,
 		const std::string &body, const std::vector<std::string>& cookies) {
-    std::cout << "hello from setResponse" << std::endl;
     _body = body;
     _statusCode = statusCode;
     setStatusLine();
@@ -60,7 +59,7 @@ void Response::setResponse(int statusCode, const std::string& contentType,
               "Access-Control-Allow-Origin: *" + "\r\n" +
               "Access-Control-Allow-Methods: GET, POST, OPTIONS" + "\r\n" +
               "Access-Control-Allow-Headers: Content-Type" + "\r\n";
-	
+
 	// Add cookies as Set-Cookie headers
     for (const std::string& cookie : cookies)
     {

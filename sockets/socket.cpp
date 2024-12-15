@@ -5,12 +5,10 @@ Socket::Socket(int port, std::string host) : _socket_fd(0), _active(false), _ser
 {
 	this->_port = port;
 	this->_ip = host;
-	std::cout << "Socket default constructor\n";
 }
 
 Socket::Socket(Socket const &other)
 {
-	std::cout << "Socket copy constructor\n";
 	this->_port = other._port;
 	this->_ip = other._ip;
 	this->_socket_fd = other._socket_fd;
@@ -28,10 +26,7 @@ Socket &Socket::operator=(Socket const &other)
 	return (*this);
 }
 
-Socket::~Socket()
-{
-	std::cout << "Socket destroyed.\n";
-}
+Socket::~Socket() {}
 
 void	Socket::setPort(int	port)
 {
@@ -87,7 +82,6 @@ bool	initSocket(std::vector<ServerConfig> &server, std::vector<Socket> &sockets)
 {
 	for (const auto &config : server)
     {
-		std::cout << "Creating socket on port " << config.getListenPort() << " and host " << config.getHost() << "...\n";
 		Socket sock(config.getListenPort(), config.getHost());
 
 		sock.setSocketFd(socket(AF_INET, SOCK_STREAM, 0));
@@ -117,7 +111,6 @@ bool	initSocket(std::vector<ServerConfig> &server, std::vector<Socket> &sockets)
 			return false;
 		}
 
-		// std::cout << "SOMAXCONN: " << SOMAXCONN << std::endl;
 		if (listen(sock.getSocketFd(), SOMAXCONN) < 0) // SOMAXCONN is the system defined maximum for the backlog
 		{
 			std::cerr << RED << "Failed to listen: " << strerror(errno) << DEFAULT << "\n";

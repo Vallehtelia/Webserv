@@ -66,7 +66,7 @@ void RequestHandler::readCgiOutputFile() {
     std::ifstream inputFile(_filePath);
 
     if (!inputFile.is_open()) {
-        std::cerr << "Error: Could not open file for reading." << std::endl;
+        std::cerr << RED << "Error: Could not open file for reading." << DEFAULT << std::endl;
         return;
     }
 
@@ -89,9 +89,9 @@ void RequestHandler::readCgiOutputFile() {
     _body = body.str();
     inputFile.close();
 
-    std::cout << "----- CGI RESPONSE -----" << std::endl;
-    std::cout << "content-type: " << _contentType << std::endl;
-    std::cout << "body: \n" << _body << std::endl;
+    // std::cout << "----- CGI RESPONSE -----" << std::endl;
+    // std::cout << "content-type: " << _contentType << std::endl;
+    // std::cout << "body: \n" << _body << std::endl;
 }
 
 
@@ -213,18 +213,18 @@ void removePrefix(std::string& str, const std::string& prefix) {
 
 std::string RequestHandler::getFilepath(std::string filepath)
 {
-    filepath = urlDecode(filepath);  // Assuming urlDecode() is defined elsewhere
+    filepath = urlDecode(filepath);
 
     // Remove the root path (from location data) from the file path
-    std::string tmp = _location.getLocation(); // This should be "/uploads"
+    std::string tmp = _location.getLocation();
     removePrefix(tmp, _location.getLocation());
-    std::cout << "LOCATION NAME: " << tmp << std::endl;
+    // std::cout << "LOCATION NAME: " << tmp << std::endl;
 
-    std::string locationRoot = _location.getRoot(); // Assume this returns something like "/website/html/uploads"
+    std::string locationRoot = _location.getRoot();
     removePrefix(locationRoot, "/");
-    std::cout << "LOCATION ROOT: " << locationRoot << std::endl;
+    // std::cout << "LOCATION ROOT: " << locationRoot << std::endl;
 
-    std::cout << _location.getLocation() << std::endl;
+    // std::cout << _location.getLocation() << std::endl;
 
     // std::cout << "FILEPATH: " << filepath << std::endl;
     removePrefix(filepath, _location.getLocation());
@@ -235,7 +235,7 @@ std::string RequestHandler::getFilepath(std::string filepath)
     std::string baseDirStr = baseDir.string();
     // std::cout << "baseDirStr: " << baseDirStr << std::endl;
     std::string path;
-    checkline(_location.getLocation());
+    // checkline(_location.getLocation());
     // if (_location.getLocation() == "/cgi")
     // {
     //     path = baseDirStr + locationRoot + "tmp" + filepath;
@@ -243,7 +243,7 @@ std::string RequestHandler::getFilepath(std::string filepath)
     // }
     // else
     path = baseDirStr + locationRoot + filepath;
-    std::cout << "FILEPATH CREATED: " << path << std::endl;
+    // std::cout << "FILEPATH CREATED: " << path << std::endl;
     return path;
 }
 
@@ -382,7 +382,7 @@ std::string RequestHandler::generateDirectoryListing(const std::string& director
 	*/
 
 void RequestHandler::handleGetRequest(Response& res) {
-	std::cout << "HANDLE GET" << std::endl;
+	std::cout << "GET REQUEST" << std::endl;
 
     // Example: Log cookies for debugging
     for (const auto& [key, value] : _cookies) {
@@ -407,7 +407,7 @@ void RequestHandler::handleGetRequest(Response& res) {
 		std::cout << "Session data: " << key << " = " << value << std::endl;
 	}
 
-    std::cout << "Is directory: " << std::filesystem::is_directory(_filePath) << std::endl;
+    // std::cout << "Is directory: " << std::filesystem::is_directory(_filePath) << std::endl;
     if (std::filesystem::is_directory(_filePath)){
         if (_location.isAutoindex()) { // Assuming there's a method to check if auto-index is enabled
             std::string directoryListing = generateDirectoryListing(_filePath);
@@ -419,7 +419,6 @@ void RequestHandler::handleGetRequest(Response& res) {
         }
     }
     else if (validFile(_filePath)) {
-        std::cout << "FILE IS LEGIT" << std::endl;
         if (_location.getLocation() == "/cgi")
             res.setResponse(200, _contentType, _body, _responseCookies);
         else
@@ -428,7 +427,7 @@ void RequestHandler::handleGetRequest(Response& res) {
             res.setResponse(200, getContentType(_filePath), _body, _responseCookies);
         }
     } else {
-        std::cout << "FILE IS NOT FOUND" << std::endl;
+        std::cerr << RED << "FILE IS NOT FOUND AT: " << _filePath << DEFAULT << std::endl;
         res.setResponse(404, "text/html", _body);
     }
 }
@@ -463,8 +462,7 @@ void RequestHandler::handleDeleteRequest(Response& res)
 
 void RequestHandler::handlePostRequest(const Request& req, Response& res)
 {
-    std::cout << "HANDLING POST REQUEST" << std::endl;
-	std::cout << "CONTENT TYPE: " << req.getContentType() << std::endl;
+    std::cout << "POST REQUEST" << std::endl;
     if (req.isMultiPart()) {
         handleMultipartRequest(req, res);
     }
