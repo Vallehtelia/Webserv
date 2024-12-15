@@ -22,6 +22,10 @@ void SessionManager::cleanUpExpiredSessions() {
         const auto& sessionId = it->first;
         const auto& sessionData = it->second; // avoids using []operator for performance (no lookup necessary)
 
+		// Possibly add culling of older sessions IF number of active sessions exceeds
+		// a certain large number, to avoid bombarding with setting more and more cookies
+		// by repeating a few requests then deleting the cookie at clients end
+		// currently no way to know which sessions are 'really active'
         if (now > sessionData.expirationTime) {
             // Print details of the expired session
             std::cout << "Expired session: " << sessionId
@@ -62,7 +66,7 @@ bool SessionManager::isValidSession(const std::string& sessionId) const {
 
 void SessionManager::validateAndExtendSession(const std::string& sessionId) {
 	std::lock_guard<std::mutex> lock(_mutex);
-	_sessions[sessionId].expirationTime = std::chrono::steady_clock::now() + std::chrono::hours(24);
+	_sessions[sessionId].expirationTime = std::chrono::steady_clock::now() + std::chrono::hours(1);
 	_sessions[sessionId].isDummy = false;
 }
 
