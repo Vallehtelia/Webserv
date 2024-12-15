@@ -96,6 +96,10 @@ std::string RequestHandler::getContentType(const std::string& path) const {
     return "text/plain";
 }
 
+bool isStaticResource(const std::string& uri) {
+    return uri.find("/assets/") == 0 || uri.find("/styles/") == 0 || 
+           uri.find("/scripts/") == 0 || uri == "/favicon.ico";
+}
 
 void RequestHandler::prepareHandler(const Request &req)
 {
@@ -117,6 +121,7 @@ void RequestHandler::prepareHandler(const Request &req)
 
     // Session management
     if (_cookies.find("session_id") != _cookies.end()) {
+		sessionManager.printSessions();
         std::string sessionId = _cookies["session_id"];
         if (sessionManager.isValidSession(sessionId)) {
             _sessionId = sessionId;
@@ -126,8 +131,9 @@ void RequestHandler::prepareHandler(const Request &req)
             _sessionId = sessionManager.createSession();
         }
     } else {
-        std::cout << "No session_id found, creating a new session." << std::endl;
+		sessionManager.printSessions();
         _sessionId = sessionManager.createSession();
+		std::cout << "No session_id found, creating a new session with ID: " << _sessionId << std::endl;
 		_responseCookies.push_back("session_id=" + _sessionId + "; Path=/; HttpOnly; Secure");
     }
 
