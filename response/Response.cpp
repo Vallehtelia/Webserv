@@ -13,11 +13,17 @@ std::string Response::getResponseString() const
     return _statusLine + _headers + "\r\n" + _body;
 }
 
+// Excluding body when printing bcs Docker prints binary data
+std::string Response::printResponseString() const
+{
+    return _statusLine + _headers + "\r\n" + "<body excluded>";
+}
+
 void Response::printResponse()
 {
     std::cout << std::endl;
     std::cout << "RESPONSE:" << "\033[32m" << std::endl;
-    std::cout << getResponseString() << std::endl;
+    std::cout << printResponseString() << std::endl;
     std::cout << "\033[0m" << std::endl;
 }
 

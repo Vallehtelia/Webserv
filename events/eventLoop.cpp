@@ -73,7 +73,8 @@ void cleanupTempFiles()
 *
 * @param fd File descriptor to close
 */
-static void	closeOnce(int &fd)
+// mun koneella ei toimi referenssilla, int on ok copy
+static void	closeOnce(int fd)
 {
 	if (fd != -1)
 	{
