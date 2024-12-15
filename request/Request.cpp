@@ -342,7 +342,7 @@ void Request::parseHeaders() {
         if (colonPos != std::string::npos) {
             std::string key = headerLine.substr(0, colonPos);
             std::transform(key.begin(), key.end(), key.begin(), ::tolower); // transform header keys to lowercase to remove case sensitivity
-            std::string value = headerLine.substr(colonPos + 1);
+			std::string value = headerLine.substr(colonPos + 1);
             value.erase(0, value.find_first_not_of(" \t"));
             headers[key] = value;
         }

@@ -33,9 +33,7 @@ void RequestHandler::handleRequest( Request& req, Response& res)
 	}
     if (req.getState() == State::ERROR)
     {
-        // std::cout << "it gets here!" << std::endl;
         res.setResponse(400, "text/html", "");
-        // std::cout << "but not here" << std::endl;
         return ;
     }
     if (_location.getLocation() == "/cgi")
@@ -151,7 +149,7 @@ void RequestHandler::prepareHandler(const Request &req)
     } else {
         std::cout << "No session_id found, creating a new session." << std::endl;
         _sessionId = sessionManager.createSession();
-		_responseCookies.push_back("session_id=" + _sessionId + "; Path=/; HttpOnly; Secure");
+		_responseCookies.push_back("session_id=" + _sessionId + "; Path=/; HttpOnly");
     }
 
 	// test singleton:
