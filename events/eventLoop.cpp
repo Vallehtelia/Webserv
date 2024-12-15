@@ -190,7 +190,7 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 
 			if (req.getState() == State::COMPLETE || req.getState() == State::ERROR)
 			{
-				req.printRequest();
+				// req.printRequest();
 				if (req.getState() != State::ERROR)
 				{
 					if (req.getLocation().getLocation() == "/cgi")
