@@ -186,7 +186,7 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 		if (bytes_read <= 0)
 		{
 			checkReceivedData(fd, bytes_read, client_data);
-			return -1;
+			return -1; // WE SHOULD CHECK 0 AND <0 SEPARATELY HERE!!!!
 			// temp errors not checked, just close the connection
 			// let epoll retry the recv
 		}

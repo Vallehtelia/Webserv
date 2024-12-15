@@ -14,6 +14,27 @@ void SessionManager::clearSessions() {
 	std::cout << "After clearSessions: _sessions.size() = " << _sessions.size() << std::endl;
 }
 
+void SessionManager::cleanUpExpiredSessions() {
+    std::lock_guard<std::mutex> lock(_mutex);
+    auto now = std::chrono::steady_clock::now();
+
+    for (auto it = _sessions.begin(); it != _sessions.end(); ) {
+        const auto& sessionId = it->first;
+        const auto& sessionData = it->second; // avoids using []operator for performance (no lookup necessary)
+
+        if (now > sessionData.expirationTime) {
+            // Print details of the expired session
+            std::cout << "Expired session: " << sessionId
+                      << ", is dummy: " << (sessionData.isDummy ? "true" : "false") << " was deleted." << std::endl;
+
+            // Erase the session from the map
+            it = _sessions.erase(it); // safer in the loop than passing to another function.
+        } else {
+            ++it;
+        }
+    }
+}
+
 static unsigned int seedWithTime() {
     std::random_device rd;
     auto now = std::chrono::high_resolution_clock::now();
@@ -21,11 +42,15 @@ static unsigned int seedWithTime() {
     return rd() ^ static_cast<unsigned int>(duration.count());
 }
 
-std::string SessionManager::createSession() {
-	std::lock_guard<std::mutex> lock(_mutex);
-	std::string sessionId = generateSessionId();
-	_sessions[sessionId] = {}; // Empty session data
-	return sessionId;
+bool SessionManager::hasSession(const std::string& sessionId) const {
+    std::lock_guard<std::mutex> lock(_mutex);
+    return _sessions.find(sessionId) != _sessions.end();
+}
+
+std::string SessionManager::createDummySession() { // add more time before cleanup later
+    std::string sessionId = generateSessionId();
+    _sessions[sessionId] = { {}, std::chrono::steady_clock::now() + std::chrono::minutes(1), true };
+    return sessionId;
 }
 
 bool SessionManager::isValidSession(const std::string& sessionId) const {
@@ -35,14 +60,15 @@ bool SessionManager::isValidSession(const std::string& sessionId) const {
     return valid;
 }
 
-void SessionManager::invalidateSession(const std::string& sessionId) {
+void SessionManager::validateAndExtendSession(const std::string& sessionId) {
 	std::lock_guard<std::mutex> lock(_mutex);
-	_sessions.erase(sessionId);
+	_sessions[sessionId].expirationTime = std::chrono::steady_clock::now() + std::chrono::hours(24);
+	_sessions[sessionId].isDummy = false;
 }
 
-std::unordered_map<std::string, std::string>& SessionManager::getSession(const std::string& sessionId) {
-	std::lock_guard<std::mutex> lock(_mutex);
-	return _sessions[sessionId]; // Returns a reference to the session data
+SessionData& SessionManager::getSession(const std::string& sessionId) {
+    std::lock_guard<std::mutex> lock(_mutex);
+    return _sessions.at(sessionId); // Throws std::out_of_range if sessionId is not found
 }
 
 std::string SessionManager::generateSessionId() const {
@@ -61,11 +87,24 @@ std::string SessionManager::generateSessionId() const {
 }
 
 void SessionManager::printSessions() const {
-	for (const auto& [sessionId, data] : _sessions) {
+	for (const auto& [sessionId, sessionData] : _sessions) { // Use sessionData directly
 		std::cout << "Session ID: " << sessionId << std::endl;
-		for (const auto& [key, value] : data) {
+
+		// Iterate over the data map inside SessionData
+		for (const auto& [key, value] : sessionData.data) {
 			std::cout << "  " << key << ": " << value << std::endl;
 		}
+
+        // Print expiration time in human-readable format
+        std::time_t expirationTimeT = std::chrono::system_clock::to_time_t(
+            std::chrono::system_clock::now() +
+            (sessionData.expirationTime - std::chrono::steady_clock::now()));
+
+        std::cout << "  Expiration Time: " 
+                  << std::put_time(std::localtime(&expirationTimeT), "%Y-%m-%d %H:%M:%S") 
+                  << std::endl;
+
+		std::cout << "  Considered dummy: " << sessionData.isDummy << std::endl;
 	}
 }
 

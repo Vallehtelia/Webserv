@@ -103,7 +103,6 @@ bool isStaticResource(const std::string& uri) {
 
 void RequestHandler::prepareHandler(const Request &req)
 {
-	auto& sessionManager = SessionManager::getInstance();
     _location = req.getLocation();
 	_uri = req.getUri();
 	_method = req.getMethod();
@@ -120,23 +119,28 @@ void RequestHandler::prepareHandler(const Request &req)
     std::cout << std::endl;
 
     // Session management
+	auto& sessionManager = SessionManager::getInstance();
+	//sessionManager.clearSessions();
+	sessionManager.printSessions();
     if (_cookies.find("session_id") != _cookies.end()) {
-		sessionManager.printSessions();
         std::string sessionId = _cookies["session_id"];
         if (sessionManager.isValidSession(sessionId)) {
             _sessionId = sessionId;
+			sessionManager.validateAndExtendSession(sessionId);
             std::cout << "Using existing session: " << sessionId << std::endl;
         } else {
             std::cout << "Invalid session: " << sessionId << std::endl;
-            _sessionId = sessionManager.createSession();
+			std::cout << "Creating a new session with ID: " << _sessionId << std::endl;
+            _sessionId = sessionManager.createDummySession();
+			_responseCookies.push_back("session_id=" + _sessionId + "; Path=/; HttpOnly"); //; Secure");
         }
     } else {
-		sessionManager.printSessions();
-        _sessionId = sessionManager.createSession();
+        _sessionId = sessionManager.createDummySession();
 		std::cout << "No session_id found, creating a new session with ID: " << _sessionId << std::endl;
-		_responseCookies.push_back("session_id=" + _sessionId + "; Path=/; HttpOnly; Secure");
+		_responseCookies.push_back("session_id=" + _sessionId + "; Path=/; HttpOnly"); //; Secure");
     }
 
+	/*
 	// test singleton:
 	auto& sessionManager1 = SessionManager::getInstance();
     auto& sessionManager2 = SessionManager::getInstance();
@@ -146,6 +150,7 @@ void RequestHandler::prepareHandler(const Request &req)
     } else {
         std::cout << "Singleton error: Instances are different!" << std::endl;
     }
+	*/
 }
 
 static std::string urlDecode(const std::string& src) {
@@ -316,32 +321,55 @@ std::string RequestHandler::generateDirectoryListing(const std::string& director
     return result;
 }
 
+// new helpers for sessions:
+void logCookies(const std::unordered_map<std::string, std::string>& cookies) {
+    std::cout << "Cookies received:" << std::endl;
+    for (const auto& [key, value] : cookies) {
+        std::cout << "  " << key << " = " << value << std::endl;
+    }
+}
 
+void logSessionData(const std::string& sessionId, const SessionData& sessionData) {
+    std::cout << "Session ID: " << sessionId << std::endl;
+    for (const auto& [key, value] : sessionData.data) {
+        std::cout << "  " << key << " = " << value << std::endl;
+    }
+    std::time_t expirationTimeT = std::chrono::system_clock::to_time_t(
+        std::chrono::system_clock::now() +
+        (sessionData.expirationTime - std::chrono::steady_clock::now()));
+    std::cout << "  Expiration Time: "
+              << std::put_time(std::localtime(&expirationTimeT), "%Y-%m-%d %H:%M:%S") << std::endl;
+}
 
 void RequestHandler::handleGetRequest(Response& res) {
 	std::cout << "HANDLE GET" << std::endl;
 
     // Example: Log cookies for debugging
     for (const auto& [key, value] : _cookies) {
-        std::cout << "Cookie: " << key << " = " << value << std::endl;
-    }
-    // Example: Use a specific cookie
-    if (_cookies.find("session_id") != _cookies.end()) {
-        std::cout << "Session ID: " << _cookies["session_id"] << std::endl;
-    }
-    // Example: Use session data
-	auto& sessionManager = SessionManager::getInstance();
-    auto& sessionData = sessionManager.getSession(_sessionId);
-    if (sessionData.find("last_visited") == sessionData.end()) {
-        sessionData["last_visited"] = _uri;
-    } else {
-        std::cout << "Last visited: " << sessionData["last_visited"] << std::endl;
-        sessionData["last_visited"] = _uri; // Update last visited page
+        std::cout << "Cookie received: " << key << " = " << value << std::endl;
     }
 
-	// Example: Log session data for debugging
-	for (const auto& [key, value] : sessionData) {
-		std::cout << "Session data: " << key << " = " << value << std::endl;
+    // Example: Use session data
+	auto& sessionManager = SessionManager::getInstance();
+	if (sessionManager.hasSession(_sessionId)) {
+    	auto& sessionData = sessionManager.getSession(_sessionId);
+
+		// Update "last_visited" in session data
+		if (sessionData.data.find("last_visited") == sessionData.data.end()) {
+			sessionData.data["last_visited"] = _uri;
+		} else {
+			std::cout << "Last visited: " << sessionData.data["last_visited"] << std::endl;
+			sessionData.data["last_visited"] = _uri; // Update last visited page
+		}
+		// Log session data for debugging
+		for (const auto& [key, value] : sessionData.data) {
+			std::cout << "Session data: " << key << " = " << value << std::endl;
+		}
+	} else {
+		std::cout << "Session ID " << _sessionId << " not found. Creating a new session." << std::endl;
+		_sessionId = sessionManager.createDummySession();
+		auto& newSessionData = sessionManager.getSession(_sessionId);
+		newSessionData.data["last_visited"] = _uri;
 	}
 
     std::cout << "Is directory: " << std::filesystem::is_directory(_filePath) << std::endl;
