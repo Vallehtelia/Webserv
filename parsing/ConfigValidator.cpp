@@ -103,7 +103,7 @@ bool ConfigValidator::validateLocationBlock(std::istream &input) {
             }
 		} else if (line.find("autoindex") == 0) {
             if (!validateAutoindex(line)) {
-                std::cerr << "Invalid cgi_path directive: " << line << std::endl;
+                std::cerr << "Invalid autoindex directive: " << line << std::endl;
                 return false;
             }
         } else if (line == "}") {
