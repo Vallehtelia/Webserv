@@ -29,32 +29,23 @@ std::string trim(const std::string& str) {
 // Function to parse configuration data from the input line
 static bool parseServerData(ServerConfig& server, const std::string& line) {
 	std::string trimmedLine = trim(line);
-
-	// Check if the line is empty or starts with a comment (you can extend this to support comments)
 	if (trimmedLine.empty() || trimmedLine[0] == '#') return 0;
-
-	// Find the position of the first space to separate the key and value
 	size_t spacePos = trimmedLine.find(' ');
 	if (spacePos == std::string::npos) {
 		std::cout << "Invalid server configuration value: " << trimmedLine << std::endl;
-		return 1;  // No space means invalid line
+		return 1;
 	}
-
-	// Extract the key and value from the line
 	std::string key = trimmedLine.substr(0, spacePos);
-	std::string value = trim(trimmedLine.substr(spacePos + 1));  // Remove extra spaces from the value
-
-	// Process the key and assign the value
+	std::string value = trim(trimmedLine.substr(spacePos + 1));
 	if (key == "listen" || key == "client_max_body_size" || key == "max_events") {
-		server.setConfig(key, std::stoi(value));  // Assume listen is an integer (port)
+		server.setConfig(key, std::stoi(value));
 		return 0;
 	}
 	else if (key == "server_name" || key == "host" || key == "root" || key == "index") {
-		server.setConfig(key, value.erase(value.find_last_of(";")));  // server_name is a string
+		server.setConfig(key, value.erase(value.find_last_of(";")));
 		return 0;
 	}
 	else if (key == "error_page") {
-		// Assuming error_page contains the error code and file path
 		size_t spacePos = value.find(' ');
 		if (spacePos != std::string::npos)
 		{
@@ -236,8 +227,106 @@ static int	parseServerBlock(std::ifstream &file, ServerConfig &server)
 	return 0;
 }
 
+// New function to check the presence of all configuration keys
+std::vector<std::string> validateServerBlock(const ServerConfig &server) {
+    std::vector<std::string> confKeys = {
+		"listen", 
+		"server_name", 
+		"host", 
+		"root", 
+        "client_max_body_size", 
+		"max_events", 
+        "index"};
 
-void	parseData(const std::string &filename, std::vector<ServerConfig> &server)
+    std::vector<std::string> missingKeys;
+
+    for (const std::string &key : confKeys) {
+        try {
+            server.getConfig(key);
+        } catch (const std::out_of_range &e) {
+            missingKeys.push_back(key);
+        }
+    }
+    return missingKeys;
+}
+
+std::vector<int> validateErrorPageKeys(const ServerConfig &server) {
+    // Define the required error page status codes
+    std::vector<int> requiredErrorPageKeys = {
+        400, 403, 404, 405, 409, 500, 504
+    };
+
+    std::vector<int> missingKeys;
+
+    for (int key : requiredErrorPageKeys) {
+        if (server.getErrorPage(key).empty()) {
+            missingKeys.push_back(key);
+        }
+    }
+    return missingKeys;
+}
+
+std::vector<std::string> validateLocationConfigs(const ServerConfig &server) {
+    std::vector<std::string> missingKeys;
+    const std::vector<LocationConfig> &locations = server.getLocations();
+
+    for (size_t i = 0; i < locations.size(); ++i) {
+        const LocationConfig &location = locations[i];
+
+        if (location.root.empty()) {
+            missingKeys.push_back("root missing in location " + std::to_string(i) + " (" + location.path + ")");
+        }
+
+        if (location.allow_methods.empty()) {
+            missingKeys.push_back("allow_methods missing in location " + std::to_string(i) + " (" + location.path + ")");
+        }
+    }
+    return missingKeys;
+}
+
+// New function to validate the new server
+bool validateNewServer(const ServerConfig &server) {
+
+	std::vector<std::string> missingKeys = validateServerBlock(server);
+	std::vector<int> missingErrorPageKeys = validateErrorPageKeys(server);
+	std::vector<std::string> missingLocationKeys = validateLocationConfigs(server);
+
+	if (missingKeys.empty()) {
+		std::cout << "All required keys are present." << std::endl;
+	} else {
+		std::cerr << "Missing keys: ";
+		for (const std::string &key : missingKeys) {
+			std::cerr << key << " ";
+		}
+		std::cerr << std::endl;
+	}
+
+	if (missingErrorPageKeys.empty()) {
+		std::cout << "All required error page keys are present." << std::endl;
+	} else {
+		std::cerr << "Missing error page keys:" << std::endl;
+		for (int key : missingErrorPageKeys) {
+			std::cerr << key << std::endl;
+		}
+	}
+
+	if (missingLocationKeys.empty()) {
+		std::cout << "All required location keys for all locations are present." << std::endl;
+	} else {
+		std::cerr << "Missing location keys: ";
+		for (const std::string &key : missingLocationKeys) {
+			std::cerr << key << " ";
+		}
+		std::cerr << std::endl;
+	}
+
+	if (!missingErrorPageKeys.empty() || !missingKeys.empty() || !missingLocationKeys.empty()) {
+		return false;
+	} 
+	return true;
+}
+
+bool	parseData(const std::string &filename, std::vector<ServerConfig> &server)
 {
 	std::ifstream	file(filename);
 	std::string		line;
@@ -264,7 +353,12 @@ void	parseData(const std::string &filename, std::vector<ServerConfig> &server)
 			new_serv = 0;
 			ServerConfig new_server;
 			new_serv = parseServerBlock(file, new_server);
+			if (!validateNewServer(new_server)) {
+				std::cout << "Not valid..." << std::endl;
+				return false;	
+			}
 			server.push_back(new_server);
 		}
 	}
+	return true;
 }
