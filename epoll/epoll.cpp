@@ -21,7 +21,8 @@ void cleanup(std::vector<Socket> &sockets, int epoll_fd)
 {
 	for (const auto &sock : sockets)
 		close(sock.getSocketFd());
-	close(epoll_fd);
+	if (epoll_fd != -1) // valgrind warning
+		close(epoll_fd);
 }
 
 int	setup_epoll(std::vector<Socket> &sockets)

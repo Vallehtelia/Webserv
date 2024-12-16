@@ -349,15 +349,15 @@ void	handleCgiRequest(Request &req, const Socket &socket)
 		req.setPath("/cgi/tmp/cgi_output.html");
 		break;
 	case 404:
-		req.setState(State::CGI_NOT_FOUND);
+		req.setErrorCode(404);
 		break;
 	case 500:
-		req.setState(State::CGI_ERROR);
+		req.setErrorCode(500);
 		break;
 	case 504:
-		req.setState(State::TIMEOUT);
+		req.setErrorCode(504);
 		break;
 	default:
-		req.setState(State::CGI_NOT_PERMITTED);
+		req.setErrorCode(500);
 	}
 }

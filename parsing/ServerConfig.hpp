@@ -64,5 +64,5 @@ class ServerConfig
 };
 
 bool	checkConfFile(const std::string &filename);
-void	parseData(const std::string &filename, std::vector<ServerConfig> &server);
+bool	parseData(const std::string &filename, std::vector<ServerConfig> &server);
 #endif

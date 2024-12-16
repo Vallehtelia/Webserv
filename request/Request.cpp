@@ -6,6 +6,8 @@ Request::Request() : currentState(State::REQUEST_LINE), contentLength(0), body("
 	inChunk = false;
     received = false;
     _isMultiPart = false;
+    body_size = 0;
+    errorCode = 0;
 }
 
 Request::Request(const std::string& rawRequest) : currentState(State::REQUEST_LINE), contentLength(0), requestStream(rawRequest)  {
@@ -31,6 +33,7 @@ Request &Request::operator=(const Request &rhs) {
         boundary = rhs.boundary;
         multipartData = rhs.multipartData;
         location = rhs.location;
+        errorCode = rhs.errorCode;
     }
     return *this;
 }
@@ -102,6 +105,17 @@ std::map<std::string, std::string>  Request::getQueryParams() const
     return queryParams;
 }
 
+int     Request::getErrorCode() const
+{
+    return errorCode;
+}
+
+void    Request::setErrorCode(const int code)
+{
+    errorCode = code;
+    currentState = State::ERROR;
+}
+
 void Request::reset()
 {
     currentState = State::REQUEST_LINE;
@@ -125,12 +139,14 @@ void Request::reset()
     multipartData.clear();
     queryParams.clear();
     location = LocationConfig();
+    errorCode = 0;
 }
 
 
-void Request::handleError(const std::string& errorMsg) {
+void Request::handleError(int code, const std::string& errorMsg) {
     std::cerr << "\033[31m" << "Error: " << errorMsg << "\033[0m" << std::endl;
     currentState = State::ERROR;
+    errorCode = code;
 }
 
 void Request::parseRequest(std::string &rawRequest,const Socket &socket) {
@@ -170,19 +186,19 @@ void Request::parseRequest(std::string &rawRequest,const Socket &socket) {
     }
 }
 
+
+
 LocationConfig Request::findLocation(const std::string &uri, const Socket &socket) {
-    LocationConfig bestMatch; // Default location config to return if no match
-    size_t bestMatchLength = 0; // Track the length of the best match
+    LocationConfig bestMatch;
+    size_t bestMatchLength = 0;
     std::vector<LocationConfig> locations = socket.getServer().getLocations();
 
     for (std::vector<LocationConfig>::iterator it = locations.begin(); it != locations.end(); ++it) {
         std::string locationPath = it->getLocation();
 
-        // Ensure no trailing slash in location unless it’s "/"
         if (locationPath != "/" && locationPath.back() == '/')
             locationPath = locationPath.substr(0, locationPath.length() - 1);
 
-        // Check if locationPath is a prefix of uri
         if (uri.find(locationPath) == 0) {
             // Ensure match is valid:
             // - If location is "/", always match.
@@ -195,13 +211,12 @@ LocationConfig Request::findLocation(const std::string &uri, const Socket &socke
             }
         }
     }
-
     return bestMatch;
 }
 
 
 
-static bool isValidRequestLine(const std::string& requestLine) {
+bool Request::isValidRequestLine(const std::string& requestLine) {
     std::regex requestLinePattern(R"(^[A-Z]+ [^\s]+ HTTP/1\.1$)");
     return std::regex_match(requestLine, requestLinePattern);
 }
@@ -230,7 +245,7 @@ void Request::parseRequestLine(const Socket &socket) {
         removeCarriageReturn(requestLine);
         if (!isValidRequestLine(requestLine))
         {
-            handleError("Invalid characters in request line.");
+            handleError(400, "Invalid characters in request line.");
             return ;
         }
         std::istringstream lineStream(requestLine);
@@ -240,21 +255,22 @@ void Request::parseRequestLine(const Socket &socket) {
             location = findLocation(uri, socket);
             currentState = State::HEADERS;
         } else {
-            handleError("Invalid request line format.");
+            handleError(400, "Invalid request line format.");
         }
     } else {
-        handleError("Request line missing.");
+        handleError(400, "Request line missing.");
     }
 }
 
-bool isMethodAllowed(const std::vector<std::string>& allowedMethods, const std::string& method) {
+bool Request::isMethodAllowed(const std::vector<std::string>& allowedMethods, const std::string& method) {
     return std::find(allowedMethods.begin(), allowedMethods.end(), method) != allowedMethods.end();
 }
 
 void Request::prepareRequest()
 {
-    if (!isMethodAllowed(location.getAllowMethods(), method)) {
-        return handleError("METHOD not allowed in " + location.getLocation());
+    if (!isMethodAllowed(location.getAllowMethods(), method))
+    {
+        return handleError(405, "METHOD not allowed in" + location.getLocation());
     }
 
     if (headers.find("transfer-encoding") != headers.end() && headers["transfer-encoding"] == "chunked") {
@@ -272,17 +288,15 @@ void Request::prepareRequest()
 
     if (headers.find("content-type") != headers.end()) {
         contentType = headers["content-type"];
-        if (contentType.find("multipart/form-data") != std::string::npos) {
-            size_t boundaryPos = contentType.find("boundary=");
-            if (boundaryPos != std::string::npos) {
-                boundary = contentType.substr(boundaryPos + 9);
-                boundary = "--" + boundary;
-                boundary.erase(boundary.find_last_not_of("\r") + 1);
-                _isMultiPart = true;
-            } else {
-                handleError("Boundary missing in multipart/form-data");
-                return;
-            }
+    if (method == "POST" && headers["content-type"].find("multipart/form-data") != std::string::npos)
+    {
+        size_t boundaryPos = headers["content-type"].find("boundary=");
+        if (boundaryPos != std::string::npos)
+        {
+            boundary = headers["content-type"].substr(boundaryPos + 9);
+            boundary =  "--" + boundary;
+            boundary.erase(boundary.find_last_not_of("\r") + 1);
+            _isMultiPart = true;
         }
     }
 
@@ -292,11 +306,14 @@ void Request::prepareRequest()
             return;
         }
         currentState = State::UNCHUNK;
-    } else if (contentLength > 0) {
-        if (method == "GET") {
-            handleError("Body in a GET request");
-            return;
-        } else {
+    else if (contentLength > 0)
+    {
+        if (method == "GET")
+        {
+            handleError(400, "body in a GET request");
+            return ;
+        }
+        else
             currentState = State::BODY;
         }
     } else {
@@ -324,11 +341,11 @@ void Request::validateHeaders() {
         std::string key = pair.first;
         std::string value = pair.second;
         if (!isValidHeaderKey(key)) {
-            handleError("Invalid header key format: " + key);
+            handleError(400, "Invalid header key format: " + key);
             return;
         }
         if (!isValidHeaderValue(key, value)) {
-            handleError("Invalid header value format for " + key + ": " + value);
+            handleError(400, "Invalid header value format for " + key + ": " + value);
             return;
         }
     }
@@ -469,7 +486,7 @@ void Request::parseBody()
     body.append(std::string(buffer.begin(), buffer.end()));
     if (body.size() > contentLength)
     {
-        handleError("body size and content length dont match");
+        handleError(400, "body size and content length dont match");
         return ;
     }
     else if ((body.size() == contentLength))

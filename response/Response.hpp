@@ -14,13 +14,14 @@ public:
     ~Response();
 
     void        printResponse();
-    void        setResponse(int statusCode, const std::string& contentType, 
+    void        setResponse(int statusCode, const std::string& contentType,
 					const std::string &body, const std::vector<std::string>& cookies = {});
     void        setStatusLine(std::string &statusline);
     void        setBody(std::string &body);
     void        setHeaders(std::string &headers);
     void        setUri(std::string &URI);
     std::string getResponseString() const;
+	std::string printResponseString() const;
 	Socket		getSocket() const;
 private:
     int         _statusCode;

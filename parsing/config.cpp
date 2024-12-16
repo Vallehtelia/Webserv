@@ -32,7 +32,11 @@ bool	initConfig(const std::string &configFile, std::vector<ServerConfig> &server
 	}
 
 	std::cout << GREEN << "Parsing file: " << configFile << DEFAULT << std::endl;
-	parseData(configFile, server);
 
+	if (!parseData(configFile, server))
+	{
+		std::cerr << RED << "Fatal error in server configuration, aborting..." << DEFAULT << std::endl;
+		return false;
+	}
 	return(portCheck(server));
 }

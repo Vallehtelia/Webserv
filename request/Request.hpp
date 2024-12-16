@@ -24,11 +24,7 @@ enum class State {
     MULTIPARTDATA,
     COMPLETE,
     ERROR,
-    INCOMPLETE,
-	CGI_ERROR,
-	TIMEOUT,
-	CGI_NOT_FOUND,
-	CGI_NOT_PERMITTED
+    INCOMPLETE
 };
 
 struct MultipartData
@@ -67,6 +63,8 @@ class Request {
         void                                validateHeaders();
         LocationConfig                      getLocation() const;
         std::map<std::string, std::string>  getQueryParams() const;
+        int                                 getErrorCode() const;
+        void                                setErrorCode(const int code);
         Request &operator=(const Request &rhs);
 
     private:
@@ -79,6 +77,7 @@ class Request {
         State                               currentState;
         size_t                              contentLength;
         size_t                              body_size = 0;
+        int                                 errorCode;
 		size_t                              chunkSize = 0;
         std::string                         requestBuffer;
         std::string                         rawRequest;
@@ -99,7 +98,7 @@ class Request {
         void                                parseMultipartData();
         void                                parseHeaders();
         void                                parseBody();
-        void                                handleError(const std::string& errorMsg);
+        void                                handleError(int code, const std::string& errorMsg);
         void                                parseRequestLine(const Socket &socket);
         void                                parseQueryString();
         void                                printMultipartdata();
@@ -110,6 +109,8 @@ class Request {
         bool                                isValidHeaderValue(const std::string& key, const std::string& value);
         MultipartData                       createData(std::string &rawData);
         LocationConfig                      findLocation(const std::string &uri, const Socket &socket);
+        bool                                isMethodAllowed(const std::vector<std::string>& allowedMethods, const std::string& method);
+        bool                                isValidRequestLine(const std::string& requestLine);
 } ;
 
 # endif

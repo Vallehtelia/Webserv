@@ -8,7 +8,7 @@ RequestHandler::~RequestHandler() {}
 
 void RequestHandler::handleRequest( Request& req, Response& res)
 {
-    _location = req.getLocation();
+	_location = req.getLocation();
 
     prepareHandler(req);
 	if (req.getState() == State::CGI_ERROR) // Naa johonki siistimmin
@@ -31,17 +31,17 @@ void RequestHandler::handleRequest( Request& req, Response& res)
 		res.setResponse(403, "text/html", "");
 		return ;
 	}
+
     if (req.getState() == State::ERROR)
     {
-        res.setResponse(400, "text/html", "");
+        res.setResponse(req.getErrorCode(), "text/html", "");
         return ;
     }
+
     if (_location.getLocation() == "/cgi")
     {
         readCgiOutputFile();
     }
-	if (req.getUri() == "/")
-		req.setPath("/index.html");
     if (_method == "GET")
 	{
         handleGetRequest(res);
@@ -56,9 +56,10 @@ void RequestHandler::handleRequest( Request& req, Response& res)
     }
 	else
 	{
-        res.setResponse(400, "text/html", "");
+        res.setResponse(405, "text/html", "");
     }
 }
+
 
 void RequestHandler::readCgiOutputFile() {
     std::ifstream inputFile(_filePath);
@@ -70,7 +71,6 @@ void RequestHandler::readCgiOutputFile() {
 
     std::string contentType;
     std::string line;
-    std::stringstream body;
 
     std::getline(inputFile, contentType);
 
@@ -80,11 +80,10 @@ void RequestHandler::readCgiOutputFile() {
         _contentType.erase(0, _contentType.find_first_not_of(" \t\r\n"));
     }
 
-    while (std::getline(inputFile, line)) {
-        body << line;
-    }
+    std::string bodyContent((std::istreambuf_iterator<char>(inputFile)),
+                             std::istreambuf_iterator<char>());
 
-    _body = body.str();
+    _body = bodyContent;
     inputFile.close();
 
     // std::cout << "----- CGI RESPONSE -----" << std::endl;
@@ -118,10 +117,14 @@ std::string RequestHandler::getContentType(const std::string& path) const {
     return "text/plain";
 }
 
+bool isStaticResource(const std::string& uri) {
+    return uri.find("/assets/") == 0 || uri.find("/styles/") == 0 ||
+           uri.find("/scripts/") == 0 || uri == "/favicon.ico";
+}
 
 void RequestHandler::prepareHandler(const Request &req)
 {
-	auto& sessionManager = SessionManager::getInstance();
+    _location = req.getLocation();
 	_uri = req.getUri();
 	_method = req.getMethod();
 	_contentType = getContentType(_uri);
@@ -137,29 +140,25 @@ void RequestHandler::prepareHandler(const Request &req)
     std::cout << std::endl;
 
     // Session management
+	auto& sessionManager = SessionManager::getInstance();
+	//sessionManager.clearSessions();
+	sessionManager.printSessions();
     if (_cookies.find("session_id") != _cookies.end()) {
         std::string sessionId = _cookies["session_id"];
         if (sessionManager.isValidSession(sessionId)) {
             _sessionId = sessionId;
+			sessionManager.validateAndExtendSession(sessionId);
             std::cout << "Using existing session: " << sessionId << std::endl;
         } else {
             std::cout << "Invalid session: " << sessionId << std::endl;
-            _sessionId = sessionManager.createSession();
+            _sessionId = sessionManager.createDummySession();
+			std::cout << "Creating a new session with ID: " << _sessionId << std::endl;
+			_responseCookies.push_back("session_id=" + _sessionId + "; Path=/; HttpOnly"); //; Secure");
         }
     } else {
-        std::cout << "No session_id found, creating a new session." << std::endl;
-        _sessionId = sessionManager.createSession();
-		_responseCookies.push_back("session_id=" + _sessionId + "; Path=/; HttpOnly");
-    }
-
-	// test singleton:
-	auto& sessionManager1 = SessionManager::getInstance();
-    auto& sessionManager2 = SessionManager::getInstance();
-
-    if (&sessionManager1 == &sessionManager2) {
-        std::cout << "Singleton confirmed: Both instances are the same." << std::endl;
-    } else {
-        std::cout << "Singleton error: Instances are different!" << std::endl;
+        _sessionId = sessionManager.createDummySession();
+		std::cout << "No session_id found, creating a new session with ID: " << _sessionId << std::endl;
+		_responseCookies.push_back("session_id=" + _sessionId + "; Path=/; HttpOnly"); //; Secure");
     }
 }
 
@@ -192,56 +191,32 @@ std::string trimSlashes(const std::string& str) {
 }
 
 void removePrefix(std::string& str, const std::string& prefix) {
-    // std::cout << "Original string: " << str << "\nPrefix to remove: " << prefix << std::endl;
-
-    // Normalize prefix by removing trailing slashes
     std::string normalizedPrefix = prefix;
     if (!prefix.empty() && prefix.back() == '/') {
         normalizedPrefix.pop_back();
     }
-
-    // If the string starts with the normalized prefix, remove it
     if (str.rfind(normalizedPrefix, 0) == 0) {
         str.erase(0, normalizedPrefix.length());
-        // std::cout << "After removing prefix: " << str << std::endl;
-    } else {
-        // std::cout << "Prefix not found at the start of the string.\n";
     }
 }
 
 std::string RequestHandler::getFilepath(std::string filepath)
 {
     filepath = urlDecode(filepath);
-
-    // Remove the root path (from location data) from the file path
     std::string tmp = _location.getLocation();
     removePrefix(tmp, _location.getLocation());
-    // std::cout << "LOCATION NAME: " << tmp << std::endl;
-
     std::string locationRoot = _location.getRoot();
     removePrefix(locationRoot, "/");
-    // std::cout << "LOCATION ROOT: " << locationRoot << std::endl;
+    std::cout << "LOCATION ROOT: " << locationRoot << std::endl;
 
-    // std::cout << _location.getLocation() << std::endl;
+    std::cout << _location.getLocation() << std::endl;
 
     // std::cout << "FILEPATH: " << filepath << std::endl;
     removePrefix(filepath, _location.getLocation());
-    // std::cout << "FILEPATH AFTER REMOVE PREFIX: " << filepath << std::endl;
     std::filesystem::path baseDir = std::filesystem::current_path();
-    // std::cout << "BASE DIRECTORY: " << baseDir << std::endl;
-
     std::string baseDirStr = baseDir.string();
-    // std::cout << "baseDirStr: " << baseDirStr << std::endl;
     std::string path;
-    // checkline(_location.getLocation());
-    // if (_location.getLocation() == "/cgi")
-    // {
-    //     path = baseDirStr + locationRoot + "tmp" + filepath;
-    //     std::cout << "CGI PATH CREATED" << std::endl;
-    // }
-    // else
     path = baseDirStr + locationRoot + filepath;
-    // std::cout << "FILEPATH CREATED: " << path << std::endl;
     return path;
 }
 
@@ -252,9 +227,6 @@ bool RequestHandler::validFile(const std::string& filePath) {
     try {
         std::filesystem::path fullPath = std::filesystem::path(filePath);
         const std::filesystem::path baseDir = std::filesystem::current_path();
-        // std::cout << "Full Path: " << fullPath << std::endl;
-        // std::cout << "Base Directory: " << baseDir << std::endl;
-
         std::filesystem::path dirPath = std::filesystem::canonical(baseDir);
 
         // std::cout << "Canonical Directory Path: " << dirPath << std::endl;
@@ -353,7 +325,7 @@ std::string RequestHandler::generateDirectoryListing(const std::string& director
         }
 
         if (!isFirstEntry) {
-            jsonStream << "\n"; // Add newline after the last entry
+            jsonStream << "\n";
         }
     } catch (const std::filesystem::filesystem_error& e) {
         std::cerr << "Error accessing directory: " << e.what() << std::endl;
@@ -362,47 +334,58 @@ std::string RequestHandler::generateDirectoryListing(const std::string& director
     jsonStream << "\t]\n}";
 
     std::string result = jsonStream.str();
-    // std::cout << result << std::endl;
     return result;
 }
 
+// new helpers for sessions:
+void logCookies(const std::unordered_map<std::string, std::string>& cookies) {
+    std::cout << "Cookies received:" << std::endl;
+    for (const auto& [key, value] : cookies) {
+        std::cout << "  " << key << " = " << value << std::endl;
+    }
+}
 
-	/*
-    if (_request.hasHeader("Cookie")) {
-        std::string cookieHeader = _request.getHeader("Cookie"); // Assuming _request has methods for headers
-        std::unordered_map<std::string, std::string> cookies = parseCookies(cookieHeader);
-
-        // Example: Log cookies for debugging
-        for (const auto& [key, value] : cookies) {
-            std::cout << "Cookie: " << key << " = " << value << std::endl;
-        }
-	}
-	*/
+void logSessionData(const std::string& sessionId, const SessionData& sessionData) {
+    std::cout << "Session ID: " << sessionId << std::endl;
+    for (const auto& [key, value] : sessionData.data) {
+        std::cout << "  " << key << " = " << value << std::endl;
+    }
+    std::time_t expirationTimeT = std::chrono::system_clock::to_time_t(
+        std::chrono::system_clock::now() +
+        (sessionData.expirationTime - std::chrono::system_clock::now()));
+    std::cout << "  Expiration Time: "
+              << std::put_time(std::localtime(&expirationTimeT), "%Y-%m-%d %H:%M:%S") << std::endl;
+}
 
 void RequestHandler::handleGetRequest(Response& res) {
 	std::cout << "GET REQUEST" << std::endl;
 
     // Example: Log cookies for debugging
     for (const auto& [key, value] : _cookies) {
-        std::cout << "Cookie: " << key << " = " << value << std::endl;
-    }
-    // Example: Use a specific cookie
-    if (_cookies.find("session_id") != _cookies.end()) {
-        std::cout << "Session ID: " << _cookies["session_id"] << std::endl;
-    }
-    // Example: Use session data
-	auto& sessionManager = SessionManager::getInstance();
-    auto& sessionData = sessionManager.getSession(_sessionId);
-    if (sessionData.find("last_visited") == sessionData.end()) {
-        sessionData["last_visited"] = _uri;
-    } else {
-        std::cout << "Last visited: " << sessionData["last_visited"] << std::endl;
-        sessionData["last_visited"] = _uri; // Update last visited page
+        std::cout << "Cookie received: " << key << " = " << value << std::endl;
     }
 
-	// Example: Log session data for debugging
-	for (const auto& [key, value] : sessionData) {
-		std::cout << "Session data: " << key << " = " << value << std::endl;
+    // Example: Use session data
+	auto& sessionManager = SessionManager::getInstance();
+	if (sessionManager.hasSession(_sessionId)) {
+    	auto& sessionData = sessionManager.getSession(_sessionId);
+
+		// Update "last_visited" in session data
+		if (sessionData.data.find("last_visited") == sessionData.data.end()) {
+			sessionData.data["last_visited"] = _uri;
+		} else {
+			std::cout << "Last visited: " << sessionData.data["last_visited"] << std::endl;
+			sessionData.data["last_visited"] = _uri; // Update last visited page
+		}
+		// Log session data for debugging
+		for (const auto& [key, value] : sessionData.data) {
+			std::cout << "Session data: " << key << " = " << value << std::endl;
+		}
+	} else {
+		std::cout << "Session ID " << _sessionId << " not found. Creating a new session." << std::endl;
+		_sessionId = sessionManager.createDummySession();
+		auto& newSessionData = sessionManager.getSession(_sessionId);
+		newSessionData.data["last_visited"] = _uri;
 	}
 
     // std::cout << "Is directory: " << std::filesystem::is_directory(_filePath) << std::endl;
@@ -475,7 +458,6 @@ void RequestHandler::handlePostRequest(const Request& req, Response& res)
 
 void RequestHandler::handleJsonData(const Request &req, Response &res)
 {
-	std::cout << "HANDLE JSON DATA" << std::endl;
 	if (validFile(_filePath))
 	{
         std::ofstream file(_filePath, std::ios::out | std::ios::trunc | std::ios::binary);
@@ -496,15 +478,12 @@ void RequestHandler::handleJsonData(const Request &req, Response &res)
 
 
 void RequestHandler::handleMultipartRequest(const Request &req, Response &res) {
-	std::cout << "HANDLE MULTIPART REQUEST" << std::endl;
     const auto& multipartData = req.getMultipartData();
     std::vector<std::string> uploadedFiles;
     bool isCgi = false;
 
-    _body = "{\n\t\"uploadedFiles\": [\n";
     for (const auto& part : multipartData) {
         if (part.filename.empty()) {
-            // handleFormField(part, formData);
             continue ;
         }
         else if (req.getUri().find("cgi") != std::string::npos) {
@@ -520,7 +499,6 @@ void RequestHandler::handleMultipartRequest(const Request &req, Response &res) {
             }
 			if (_statusCode != 200 && _statusCode != 201)
 			{
-				//res.setResponse(_statusCode, "text/html", "error");
 				return ;
 			}
         }
@@ -544,7 +522,6 @@ void RequestHandler::handleFileUpload(const MultipartData& part, Response& res)
     	std::ofstream file(_uploadPath, std::ios::binary);
 		if (file)
 		{
-			std::cout << "WRITING TO FILE" << _uploadPath << std::endl;
         	file.write(part.data.data(), part.data.size());
         	file.close();
 			_statusCode = 200;
@@ -555,15 +532,6 @@ void RequestHandler::handleFileUpload(const MultipartData& part, Response& res)
     }
 }
 
-void RequestHandler::handleFormField(const MultipartData& part) {
-    if (part.filename.empty()) {
-        // textToBody += part.name;
-        // std::string fieldValue(part.data.begin(), part.data.end());
-        // formData[fieldName] = fieldValue;
-        // std::cout << "Form field received - " << fieldName << ": " << fieldValue << std::endl;
-        return ;
-    }
-}
 
 
 std::string RequestHandler::createJsonResponse(const std::vector<std::string> uploadedFiles) {

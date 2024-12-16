@@ -120,7 +120,6 @@ bool ConfigValidator::validateServerBlock(std::istream &input) {
     while (std::getline(input, line)) {
         trim(line);
         if (line.empty() || line[0] == '#') continue;
-
         if (line.find("location") == 0) {
             std::string locationPath = extractLocationPath(line);
             if (locationPaths.find(locationPath) != locationPaths.end()) {

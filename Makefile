@@ -33,7 +33,7 @@ SRC += $(addprefix $(CGI_DIR), $(CGI_FILES))
 
 OBJ = $(SRC:.cpp=.o)
 COMPILER = c++ -std=c++17
-CFLAGS = -Wall -Wextra -Werror
+CFLAGS = -Wall -Wextra -Werror -g -O0
 LFLAGS =
 
 all: $(NAME)
