@@ -197,6 +197,7 @@ bool RequestHandler::validFile(const std::string& filePath) {
         const std::filesystem::path baseDir = std::filesystem::current_path();
         std::filesystem::path dirPath = std::filesystem::canonical(baseDir);
 
+        std::cout << "validating file: " << fullPath << std::endl;
         if (std::filesystem::relative(fullPath, dirPath).string().find("..") == 0) {
             std::cerr << "Error: Access outside base directory is prohibited." << std::endl;
 			_statusCode = 403;
