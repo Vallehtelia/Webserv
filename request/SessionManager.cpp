@@ -133,8 +133,6 @@ void SessionManager::printSessions() const {
 
 			std::time_t expirationTimeT = std::chrono::system_clock::to_time_t(sessionData.expirationTime);
 			std::cout << "  Expiration Time: " << std::put_time(std::localtime(&expirationTimeT), "%Y-%m-%d %H:%M:%S") << std::endl;
-
-			std::cout << "  Is Dummy: " << (sessionData.isDummy ? "true" : "false") << std::endl;
 		}
 	}
 }

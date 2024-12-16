@@ -186,7 +186,7 @@ int	cgiRequest::isValidCgi()
 * @param folderPath Path of the folder
 * @return true if the folder exists or was created, false otherwise
 */
-static bool	ensureFolderExists(const std::string &folderPath)
+bool	ensureFolderExists(const std::string &folderPath)
 {
 	if (!std::filesystem::exists(folderPath))
 	{

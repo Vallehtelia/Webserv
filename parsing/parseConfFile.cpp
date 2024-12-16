@@ -38,8 +38,13 @@ static bool parseServerData(ServerConfig& server, const std::string& line) {
 	std::string key = trimmedLine.substr(0, spacePos);
 	std::string value = trim(trimmedLine.substr(spacePos + 1));
 	if (key == "listen" || key == "client_max_body_size" || key == "max_events") {
-		server.setConfig(key, std::stoi(value));
-		return 0;
+		try {
+			server.setConfig(key, std::stoi(value));
+			return 0;
+		} catch (const std::exception& e) {
+			std::cerr << RED << "Invalid value for " << key << ": " << value << " (" << e.what() << ")" << DEFAULT << std::endl;
+			return 1;
+		}
 	}
 	else if (key == "server_name" || key == "host" || key == "root" || key == "index") {
 		server.setConfig(key, value.erase(value.find_last_of(";")));
@@ -187,7 +192,6 @@ std::vector<std::string> validateServerBlock(const ServerConfig &server) {
 		"host",
 		"root",
         "client_max_body_size",
-		"max_events",
         "index"};
 
     std::vector<std::string> missingKeys;

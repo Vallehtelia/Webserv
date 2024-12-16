@@ -42,10 +42,11 @@ class cgiRequest
 		std::string	getQueryString();
 		std::string	getProtocol();
 		std::string	getBodyData();
-		
+
 		std::map<std::string, std::string>	getEnv();
 };
 
+bool	ensureFolderExists(const std::string &folderPath);
 void	handleCgiRequest(Request &req, const Socket &socket);
 std::string findQueryStr(const std::string &path);
 std::string findPath(const std::string &path);

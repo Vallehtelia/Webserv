@@ -198,6 +198,7 @@ int	handleClientData(int fd, Request &req, struct epoll_event &event, std::unord
 				RequestHandler requestHandler;
 				requestHandler.handleRequest(req, res);
 				std::string http_response = res.getResponseString();
+				// res.printResponse();
 				sendData(http_response, event);
 				req.reset();
 				closeOnce(event.data.fd);
