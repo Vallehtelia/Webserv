@@ -42,8 +42,6 @@ int acceptConnection(int fd, int epoll_fd)
         close(client_fd);
         return -1;
     }
-
-    std::cout << GREEN << "Accepted new connection: client_fd = " << client_fd << DEFAULT << "\n";
     return client_fd;
 }
 
@@ -120,7 +118,6 @@ static void	sendData(std::string httpRespose, epoll_event &event)
 			return;
 		}
 	}
-	std::cout << "Response successfully sent to client." << std::endl;
 }
 
 /*
@@ -144,8 +141,7 @@ static int	checkReceivedData(int &fd, int bytesRead, std::unordered_map<int, std
 	else if (bytesRead < 0)
 	{
 		failureCount[fd]++;
-		std::cerr << RED << "Recv failed for fd: " << fd << ", failure count: " << failureCount[fd] << DEFAULT << std::endl;
-		const int maxFailures = 10;
+		const int maxFailures = 30;
 		if (failureCount[fd] >= maxFailures)
 		{
 			std::cerr << RED << "Too many recv failures for fd: " << fd << ", closing connection." << DEFAULT << std::endl;

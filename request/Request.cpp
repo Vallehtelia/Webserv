@@ -275,18 +275,20 @@ void Request::prepareRequest()
 
     if (headers.find("transfer-encoding") != headers.end() && headers["transfer-encoding"] == "chunked") {
         chunked = true;
-    } else if (headers.find("content-length") != headers.end()) {
+    } else if (headers.find("content-length") != headers.end())
         contentLength = std::stoi(headers["content-length"]);
-    } else if (method == "POST" || method == "PUT") {
-        handleError("Content-Length or Transfer-Encoding missing on a POST/PUT request");
+    else if (method == "POST" || method == "PUT")
+	{
+        handleError(400, "Content-Length required for POST or PUT requests");
         return;
     }
 
-    if (contentLength > maxBodySize) {
-        return handleError("Content-Length exceeds client max body size");
+    if (contentLength > maxBodySize)
+	{
+        return handleError(400, "Content-Length exceeds client max body size");
     }
 
-    if (headers.find("content-type") != headers.end()) {
+    if (headers.find("content-type") != headers.end())
         contentType = headers["content-type"];
     if (method == "POST" && headers["content-type"].find("multipart/form-data") != std::string::npos)
     {
@@ -300,12 +302,15 @@ void Request::prepareRequest()
         }
     }
 
-    if (chunked) {
-        if (_isMultiPart && boundary.empty()) {
-            handleError("Boundary missing for multipart chunked request");
+    if (chunked)
+	{
+        if (_isMultiPart && boundary.empty())
+		{
+            handleError(400, "Missing boundary in multipart data");
             return;
         }
         currentState = State::UNCHUNK;
+	}
     else if (contentLength > 0)
     {
         if (method == "GET")
@@ -315,10 +320,9 @@ void Request::prepareRequest()
         }
         else
             currentState = State::BODY;
-        }
-    } else {
-        currentState = State::COMPLETE;
     }
+    else
+        currentState = State::COMPLETE;
 }
 
 bool Request::isValidHeaderKey(const std::string& key) {
@@ -422,12 +426,12 @@ void Request::parseChunks()
             std::string chunkSizeStr = rawChunkedData.substr(0, pos);
             try {
                 if (chunkSizeStr.empty() || !std::all_of(chunkSizeStr.begin(), chunkSizeStr.end(), ::isxdigit)) {
-                    handleError("Invalid chunk size");
+                    handleError(400, "Invalid chunk size");
                     return;
                 }
                 chunkSize = std::stoul(chunkSizeStr, nullptr, 16);
             } catch (const std::exception &e) {
-                handleError("Error parsing chunk size: " + std::string(e.what()));
+                handleError(400, "Error parsing chunk size: " + std::string(e.what()));
                 return;
             }
             rawChunkedData.erase(0, pos + 2);
@@ -468,7 +472,7 @@ void Request::parseChunks()
 
             // Validate and remove the chunk trailer (\r\n)
             if (rawChunkedData.substr(chunkSize, 2) != "\r\n") {
-                handleError("Invalid or missing chunk trailer");
+                handleError(400, "Invalid or missing chunk trailer");
                 return;
             }
 

@@ -81,7 +81,7 @@ def apply_sepia_filter(form_data):
 
         image_data = form_data['image']['data']
         image = Image.open(io.BytesIO(image_data))
-        
+
         # Apply sepia filter
         width, height = image.size
         pixels = image.load()  # Create the pixel map
@@ -105,9 +105,9 @@ def apply_sepia_filter(form_data):
         filename = form_data['image']['filename']
         edited_filename = f'sepia_{filename}'
         output_dir = TEMP_FOLDER if form_data['preview'] else UPLOAD_FOLDER
-        
+
         output_file = os.path.join(output_dir, edited_filename)
-        
+
         # Save the sepia-filtered image
         image.save(output_file)
 
@@ -132,8 +132,9 @@ def main():
         result = apply_sepia_filter(form_data)
 
         # Return a JSON response
+        print("Content-Type: application/json\r\n")
         print(json.dumps(result))
-    
+
     except Exception as e:
         error_response = {
             'status': 'error',

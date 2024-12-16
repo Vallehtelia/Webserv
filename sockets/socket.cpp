@@ -1,5 +1,9 @@
 #include "./socket.hpp"
 #include "../epoll/epoll.hpp"
+#include <chrono>
+#include <thread>
+
+extern bool running;
 
 Socket::Socket(int port, std::string host) : _socket_fd(0), _active(false), _server()
 {
@@ -103,13 +107,33 @@ bool	initSocket(std::vector<ServerConfig> &server, std::vector<Socket> &sockets)
 		addr.sin_port = htons(sock.getPort());
 		addr.sin_addr.s_addr = inet_addr(sock.getIp().c_str());
 
-		if (bind(sock.getSocketFd(), (struct sockaddr*)&addr, sizeof(addr)) < 0)
+		int timeoutMaxSec = 60;
+		// try looping bind for 60 seconds and sleep for 1 second on fail using c++ chrono
+		auto start = std::chrono::system_clock::now();
+		while (bind(sock.getSocketFd(), (struct sockaddr*)&addr, sizeof(addr)) < 0 && running)
 		{
-			std::cerr << RED << "Failed to bind: " << strerror(errno) << " On port: " << sock.getPort() << DEFAULT << "\n";
-			close(sock.getSocketFd());
-			cleanup(sockets, -1);
-			return false;
+			auto end = std::chrono::system_clock::now();
+			std::chrono::duration<double> elapsed_seconds = end - start;
+			// print elapsed time in int form
+			std::cerr << CLEAR_TERMINAL << RED << "Failed to bind due timeout, waiting for successful bind max 1min" << DEFAULT << "\n";
+			std::cout << "Elapsed time: " << static_cast<int>(elapsed_seconds.count()) << " seconds" << std::endl;
+			if (elapsed_seconds.count() >= timeoutMaxSec)
+			{
+				std::cerr << RED << "Failed to bind: " << strerror(errno) << " or having timeout" " on port: " << sock.getPort() << DEFAULT << "\n";
+				close(sock.getSocketFd());
+				cleanup(sockets, -1);
+				return false;
+			}
+			std::this_thread::sleep_for(std::chrono::seconds(1));
 		}
+
+		// if (bind(sock.getSocketFd(), (struct sockaddr*)&addr, sizeof(addr)) < 0)
+		// {
+		// 	std::cerr << RED << "Failed to bind: " << strerror(errno) << " or having timeout" " on port: " << sock.getPort() << DEFAULT << "\n";
+		// 	close(sock.getSocketFd());
+		// 	cleanup(sockets, -1);
+		// 	return false;
+		// }
 
 		if (listen(sock.getSocketFd(), SOMAXCONN) < 0) // SOMAXCONN is the system defined maximum for the backlog
 		{

@@ -10,33 +10,13 @@ void RequestHandler::handleRequest( Request& req, Response& res)
 {
 	_location = req.getLocation();
 
-    prepareHandler(req);
-	if (req.getState() == State::CGI_ERROR) // Naa johonki siistimmin
-	{
-		res.setResponse(500, "text/html", "");
-		return ;
-	}
-	if (req.getState() == State::TIMEOUT)
-	{
-		res.setResponse(504, "text/html", "");
-		return ;
-	}
-	if (req.getState() == State::CGI_NOT_FOUND)
-	{
-		res.setResponse(404, "text/html", "");
-		return ;
-	}
-	if (req.getState() == State::CGI_NOT_PERMITTED)
-	{
-		res.setResponse(403, "text/html", "");
-		return ;
-	}
 
     if (req.getState() == State::ERROR)
     {
         res.setResponse(req.getErrorCode(), "text/html", "");
         return ;
     }
+    prepareHandler(req);
 
     if (_location.getLocation() == "/cgi")
     {
@@ -133,32 +113,24 @@ void RequestHandler::prepareHandler(const Request &req)
 	_headers = req.getHeaders();
 	_cookies = req.getCookies();
 
-	std::cout << "Cookies received in request: ";
-    for (const auto& [key, value] : _cookies) {
-        std::cout << key << "=" << value << "; ";
-    }
-    std::cout << std::endl;
-
     // Session management
 	auto& sessionManager = SessionManager::getInstance();
-	//sessionManager.clearSessions();
 	sessionManager.printSessions();
     if (_cookies.find("session_id") != _cookies.end()) {
         std::string sessionId = _cookies["session_id"];
         if (sessionManager.isValidSession(sessionId)) {
             _sessionId = sessionId;
 			sessionManager.validateAndExtendSession(sessionId);
-            std::cout << "Using existing session: " << sessionId << std::endl;
         } else {
             std::cout << "Invalid session: " << sessionId << std::endl;
             _sessionId = sessionManager.createDummySession();
 			std::cout << "Creating a new session with ID: " << _sessionId << std::endl;
-			_responseCookies.push_back("session_id=" + _sessionId + "; Path=/; HttpOnly"); //; Secure");
+			_responseCookies.push_back("session_id=" + _sessionId + "; Path=/; HttpOnly");
         }
     } else {
         _sessionId = sessionManager.createDummySession();
 		std::cout << "No session_id found, creating a new session with ID: " << _sessionId << std::endl;
-		_responseCookies.push_back("session_id=" + _sessionId + "; Path=/; HttpOnly"); //; Secure");
+		_responseCookies.push_back("session_id=" + _sessionId + "; Path=/; HttpOnly");
     }
 }
 
@@ -207,11 +179,7 @@ std::string RequestHandler::getFilepath(std::string filepath)
     removePrefix(tmp, _location.getLocation());
     std::string locationRoot = _location.getRoot();
     removePrefix(locationRoot, "/");
-    std::cout << "LOCATION ROOT: " << locationRoot << std::endl;
 
-    std::cout << _location.getLocation() << std::endl;
-
-    // std::cout << "FILEPATH: " << filepath << std::endl;
     removePrefix(filepath, _location.getLocation());
     std::filesystem::path baseDir = std::filesystem::current_path();
     std::string baseDirStr = baseDir.string();
@@ -228,9 +196,6 @@ bool RequestHandler::validFile(const std::string& filePath) {
         std::filesystem::path fullPath = std::filesystem::path(filePath);
         const std::filesystem::path baseDir = std::filesystem::current_path();
         std::filesystem::path dirPath = std::filesystem::canonical(baseDir);
-
-        // std::cout << "Canonical Directory Path: " << dirPath << std::endl;
-
 
         if (std::filesystem::relative(fullPath, dirPath).string().find("..") == 0) {
             std::cerr << "Error: Access outside base directory is prohibited." << std::endl;
@@ -358,14 +323,8 @@ void logSessionData(const std::string& sessionId, const SessionData& sessionData
 }
 
 void RequestHandler::handleGetRequest(Response& res) {
-	std::cout << "GET REQUEST" << std::endl;
+	std::cout << YELLOW << "GET REQUEST " << _uri << DEFAULT << std::endl;
 
-    // Example: Log cookies for debugging
-    for (const auto& [key, value] : _cookies) {
-        std::cout << "Cookie received: " << key << " = " << value << std::endl;
-    }
-
-    // Example: Use session data
 	auto& sessionManager = SessionManager::getInstance();
 	if (sessionManager.hasSession(_sessionId)) {
     	auto& sessionData = sessionManager.getSession(_sessionId);
@@ -374,23 +333,16 @@ void RequestHandler::handleGetRequest(Response& res) {
 		if (sessionData.data.find("last_visited") == sessionData.data.end()) {
 			sessionData.data["last_visited"] = _uri;
 		} else {
-			std::cout << "Last visited: " << sessionData.data["last_visited"] << std::endl;
 			sessionData.data["last_visited"] = _uri; // Update last visited page
 		}
-		// Log session data for debugging
-		for (const auto& [key, value] : sessionData.data) {
-			std::cout << "Session data: " << key << " = " << value << std::endl;
-		}
 	} else {
-		std::cout << "Session ID " << _sessionId << " not found. Creating a new session." << std::endl;
 		_sessionId = sessionManager.createDummySession();
 		auto& newSessionData = sessionManager.getSession(_sessionId);
 		newSessionData.data["last_visited"] = _uri;
 	}
 
-    // std::cout << "Is directory: " << std::filesystem::is_directory(_filePath) << std::endl;
     if (std::filesystem::is_directory(_filePath)){
-        if (_location.isAutoindex()) { // Assuming there's a method to check if auto-index is enabled
+        if (_location.isAutoindex()) {
             std::string directoryListing = generateDirectoryListing(_filePath);
             res.setResponse(200, "text/html", directoryListing);
         } else {
@@ -443,7 +395,7 @@ void RequestHandler::handleDeleteRequest(Response& res)
 
 void RequestHandler::handlePostRequest(const Request& req, Response& res)
 {
-    std::cout << "POST REQUEST" << std::endl;
+    std::cout << YELLOW << "POST REQUEST " << _uri << DEFAULT << std::endl;
     if (req.isMultiPart()) {
         handleMultipartRequest(req, res);
     }

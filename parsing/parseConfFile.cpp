@@ -149,54 +149,6 @@ static void	parseLocationBlock(LocationConfig &location, std::ifstream &file, st
 	}
 }
 
-/* suggestion:
-static int parseServerBlock(std::ifstream &file, ServerConfig &server)
-{
-    std::string line;
-    int braceCount = 1;  // Start with 1 because we've already encountered the `{` after "server"
-
-    while (std::getline(file, line))
-    {
-        // Trim leading and trailing whitespace
-        line = line.substr(line.find_first_not_of(" \t"), line.find_last_not_of(" \t") - line.find_first_not_of(" \t") + 1);
-
-        if (line.empty()) continue;
-
-        // Check for opening and closing braces to manage nested blocks
-        if (line.find("{") != std::string::npos) {
-            braceCount++;
-        }
-        if (line.find("}") != std::string::npos) {
-            braceCount--;
-            // If braceCount reaches 0, the server block is complete
-            if (braceCount == 0) return 0;
-        }
-
-        // Handle "location" blocks separately
-        if (line.compare(0, 8, "location") == 0)
-        {
-            LocationConfig location;
-            parseLocationBlock(location, file, line);
-            server.addLocation(std::move(location));
-            continue;
-        }
-
-        // Parse each line dynamically
-        if (parseServerData(server, line) != 0) {
-            std::cerr << "Failed to parse line: " << line << std::endl;
-            return 1;  // Return an error if parsing fails
-        }
-    }
-
-    // If we exit the loop and braceCount is not zero, there’s an imbalance
-    if (braceCount != 0) {
-        throw std::runtime_error("Invalid configuration file: unmatched braces in server block.");
-    }
-
-    return 0;
-}
-*/
-
 static int	parseServerBlock(std::ifstream &file, ServerConfig &server)
 {
 	std::string				line;
@@ -230,12 +182,12 @@ static int	parseServerBlock(std::ifstream &file, ServerConfig &server)
 // New function to check the presence of all configuration keys
 std::vector<std::string> validateServerBlock(const ServerConfig &server) {
     std::vector<std::string> confKeys = {
-		"listen", 
-		"server_name", 
-		"host", 
-		"root", 
-        "client_max_body_size", 
-		"max_events", 
+		"listen",
+		"server_name",
+		"host",
+		"root",
+        "client_max_body_size",
+		"max_events",
         "index"};
 
     std::vector<std::string> missingKeys;
@@ -291,9 +243,8 @@ bool validateNewServer(const ServerConfig &server) {
 	std::vector<int> missingErrorPageKeys = validateErrorPageKeys(server);
 	std::vector<std::string> missingLocationKeys = validateLocationConfigs(server);
 
-	if (missingKeys.empty()) {
-		std::cout << "All required keys are present." << std::endl;
-	} else {
+	if (!missingKeys.empty())
+	{
 		std::cerr << "Missing keys: ";
 		for (const std::string &key : missingKeys) {
 			std::cerr << key << " ";
@@ -301,18 +252,16 @@ bool validateNewServer(const ServerConfig &server) {
 		std::cerr << std::endl;
 	}
 
-	if (missingErrorPageKeys.empty()) {
-		std::cout << "All required error page keys are present." << std::endl;
-	} else {
+	if (!missingErrorPageKeys.empty())
+	{
 		std::cerr << "Missing error page keys:" << std::endl;
 		for (int key : missingErrorPageKeys) {
 			std::cerr << key << std::endl;
 		}
 	}
 
-	if (missingLocationKeys.empty()) {
-		std::cout << "All required location keys for all locations are present." << std::endl;
-	} else {
+	if (!missingLocationKeys.empty())
+	{
 		std::cerr << "Missing location keys: ";
 		for (const std::string &key : missingLocationKeys) {
 			std::cerr << key << " ";
@@ -322,7 +271,7 @@ bool validateNewServer(const ServerConfig &server) {
 
 	if (!missingErrorPageKeys.empty() || !missingKeys.empty() || !missingLocationKeys.empty()) {
 		return false;
-	} 
+	}
 	return true;
 }
 
@@ -355,7 +304,7 @@ bool	parseData(const std::string &filename, std::vector<ServerConfig> &server)
 			new_serv = parseServerBlock(file, new_server);
 			if (!validateNewServer(new_server)) {
 				std::cout << "Not valid..." << std::endl;
-				return false;	
+				return false;
 			}
 			server.push_back(new_server);
 		}
